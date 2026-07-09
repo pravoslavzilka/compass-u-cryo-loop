@@ -1,0 +1,12 @@
+# Dymola/OpenModelica build artifacts
+*.mat
+*.log
+dsin.txt
+dsu.txt
+dsmodel.c
+dymosim*
+*.exe
+*.o
+*.obj
+/work/
+*.bak
