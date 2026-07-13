@@ -1,0 +1,202 @@
+# Migration notes: OpenModelica prototype → Dymola (TIL/TSMedia) rebuild
+
+Troubleshooting log for the COMPASS-U cryo helium loop model as it's rebuilt
+from the hand-derived causal prototype (`prototype-openmodelica/`) into the
+full Dymola Thermal Systems model (`dymola-thermal-systems/`).
+
+Purpose: record non-obvious issues and their root causes so the next person
+(or the next AI session) hitting the same symptom doesn't have to re-derive
+it from scratch. Add a new dated entry per issue, most recent first. Keep
+entries even after they're fixed — "what it looked like" is often the only
+way to recognize the same bug again.
+
+---
+
+## 2026-07-13 — "Circular equalities detected" / model is structurally singular
+
+**Symptom:** Translation aborted with:
+```
+The DAE has 1254 scalar unknowns and 1254 scalar equations.
+Model is singular: Circular equalities detected.
+The equations
+  junction.portB.p = junction.portA.p;
+  junction.portA.p = junction.portB.p;
+which was derived from
+  junction.portA.p-junction.portB.p = 0;
+mean circular equalities for junction.portA.p, junction.portB.p
+```
+
+**Root cause:** a stray `connect(junction.portA, junction.portB)` had been added
+directly in `Test/CoilLoopThermalSystems.mo` (self-loop connecting two ports
+of the *same* `VolumeJunction` instance to each other). `VolumeJunction` is a
+single lumped-volume component — all of its ports already share one internal
+pressure state, so `portA.p = portB.p` is already implied internally. Adding
+an external `connect` between them asserts the exact same equality a second
+time: two equations that reduce to the same relation, with nothing left to
+pin down the actual value → structurally singular ("circular"). It was also
+topologically wrong on top of being redundant, since `portA` and `portB`
+were each already wired to different external components (`tube2.portA` and
+`sensor_m_flow.portB`), so the extra connect tried to weld four ports into
+one node instead of leaving `junction` as a normal 3-way split/merge.
+
+**Fix:** delete the stray `connect(junction.portA, junction.portB)` statement.
+
+**How it was found:** the Dymola translation error itself names the exact
+two variables and the reduced equation directly — for this class of error
+you don't need `dsfinal.txt`/`dsin.txt` forensics, just grep the `.mo` file
+for the named variables' component (`junction`) and look for any `connect(...)`
+involving two ports of the *same* instance — that's almost always the tell
+for "circular equalities" on a component that internally ties its own ports
+together (single-pressure-state volumes, ideal junctions, sensors with
+`portA`≡`portB`, etc.).
+
+**General lesson:** "Circular equalities detected" in Dymola almost always
+means two (or more) equations assert the *same* relationship between the
+same variables — not that there's a physical loop in the network. Check for:
+redundant/duplicate `connect()` statements, a component's own internal
+port-equality equations being re-asserted externally, or two different
+initial-condition fixes pinning the same state twice.
+
+---
+
+## 2026-07-13 — Result file bloat (66MB) / "many state events" chattering warning
+
+**Symptom:** `SimpleLoop.mat` was 66MB for a 10s / ~100-interval simulation
+(later confirmed as 25,903 state events over 10s). Dymola printed:
+```
+WARNING: You have many state events. It might be due to chattering.
+```
+Simulation was extremely slow (minimum integration stepsize `5.14e-11`,
+263,365 crossing-function evaluations for a trivial model).
+
+**Root cause:** `generateEventsAtFlowReversalGas` (a parameter on
+`ThermalSystems.SystemInformationManager`, inherited by all gas components
+unless locally overridden) defaults to `true`. This is *not* about the bulk
+loop flow reversing — the fan drives that monotonically positive the whole
+time. It's about the **flow split between two parallel branches**
+(`tube`/`tube2` in `SimpleLoop`, both identical geometry, both driven by
+identically-profiled heat sources). With no physical basis to prefer one
+branch over the other, the split is numerically degenerate. Early in the
+run the *total* flow being split is tiny (junction `m_flowStart=1e-5`, fan
+still ramping up), so ordinary solver roundoff (~1e-9 to 1e-12) is
+comparable to or larger than the quantity being split — the computed
+per-branch flow can briefly read slightly negative in one branch while the
+other over-compensates to conserve mass. That's a real sign change on the
+variable Dymola is watching, even though it's physically meaningless.
+`generateEventsAtFlowReversal` can't tell "meaningful reversal" from
+"roundoff-scale noise on a degenerate split" — every flip forces a full
+state event: stop, iterate to localize the crossing to `eveps` (1e-10s)
+tolerance, restart. And because `dsin.txt` has `evgrid=1`, every such event
+also becomes an extra stored row, ballooning the result file.
+
+**Fix:** set `generateEventsAtFlowReversalGas=false` on the `sim`
+(`ThermalSystems.SystemInformationManager`) instance — single point of
+control, all gas components inherit it unless they override locally. This
+doesn't remove the branch-split degeneracy (still structurally there if you
+build genuinely symmetric parallel branches) — it changes the upwind switch
+from a hard state-event to a continuous/smoothed evaluation, so the same
+noise gets absorbed for free instead of forcing expensive event handling.
+
+**When this fix is/isn't appropriate:** safe when the topology has no
+scenario where flow should *actually* reverse and you need to catch that
+moment precisely (true here — single fan, one-directional loop). Do **not**
+blanket-disable this on a model where real flow reversal is physically
+expected and matters (e.g. a natural-convection loop, or anything with
+bidirectional operation) — you'd lose accurate switching there.
+
+**How it was actually found:** confirmed directly from the compiled model's
+own parameter dump rather than guessed — `dsfinal.txt` (and `dsin.txt`) are
+plain-text and contain an `initialValue` matrix; grepping for
+`generateEventsAtFlowReversal` there shows the actual compiled value (4th
+number in the row's continuation line) for every component. This is the
+reliable way to check *what value a parameter actually compiled to*,
+independent of what the `.mo` source says — see the next entry for why that
+distinction matters.
+
+---
+
+## 2026-07-13 — `.mo` edit had "no effect" after re-running
+
+**Symptom:** After adding `generateEventsAtFlowReversalGas=false` to the
+`.mo` source and re-running `auto_translate_log.mos`, translate reported
+success but the chattering warning and event counts were unchanged.
+Checking `dsin.txt`/`dsfinal.txt` confirmed the parameter was still
+compiling to `true` — the edit genuinely never reached the model.
+
+**Root cause:** `translateModel(modelName)` re-translates whatever class
+definition is **already loaded in Dymola's workspace** — it does not
+re-read the `.mo` file from disk. If the model was opened once in the GUI
+(or a previous script run) and left loaded, external edits to the file sit
+unused indefinitely, silently, with no error.
+
+**Fix:** `auto_translate_log.mos` now calls
+`openModel(sharedPath + "/CoilLoopThermalSystems.mo", mustRead=true)`
+immediately before `translateModel()`, forcing a fresh read from the shared
+folder every run.
+
+**Lesson:** when a model-source edit appears to have no effect, don't
+conclude the hypothesis was wrong before checking `dsin.txt`/`dsfinal.txt`
+for whether the parameter's *compiled* value actually changed. "Translate
+succeeded" only means the syntax was valid, not that your edit was used.
+
+---
+
+## 2026-07-13 — `auto_translate_log.mos` errors before producing any log
+
+**Symptom:** Running the automation script produced no `status.txt` /
+`last_error.txt` at all (translate/compile clearly succeeded per
+`buildlog.txt`, but the script never got to write a status file).
+
+**Root causes found (all in the same script):**
+1. `Modelica.Utilities.Streams.print(string, fileName, false)` — this
+   function only takes **2** arguments (`string`, `fileName`); there is no
+   append/overwrite flag. The 3-argument call throws
+   `Error: Too many positional arguments for function ... print` and aborts
+   the script at that line, before the status file gets written. (Since the
+   function always *appends*, stale status/error files from previous runs
+   also need to be explicitly deleted at the start of each run, or old and
+   new statuses stack up in the same file forever.)
+2. `simulateModel(modelName, StopTime=10, Tolerance=1e-6, ResultFile=...)`
+   — the named arguments were capitalized, but the actual function
+   signature uses lowerCamelCase: `stopTime`, `tolerance`, `resultFile`.
+   Capitalized names throw `Error: Unknown named argument '...'`.
+3. `sharedPath` was written with backslashes
+   (`"Z:\compass-u-cryo-loop\..."`) — backslash is a Modelica string escape
+   character. This happened to work here only because none of the path
+   segments started with a letter Modelica recognizes as an escape
+   (`'`,`"`,`?`,`\`,`a`,`b`,`f`,`n`,`r`,`t`,`v`,`0`) — fragile, not a
+   guarantee. Use forward slashes in `.mos` path strings.
+
+**Fix:** corrected all of the above in `Test/auto_translate_log.mos`; also
+added a `"RUNNING: translate started"` marker written to `status.txt`
+immediately at the start of the run (after clearing any stale status/error
+files), so a hung or crashed Dymola session can be distinguished from a
+stale leftover file by its timestamp/content instead of looking identical.
+
+---
+
+## Known-unexplained / flagged, not fixed
+
+- `Test/request` and `Test/status` (no `.txt` extension) — both contain
+  just a single space + CRLF. Not written by `auto_translate_log.mos`
+  (which writes `status.txt`, not `status`). Likely leftover manual-test
+  artifacts from earlier debugging, unrelated to the actual pipeline. Safe
+  to delete if unrecognized, left in place for now.
+
+---
+
+## Working constraints worth remembering
+
+- Dymola runs inside a network-isolated VM; only a shared disk folder
+  connects it to the host. No one working from the host side (including an
+  AI assistant) can run translate/simulate directly — diagnosis has to come
+  from the shared-folder files (`status.txt`, `translation_log.txt`,
+  `last_error.txt`, `dslog.txt`, `dsin.txt`, `dsfinal.txt`, result `.mat`)
+  plus static reading of `.mo` sources. Every fix needs a real re-run inside
+  the VM to confirm — don't trust "should work" without seeing the new log.
+- `dsin.txt`/`dsfinal.txt` are plain text but can be 300KB+ — grep for the
+  variable name rather than reading the whole file. Each variable's actual
+  compiled value lives in the `initialValue(N,6)` matrix; each row wraps
+  across 2 physical lines, and the row is matched to its name by matching
+  order with the `initialName(N,77)` block (or just grep the trailing
+  `# variable.name` comment Dymola prints on the first of the two lines).
