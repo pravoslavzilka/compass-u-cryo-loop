@@ -14,27 +14,29 @@ model CoilAssembly2ch
   parameter Modelica.Units.SI.Length lengths[2] = {90,75} "Per-channel tube length [m] (Channel1, Channel2)";
   parameter Real diameters_mm[2](each unit="mm") = {7,7} "Per-channel tube inner diameter [mm] (Channel1, Channel2)";
   parameter Modelica.Units.SI.Power dischargeLoads[2] = {50000,50000} "Per-channel peak discharge heat [W] (Channel1, Channel2)";
-  parameter Modelica.Units.SI.Time pulseStart = 5 "Discharge start time";
-  parameter Modelica.Units.SI.Time pulseEnd = 10 "Discharge end time";
+  parameter Modelica.Units.SI.Time pulseStart = 185 "Discharge start time (after fan finishes accelerating)";
+  parameter Modelica.Units.SI.Time pulseEnd = 190 "Discharge end time (5s heat shock)";
   parameter Real valveOpening = 1.0 "Isolation valve opening (0-1)";
   parameter Real valveKvNominal = 100 "Kv value at fully-open (valveOpening=1)";
   parameter Modelica.Units.SI.Temperature TInitial = 80 "Initial coil/gas temperature";
 
   final parameter Modelica.Units.SI.Diameter diameters[2] = diameters_mm*1e-3 "Per-channel tube inner diameter, converted to m";
+  final parameter Modelica.Units.SI.Length lengthsAdjusted[2] = {lengths[i]*(1 + 0.0001*(i - 1)) for i in 1:2}
+    "Per-channel length with a tiny (<=0.01%) per-index offset so identical-length channels don't create a numerically degenerate flow split";
 
   output ChannelSummary Channel1(
     T_wall=tube2.heatPort[1].T,
     T_gas_out=tube2.summary.T_gas_B,
     T_gas_in=tube2.summary.T_gas_A,
     m_flow=tube2.summary.m_flow_gas_B,
-    length=lengths[1],
+    length=lengthsAdjusted[1],
     diameter=diameters[1]) "Channel 1 summary (tube2 branch)";
   output ChannelSummary Channel2(
     T_wall=tube1.heatPort[1].T,
     T_gas_out=tube1.summary.T_gas_B,
     T_gas_in=tube1.summary.T_gas_A,
     m_flow=tube1.summary.m_flow_gas_B,
-    length=lengths[2],
+    length=lengthsAdjusted[2],
     diameter=diameters[2]) "Channel 2 summary (tube1 branch)";
 
   Modelica.Thermal.HeatTransfer.Sources.PrescribedHeatFlow prescribedHeatFlow
@@ -47,7 +49,7 @@ model CoilAssembly2ch
   ThermalSystems.GasComponents.Tubes.Tube tube2(
     tubeGeometry(
       innerDiameter=diameters[1],
-      length=lengths[1],
+      length=lengthsAdjusted[1],
       nParallelTubes=1,
       crossSectionType=ThermalSystems.Internals.CrossSectionType.Circular),
     pressureDropPosition=ThermalSystems.Internals.PressureDropPosition.center,
@@ -87,7 +89,7 @@ model CoilAssembly2ch
       condensingIndex=sim.gasType1.condensingIndex))
     annotation (Placement(transformation(extent={{94,-12},{114,8}})));
   ThermalSystems.GasComponents.JunctionElements.VolumeJunction junction2(
-    volume=1e-5,
+    volume=1e-4,
     m_flowStart=1e-5,
     pInitial=2000000,
     fixedInitialPressure=false,
@@ -105,7 +107,7 @@ model CoilAssembly2ch
   ThermalSystems.GasComponents.Tubes.Tube tube1(
     tubeGeometry(
       innerDiameter=diameters[2],
-      length=lengths[2],
+      length=lengthsAdjusted[2],
       nParallelTubes=1,
       crossSectionType=ThermalSystems.Internals.CrossSectionType.Circular),
     pressureDropPosition=ThermalSystems.Internals.PressureDropPosition.center,
@@ -122,7 +124,7 @@ model CoilAssembly2ch
     TInitialWall(displayUnit="K") = TInitial)
     annotation (Placement(transformation(extent={{32,30},{48,34}})));
   ThermalSystems.GasComponents.JunctionElements.VolumeJunction junction1(
-    volume=1e-5,
+    volume=1e-4,
     m_flowStart=1e-5,
     pInitial=2000000,
     fixedInitialPressure=false,
