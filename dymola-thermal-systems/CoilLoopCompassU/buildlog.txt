@@ -2,15 +2,46 @@
 Compiling and linking the model (Visual C++). 
  
 dsmodel.c
-dsmodel.c(13192): warning C4018: <: signed/unsigned - neshoda
-dsmodel.c(13681): warning C4018: <: signed/unsigned - neshoda
-dsmodel.c(13953): warning C4018: <: signed/unsigned - neshoda
-dsmodel.c(14196): warning C4018: <: signed/unsigned - neshoda
-dsmodel.c(14441): warning C4018: <: signed/unsigned - neshoda
-dsmodel.c(14988): warning C4018: <: signed/unsigned - neshoda
-dsmodel.c(15374): warning C4018: <: signed/unsigned - neshoda
-dsmodel.c(15623): warning C4018: <: signed/unsigned - neshoda
-dsmodel.c(16070): warning C4018: <: signed/unsigned - neshoda
+dsmodel.c(36567): warning C4018: <: signed/unsigned - neshoda
+dsmodel.c(36767): warning C4018: <: signed/unsigned - neshoda
+dsmodel.c(37372): warning C4018: <: signed/unsigned - neshoda
+dsmodel.c(37642): warning C4018: <: signed/unsigned - neshoda
+dsmodel.c(37891): warning C4018: <: signed/unsigned - neshoda
+dsmodel.c(38183): warning C4018: <: signed/unsigned - neshoda
+dsmodel.c(38453): warning C4018: <: signed/unsigned - neshoda
+dsmodel.c(38702): warning C4018: <: signed/unsigned - neshoda
+dsmodel.c(39047): warning C4018: <: signed/unsigned - neshoda
+dsmodel.c(39297): warning C4018: <: signed/unsigned - neshoda
+dsmodel.c(39578): warning C4018: <: signed/unsigned - neshoda
+dsmodel.c(39830): warning C4018: <: signed/unsigned - neshoda
+dsmodel.c(40142): warning C4018: <: signed/unsigned - neshoda
+dsmodel.c(40392): warning C4018: <: signed/unsigned - neshoda
+dsmodel.c(40675): warning C4018: <: signed/unsigned - neshoda
+dsmodel.c(40925): warning C4018: <: signed/unsigned - neshoda
+dsmodel.c(41267): warning C4018: <: signed/unsigned - neshoda
+dsmodel.c(41517): warning C4018: <: signed/unsigned - neshoda
+dsmodel.c(41800): warning C4018: <: signed/unsigned - neshoda
+dsmodel.c(42050): warning C4018: <: signed/unsigned - neshoda
+dsmodel.c(42372): warning C4018: <: signed/unsigned - neshoda
+dsmodel.c(42624): warning C4018: <: signed/unsigned - neshoda
+dsmodel.c(42905): warning C4018: <: signed/unsigned - neshoda
+dsmodel.c(43155): warning C4018: <: signed/unsigned - neshoda
+dsmodel.c(43458): warning C4018: <: signed/unsigned - neshoda
+dsmodel.c(43708): warning C4018: <: signed/unsigned - neshoda
+dsmodel.c(44049): warning C4018: <: signed/unsigned - neshoda
+dsmodel.c(44800): warning C4018: <: signed/unsigned - neshoda
+dsmodel.c(45226): warning C4018: <: signed/unsigned - neshoda
+dsmodel.c(46275): warning C4018: <: signed/unsigned - neshoda
+dsmodel.c(46765): warning C4018: <: signed/unsigned - neshoda
+dsmodel.c(47149): warning C4018: <: signed/unsigned - neshoda
+dsmodel.c(47830): warning C4018: <: signed/unsigned - neshoda
+dsmodel.c(48163): warning C4018: <: signed/unsigned - neshoda
+dsmodel.c(48399): warning C4018: <: signed/unsigned - neshoda
+dsmodel.c(48713): warning C4018: <: signed/unsigned - neshoda
+dsmodelext1.c
+dsmodelext2.c
+dsmodelext3.c
+Generov n¡ k¢du...
    Vytv ý¡ se knihovna dymosim.lib a objekt dymosim.exp.
  
 Successful generation of Dymosim. 

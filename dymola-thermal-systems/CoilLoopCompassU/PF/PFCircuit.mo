@@ -10,8 +10,8 @@ model  PFCircuit
       nc_propertyCalculation=1,
       gasNames={"VDIWA2006.Helium"},
       mixingRatio_propertyCalculation={1},
-      condensingIndex=0)) annotation (Placement(transformation(extent={{186,92},
-            {206,112}},
+      condensingIndex=0)) annotation (Placement(transformation(extent={{180,100},
+            {200,120}},
                       rotation=0)));
 
   ThermalSystems.GasComponents.Fans.Fan2ndOrder fan2ndOrder(
@@ -82,13 +82,6 @@ model  PFCircuit
     annotation (Placement(transformation(extent={{-6,-3},{6,3}},
         rotation=90,
         origin={-86,-43})));
-  CoilAssembly PF1U(
-    length=64,
-    nChannels=4,
-    TInitial(displayUnit="K"))
-    annotation (Placement(transformation(extent={{60,80},{80,100}})));
-  CoilAssembly PF1L(length=74, nChannels=4)
-    annotation (Placement(transformation(extent={{60,60},{80,80}})));
   ThermalSystems.GasComponents.JunctionElements.VolumeJunction junction1(
     volume=1e-5,
     m_flowStart=1e-5,
@@ -97,7 +90,7 @@ model  PFCircuit
     TInitial(displayUnit="K") = 80)
     annotation (Placement(transformation(extent={{-4,-4},{4,4}},
         rotation=90,
-        origin={-2,56})));
+        origin={20,60})));
   ThermalSystems.GasComponents.JunctionElements.VolumeJunction junction3(
     volume=1e-5,
     m_flowStart=1e-5,
@@ -166,8 +159,8 @@ model  PFCircuit
     fixedInitialPressure=false,
     TInitial(displayUnit="K") = 80)
     annotation (Placement(transformation(extent={{-4,-4},{4,4}},
-        rotation=90,
-        origin={-26,44})));
+        rotation=270,
+        origin={-20,20})));
   ThermalSystems.GasComponents.JunctionElements.VolumeJunction junction8(
     volume=1e-5,
     m_flowStart=1e-5,
@@ -176,7 +169,7 @@ model  PFCircuit
     TInitial(displayUnit="K") = 80)
     annotation (Placement(transformation(extent={{-4,-4},{4,4}},
         rotation=90,
-        origin={44,80})));
+        origin={40,80})));
   ThermalSystems.GasComponents.JunctionElements.VolumeJunction junction9(
     volume=1e-5,
     m_flowStart=1e-5,
@@ -194,7 +187,7 @@ model  PFCircuit
     TInitial(displayUnit="K") = 80)
     annotation (Placement(transformation(extent={{-4,-4},{4,4}},
         rotation=90,
-        origin={44,40})));
+        origin={40,40})));
   ThermalSystems.GasComponents.JunctionElements.VolumeJunction junction11(
     volume=1e-5,
     m_flowStart=1e-5,
@@ -208,6 +201,90 @@ model  PFCircuit
     annotation (Placement(transformation(extent={{60,20},{80,40}})));
   CoilAssembly2ch PF2L(lengths={80,83})
     annotation (Placement(transformation(extent={{60,40},{80,60}})));
+  CoilAssembly4ch PF1L(lengths={70,74,70,74}, TInitial(displayUnit="K"))
+    annotation (Placement(transformation(extent={{60,80},{80,100}})));
+  CoilAssembly4ch PF1U(lengths={61,64,61,64})
+    annotation (Placement(transformation(extent={{60,60},{80,80}})));
+  CoilAssembly3ch PF3L(lengths={83,84,87})
+    annotation (Placement(transformation(extent={{60,0},{80,20}})));
+  CoilAssembly3ch PF3U(lengths={83,84,87})
+    annotation (Placement(transformation(extent={{60,-20},{80,0}})));
+  CoilAssembly4ch PF4L(lengths={90,90,90,75}, diameters_mm={9,9,9,9})
+    annotation (Placement(transformation(extent={{60,-40},{80,-20}})));
+  CoilAssembly4ch PF4U(lengths={90,90,90,75}, diameters_mm={9,9,9,9})
+    annotation (Placement(transformation(extent={{60,-60},{80,-40}})));
+  ThermalSystems.GasComponents.JunctionElements.VolumeJunction junction12(
+    volume=1e-5,
+    m_flowStart=1e-5,
+    pInitial=4000000,
+    fixedInitialPressure=false,
+    TInitial(displayUnit="K") = 80)
+    annotation (Placement(transformation(extent={{-4,-4},{4,4}},
+        rotation=90,
+        origin={20,-20})));
+  ThermalSystems.GasComponents.JunctionElements.VolumeJunction junction13(
+    volume=1e-5,
+    m_flowStart=1e-5,
+    pInitial=4000000,
+    fixedInitialPressure=false,
+    TInitial(displayUnit="K") = 80)
+    annotation (Placement(transformation(extent={{-4,-4},{4,4}},
+        rotation=90,
+        origin={40,0})));
+  ThermalSystems.GasComponents.JunctionElements.VolumeJunction junction14(
+    volume=1e-5,
+    m_flowStart=1e-5,
+    pInitial=4000000,
+    fixedInitialPressure=false,
+    TInitial(displayUnit="K") = 80)
+    annotation (Placement(transformation(extent={{-4,-4},{4,4}},
+        rotation=90,
+        origin={40,-40})));
+  ThermalSystems.GasComponents.JunctionElements.VolumeJunction junction15(
+    volume=1e-5,
+    m_flowStart=1e-5,
+    pInitial=4000000,
+    fixedInitialPressure=false,
+    TInitial(displayUnit="K") = 80)
+    annotation (Placement(transformation(extent={{-4,-4},{4,4}},
+        rotation=-90,
+        origin={100,0})));
+  ThermalSystems.GasComponents.JunctionElements.VolumeJunction junction16(
+    volume=1e-5,
+    m_flowStart=1e-5,
+    pInitial=4000000,
+    fixedInitialPressure=false,
+    TInitial(displayUnit="K") = 80)
+    annotation (Placement(transformation(extent={{-4,-4},{4,4}},
+        rotation=-90,
+        origin={100,-40})));
+  ThermalSystems.GasComponents.JunctionElements.VolumeJunction junction17(
+    volume=1e-5,
+    m_flowStart=1e-5,
+    pInitial=4000000,
+    fixedInitialPressure=false,
+    TInitial(displayUnit="K") = 80)
+    annotation (Placement(transformation(extent={{-4,-4},{4,4}},
+        rotation=-90,
+        origin={120,-20})));
+  ThermalSystems.GasComponents.JunctionElements.VolumeJunction junction18(
+    volume=1e-5,
+    m_flowStart=1e-5,
+    pInitial=4000000,
+    fixedInitialPressure=false,
+    TInitial(displayUnit="K") = 80)
+    annotation (Placement(transformation(extent={{-4,-4},{4,4}},
+        rotation=-90,
+        origin={140,20})));
+  ThermalSystems.GasComponents.JunctionElements.VolumeJunction junction19(
+    volume=1e-5,
+    m_flowStart=1e-5,
+    pInitial=4000000,
+    fixedInitialPressure=false,
+    TInitial(displayUnit="K") = 80)
+    annotation (Placement(transformation(extent={{-4,-4},{4,4}},
+        rotation=90,
+        origin={0,20})));
 equation
 
   connect(smoothStep.y,rotatoryBoundary. n_in)
@@ -222,14 +299,6 @@ equation
           {-50,-10}},                           color={191,0,0}));
   connect(volume.portArray[1], valve.portA) annotation (Line(
       points={{-51,-49.825},{-52,-49.825},{-52,-54},{-86,-54},{-86,-49}},
-      color={255,153,0},
-      thickness=0.5));
-  connect(PF1U.portB1, junction3.portA) annotation (Line(
-      points={{80.4,89.8},{96,89.8},{96,84}},
-      color={255,153,0},
-      thickness=0.5));
-  connect(junction3.portC, PF1L.portB1) annotation (Line(
-      points={{96,76},{96,69.8},{80.4,69.8}},
       color={255,153,0},
       thickness=0.5));
   connect(fan2ndOrder.portA, junction4.portC) annotation (Line(
@@ -264,36 +333,16 @@ equation
       points={{-86,40},{-86,-8}},
       color={255,153,0},
       thickness=0.5));
-  connect(tube1.portB, junction7.portA) annotation (Line(
-      points={{-42,-12},{-26,-12},{-26,40}},
-      color={255,153,0},
-      thickness=0.5));
-  connect(valve2.portB, junction7.portB) annotation (Line(
-      points={{-52,45},{-44,45},{-44,44},{-30,44}},
-      color={255,153,0},
-      thickness=0.5));
   connect(valve2.portA, junction6.portB) annotation (Line(
       points={{-64,45},{-68,45},{-68,44},{-82,44}},
       color={255,153,0},
       thickness=0.5));
-  connect(junction7.portC, junction1.portB) annotation (Line(
-      points={{-26,48},{-26,56},{-6,56}},
-      color={255,153,0},
-      thickness=0.5));
-  connect(PF1U.portA1, junction8.portC) annotation (Line(
-      points={{57.2,90},{44,90},{44,84}},
-      color={255,153,0},
-      thickness=0.5));
-  connect(PF1L.portA1, junction8.portA) annotation (Line(
-      points={{57.2,70},{44,70},{44,76}},
-      color={255,153,0},
-      thickness=0.5));
   connect(junction1.portC, junction8.portB) annotation (Line(
-      points={{-2,60},{-2,80},{40,80}},
+      points={{20,64},{20,80},{36,80}},
       color={255,153,0},
       thickness=0.5));
   connect(junction1.portA, junction10.portB) annotation (Line(
-      points={{-2,52},{-2,40},{40,40}},
+      points={{20,56},{20,40},{36,40}},
       color={255,153,0},
       thickness=0.5));
   connect(junction3.portB, junction11.portA) annotation (Line(
@@ -304,12 +353,8 @@ equation
       points={{100,40},{122,40},{122,58}},
       color={255,153,0},
       thickness=0.5));
-  connect(junction11.portB, junction4.portA) annotation (Line(
-      points={{126,62},{134,62},{134,122},{-16,122}},
-      color={255,153,0},
-      thickness=0.5));
   connect(junction10.portA, PF2U.portA1) annotation (Line(
-      points={{44,36},{46,36},{46,30},{57.2,30}},
+      points={{40,36},{40,30},{57.2,30}},
       color={255,153,0},
       thickness=0.5));
   connect(PF2U.portB1, junction9.portC) annotation (Line(
@@ -317,11 +362,107 @@ equation
       color={255,153,0},
       thickness=0.5));
   connect(junction10.portC, PF2L.portA1) annotation (Line(
-      points={{44,44},{46,44},{46,50},{57.2,50}},
+      points={{40,44},{40,50},{57.2,50}},
       color={255,153,0},
       thickness=0.5));
   connect(PF2L.portB1, junction9.portA) annotation (Line(
       points={{80.4,49.8},{96,49.8},{96,44}},
+      color={255,153,0},
+      thickness=0.5));
+  connect(junction8.portC, PF1L.portA1) annotation (Line(
+      points={{40,84},{40,90},{57.2,90}},
+      color={255,153,0},
+      thickness=0.5));
+  connect(junction8.portA, PF1U.portA1) annotation (Line(
+      points={{40,76},{40,70},{57.2,70}},
+      color={255,153,0},
+      thickness=0.5));
+  connect(PF1U.portB1, junction3.portC) annotation (Line(
+      points={{80.4,69.8},{96,69.8},{96,76}},
+      color={255,153,0},
+      thickness=0.5));
+  connect(PF1L.portB1, junction3.portA) annotation (Line(
+      points={{80.4,89.8},{96,89.8},{96,84}},
+      color={255,153,0},
+      thickness=0.5));
+  connect(junction12.portC, junction13.portB) annotation (Line(
+      points={{20,-16},{20,0},{36,0}},
+      color={255,153,0},
+      thickness=0.5));
+  connect(junction12.portA, junction14.portB) annotation (Line(
+      points={{20,-24},{20,-40},{36,-40}},
+      color={255,153,0},
+      thickness=0.5));
+  connect(junction15.portB, junction17.portA) annotation (Line(
+      points={{104,0},{120,0},{120,-16}},
+      color={255,153,0},
+      thickness=0.5));
+  connect(junction16.portB, junction17.portC) annotation (Line(
+      points={{104,-40},{120,-40},{120,-24}},
+      color={255,153,0},
+      thickness=0.5));
+  connect(junction17.portB, junction18.portC) annotation (Line(
+      points={{124,-20},{140,-20},{140,16}},
+      color={255,153,0},
+      thickness=0.5));
+  connect(junction11.portB, junction18.portA) annotation (Line(
+      points={{126,62},{140,62},{140,24}},
+      color={255,153,0},
+      thickness=0.5));
+  connect(junction18.portB, junction4.portA) annotation (Line(
+      points={{144,20},{160,20},{160,120},{-8,120},{-8,122},{-16,122}},
+      color={255,153,0},
+      thickness=0.5));
+  connect(junction13.portC, PF3L.portA1) annotation (Line(
+      points={{40,4},{40,10},{57.2,10}},
+      color={255,153,0},
+      thickness=0.5));
+  connect(junction13.portA, PF3U.portA1) annotation (Line(
+      points={{40,-4},{40,-10},{57.2,-10}},
+      color={255,153,0},
+      thickness=0.5));
+  connect(junction14.portC, PF4L.portA1) annotation (Line(
+      points={{40,-36},{40,-30},{57.2,-30}},
+      color={255,153,0},
+      thickness=0.5));
+  connect(junction14.portA, PF4U.portA1) annotation (Line(
+      points={{40,-44},{40,-50},{57.2,-50}},
+      color={255,153,0},
+      thickness=0.5));
+  connect(PF4U.portB1, junction16.portC) annotation (Line(
+      points={{80.4,-50.2},{100,-50.2},{100,-44}},
+      color={255,153,0},
+      thickness=0.5));
+  connect(PF4L.portB1, junction16.portA) annotation (Line(
+      points={{80.4,-30.2},{100,-30.2},{100,-36}},
+      color={255,153,0},
+      thickness=0.5));
+  connect(PF3U.portB1, junction15.portC) annotation (Line(
+      points={{80.4,-10.2},{100,-10.2},{100,-4}},
+      color={255,153,0},
+      thickness=0.5));
+  connect(PF3L.portB1, junction15.portA) annotation (Line(
+      points={{80.4,9.8},{100,9.8},{100,4}},
+      color={255,153,0},
+      thickness=0.5));
+  connect(valve2.portB, junction7.portA) annotation (Line(
+      points={{-52,45},{-20,45},{-20,24}},
+      color={255,153,0},
+      thickness=0.5));
+  connect(tube1.portB, junction7.portC) annotation (Line(
+      points={{-42,-12},{-20,-12},{-20,16}},
+      color={255,153,0},
+      thickness=0.5));
+  connect(junction7.portB, junction19.portB) annotation (Line(
+      points={{-16,20},{-4,20}},
+      color={255,153,0},
+      thickness=0.5));
+  connect(junction19.portC, junction1.portB) annotation (Line(
+      points={{0,24},{0,60},{16,60}},
+      color={255,153,0},
+      thickness=0.5));
+  connect(junction19.portA, junction12.portB) annotation (Line(
+      points={{0,16},{0,-20},{16,-20}},
       color={255,153,0},
       thickness=0.5));
   annotation (Diagram(coordinateSystem(preserveAspectRatio=false, extent={{-100,
