@@ -12,7 +12,7 @@ double experiment(7,1)
     3600                   # StopTime     Time at which integration stops
        0                   # Increment    Communication step size, if > 0
      500                   # nInterval    Number of communication intervals, if > 0
-  9.9999999999999995E-07   # Tolerance    Relative precision of signals for
+  1.0000000000000001E-05   # Tolerance    Relative precision of signals for
                            #              simulation, linearization and trimming
        0                   # MaxFixedStep Maximum step size of fixed step size
                            #              integrators, if > 0.0
@@ -2922,7 +2922,7 @@ double initialValue(2613,6)
   6   900   # sim.liquidPort[3].liquidMass
  -2       0                       0                       0                
   6   900   # sim.liquidPort[3].liquidVolume
- -2 -1.0576117886300000E+00 -1.7976931348623157E+308       0                
+ -2 -1.0576107825613499E+00 -1.7976931348623157E+308       0                
   6   900   # sim.gasPort[1].gasMass
  -2 -4.3967365224027430E-02       0                       0                
   6   900   # sim.gasPort[1].gasVolume
@@ -3062,13 +3062,13 @@ double initialValue(2613,6)
   1   793   # statePoint1.extendedInformation
  -1       1                       0                       0                
   1   282   # statePoint1.index
- -2 -1.1481380934988989E+06       0                       0                
+ -2 -1.1481379499677385E+06       0                       0                
   6   256   # statePoint1.h
  -2      -1                      -1                       1                
   6   256   # statePoint1.xi_vapor
  -2      -1                      -1                     100                
   6   256   # statePoint1.phi
- -2  7.7060844486164527E+01       0                 1.7976931348623157E+308
+ -2  7.7060872124985366E+01       0                 1.7976931348623157E+308
   6   256   # statePoint1.T
  -2       1                       0                       0                
   6   769   # statePoint1.gas.gasType.fixedMixingRatio
@@ -3090,25 +3090,25 @@ double initialValue(2613,6)
   6  1281   # statePoint1.gas.stateSelectPreferForInputs
  -2       0                       0                       0                
   6  1281   # statePoint1.gas.computeTransportProperties
- -2  2.5238771111812710E+01       0                 1.7976931348623157E+308
+ -2  2.5252227982659676E+01       0                 1.7976931348623157E+308
   6  1280   # statePoint1.gas.d
- -2 -1.4715977019643258E+04       0                       0                
+ -2 -1.4717083867029211E+04       0                       0                
   6  1280   # statePoint1.gas.s
  -2  5.1931000000000004E+03       0                       0                
   6  1280   # statePoint1.gas.cp
  -2  3.1144850380000003E+03       0                       0                
   6  1280   # statePoint1.gas.cv
- -2  1.2976758906133446E-02       0                       0                
+ -2  1.2976754251860732E-02       0                       0                
   6  1280   # statePoint1.gas.beta
- -2  2.4735687289148682E-07       0                       0                
+ -2  2.4722496814961591E-07       0                       0                
   6  1280   # statePoint1.gas.kappa
- -2  5.1680192764343178E+02       0                       0                
+ -2  5.1680202032211128E+02       0                       0                
   6  1280   # statePoint1.gas.w
- -2 -6.3067810711343731E-05       0                       0                
+ -2 -6.3101414731650746E-05       0                       0                
   6  1280   # statePoint1.gas.drhodh_pxi
- -2  6.2429834978419863E-06       0                       0                
+ -2  6.2429812587198778E-06       0                       0                
   6  1280   # statePoint1.gas.drhodp_hxi
- -2  4.0427419230784457E+06       0                 1.7976931348623157E+308
+ -2  4.0448988930390668E+06       0                 1.7976931348623157E+308
   6  1280   # statePoint1.gas.p_i[1]
  -2       0                       0                       1                
   6  1280   # statePoint1.gas.xi_gas
@@ -3122,7 +3122,7 @@ double initialValue(2613,6)
   6  1280   # statePoint1.gas.delta_hv
  -2      -1                       0                       0                
   6  1280   # statePoint1.gas.delta_hd
- -2 -1.1481380934988989E+06       0                       0                
+ -2 -1.1481379499677382E+06       0                       0                
   6  1280   # statePoint1.gas.h_i[1]
  -2  4.0000000000000001E-03       0                 1.7976931348623157E+308
   6  1280   # statePoint1.gas.M_i[1]
@@ -3170,9 +3170,9 @@ double initialValue(2613,6)
   6   770   # fan2ndOrder.portA.gasType.condensingIndex
  -2       1                       0                       0                
   6   770   # fan2ndOrder.portA.gasType.ID
- -2  6.7286192723300204E-03       0                       0                
+ -2  6.7326060760813881E-03       0                       0                
   6   388   # fan2ndOrder.portA.m_flow
- -2 -1.0962091443565146E+06       0                       0                
+ -2 -1.0962090007733402E+06       0                       0                
   6   260   # fan2ndOrder.portA.h_outflow
  -2       1                       0                       0                
   6   769   # fan2ndOrder.portB.gasType.fixedMixingRatio
@@ -3188,7 +3188,7 @@ double initialValue(2613,6)
   6   770   # fan2ndOrder.portB.gasType.condensingIndex
  -2       1                       0                       0                
   6   770   # fan2ndOrder.portB.gasType.ID
- -2 -1.1221735783398927E+06       0                       0                
+ -2 -1.1221734348674780E+06       0                       0                
   6   260   # fan2ndOrder.portB.h_outflow
  -2       1                       0                       0                
   6   769   # fan2ndOrder.gas.gasType.fixedMixingRatio
@@ -3210,27 +3210,27 @@ double initialValue(2613,6)
   6  1281   # fan2ndOrder.gas.stateSelectPreferForInputs
  -2       0                       0                       0                
   6  1281   # fan2ndOrder.gas.computeTransportProperties
- -2 -1.1481380934988989E+06       0                       0                
+ -2 -1.1481379499677385E+06       0                       0                
   6  1280   # fan2ndOrder.gas.h
- -2 -1.4742120259811045E+04       0                       0                
+ -2 -1.4743227097676878E+04       0                       0                
   6  1280   # fan2ndOrder.gas.s
- -2  7.7060844486164498E+01       0                 1.7976931348623157E+308
+ -2  7.7060872124970984E+01       0                 1.7976931348623157E+308
   6  1280   # fan2ndOrder.gas.T
  -2  5.1931000000000004E+03       0                       0                
   6  1280   # fan2ndOrder.gas.cp
  -2  3.1144850380000003E+03       0                       0                
   6  1280   # fan2ndOrder.gas.cv
- -2  1.2976758906133451E-02       0                       0                
+ -2  1.2976754251863154E-02       0                       0                
   6  1280   # fan2ndOrder.gas.beta
- -2  2.4426522951439851E-07       0                       0                
+ -2  2.4413497453075534E-07       0                       0                
   6  1280   # fan2ndOrder.gas.kappa
- -2  5.1680192764343167E+02       0                       0                
+ -2  5.1680202032206296E+02       0                       0                
   6  1280   # fan2ndOrder.gas.w
- -2 -6.3866054406039110E-05       0                       0                
+ -2 -6.3900083456778985E-05       0                       0                
   6  1280   # fan2ndOrder.gas.drhodh_pxi
- -2  6.2429834978419871E-06       0                       0                
+ -2  6.2429812587210425E-06       0                       0                
   6  1280   # fan2ndOrder.gas.drhodp_hxi
- -2  4.0939105495612659E+06       0                 1.7976931348623157E+308
+ -2  4.0960948013371313E+06       0                 1.7976931348623157E+308
   6  1280   # fan2ndOrder.gas.p_i[1]
  -2       0                       0                       1                
   6  1280   # fan2ndOrder.gas.xi_gas
@@ -3244,7 +3244,7 @@ double initialValue(2613,6)
   6  1280   # fan2ndOrder.gas.delta_hv
  -2      -1                       0                       0                
   6  1280   # fan2ndOrder.gas.delta_hd
- -2 -1.1481380934988991E+06       0                       0                
+ -2 -1.1481379499678130E+06       0                       0                
   6  1280   # fan2ndOrder.gas.h_i[1]
  -2  4.0000000000000001E-03       0                 1.7976931348623157E+308
   6  1280   # fan2ndOrder.gas.M_i[1]
@@ -3266,41 +3266,41 @@ double initialValue(2613,6)
   6  1282   # fan2ndOrder.gas.computeFlags
  -1  1.0000000000000000E-03       0                       0                
   1  1304   # fan2ndOrder.m_flowStart
- -2  4.0939105495612659E+06       0                 1.7976931348623157E+308
+ -2  4.0960948013371313E+06       0                 1.7976931348623157E+308
   6  1280   # fan2ndOrder.p
- -2  1.0233725296563981E+05       0                       0                
+ -2  1.0239181659612851E+05       0                       0                
   6   256   # fan2ndOrder.dp
- -2  2.6326639041074351E-04       0                       0                
+ -2  2.6328200338798791E-04       0                       0                
   6   256   # fan2ndOrder.volumeFlowRate
- -2  2.6941959192815151E+01       0                       0                
+ -2  2.6957922603964143E+01       0                       0                
   6   256   # fan2ndOrder.P_hyd
- -2  7.4814461873509354E+04       0                       0                
+ -2  7.4854333801259025E+04       0                       0                
   6   256   # fan2ndOrder.P_shaft
  -2       1                       0                       0                
   6   257   # fan2ndOrder.includeDefaultSummary
  -2       1                       0                       0                
   6  1281   # fan2ndOrder.includeSummary
- -2 -1.9608915551383546E+02       0                       0                
+ -2 -1.9608912787502899E+02       0                       0                
   6   256   # fan2ndOrder.summary.T_degC_gas
- -2  1.0233725296563981E+05       0                       0                
+ -2  1.0239181659612851E+05       0                       0                
   6   256   # fan2ndOrder.summary.dp_gas
  -2   30000                       0                       0                
   6   256   # fan2ndOrder.summary.speed_rpm
- -2  7.4787519914316537E+04       0                       0                
+ -2  7.4827375878655061E+04       0                       0                
   6   256   # fan2ndOrder.P_loss
- -2  1.3723301890832676E-01       0                       0                
+ -2  1.3732491797106056E-01       0                       0                
   6   256   # fan2ndOrder.P_loss_blade
- -2  7.4787382681297633E+04       0                       0                
+ -2  7.4827238553737086E+04       0                       0                
   6   256   # fan2ndOrder.P_loss_impact
  -2     500                       0                       0                
   6   256   # fan2ndOrder.n
- -2  3.6011699500514464E-04       0                 1.7976931348623157E+308
+ -2  3.6013843467685395E-04       0                 1.7976931348623157E+308
   6   256   # fan2ndOrder.eta
  -2       0                       0                       0                
   6  1280   # fan2ndOrder.der(w)
- -2  2.3814182843858312E+01       0                       0                
+ -2  2.3826874472642238E+01       0                       0                
   6  1280   # fan2ndOrder.fluidTorque
- -2  2.5558216002552204E+01       0                 1.7976931348623157E+308
+ -2  2.5571843078692403E+01       0                 1.7976931348623157E+308
   6  1280   # fan2ndOrder.d_gas
  -2  4.4429752066115691E+02       0                       0                
   6  1280   # fan2ndOrder.coef.dp_0
@@ -3310,15 +3310,15 @@ double initialValue(2613,6)
   6  1280   # fan2ndOrder.coef.c2
  -2  5.6785714285714328E-02       0                       0                
   6  1280   # fan2ndOrder.coef.V_flow_transition
- -2  9.4414449730313674E+04       0                       0                
+ -2  9.4464789429104916E+04       0                       0                
   6  1280   # fan2ndOrder.coef_affinity.dp_0
- -2  6.6736404199254939E+03       0                       0                
+ -2  6.6771986575632673E+03       0                       0                
   6  1280   # fan2ndOrder.coef_affinity.c1
- -2 -2.4587096283935873E+04       0                       0                
+ -2 -2.4600205580496091E+04       0                       0                
   6  1280   # fan2ndOrder.coef_affinity.c2
  -2  5.6785714285714328E-01       0                       0                
   6  1280   # fan2ndOrder.coef_affinity.V_flow_transition
- -2  1.8777438468036073E+05       0                       0                
+ -2  1.8787450183395873E+05       0                       0                
   6  1280   # fan2ndOrder.P_loss0_affinity
  -2       1                       0                       0                
   6   257   # fan2ndOrder.use_mechanicalPort
@@ -3334,7 +3334,7 @@ double initialValue(2613,6)
   1   280   # fan2ndOrder.maxDeltaT
  -2  9.0000000000000002E-01       0                       0                
   6  1280   # fan2ndOrder.dh_dhmax_transition
- -2  2.5964515159006292E+04       0                       0                
+ -2  2.5964515100260549E+04       0                       0                
   6  1280   # fan2ndOrder.dh
  -1      50                       0                       0                
   1   280   # fan2ndOrder.n_nominal
@@ -3360,7 +3360,7 @@ double initialValue(2613,6)
   6  1280   # fan2ndOrder.P_loss_nominal
  -2  1.2623324047092709E+02       0                       0                
   6  1280   # fan2ndOrder.P_shaft_nominal
- -2 -7.4639756536413755E+04       0                       0                
+ -2 -7.4679524949132508E+04       0                       0                
   6  1280   # fan2ndOrder.Q_flow_loss
  -1  2.9999999999999999E-01       0                 1.7976931348623157E+308
   1   280   # fan2ndOrder.eta_maxPhyd
@@ -3422,11 +3422,11 @@ double initialValue(2613,6)
   6   256   # smoothStep.y
  -2       0                       0                       0                
   6   256   # smoothStep.der(y)
- -2  5.6237658756004078E+06       0                       0                
+ -2  5.6237707991548348E+06       0                       0                
   2   276   # rotatoryBoundary.rotatoryFlange.phi
  -2  3.1415926535897929E+03       0                       0                
   3   260   # rotatoryBoundary.rotatoryFlange.der(phi)
- -2 -2.3814182843858312E+01       0                       0                
+ -2 -2.3826874472642238E+01       0                       0                
   6   388   # rotatoryBoundary.rotatoryFlange.tau
  -1       0                       0                       0                
   1   280   # rotatoryBoundary.phiInitial
@@ -3454,7 +3454,7 @@ double initialValue(2613,6)
   6  1280   # rotatoryBoundary.w_in_
  -1      77                       0                 1.7976931348623157E+308
   1   280   # coldSurface.T
- -2  2.2755410064741082E+02       0                       0                
+ -2  2.2756256153842884E+02       0                       0                
   6   388   # coldSurface.port.Q_flow
  -2       1                       0                       0                
   6   769   # tube1.gasType.fixedMixingRatio
@@ -3544,7 +3544,7 @@ double initialValue(2613,6)
   6   770   # tube1.portA.gasType.condensingIndex
  -2       1                       0                       0                
   6   770   # tube1.portA.gasType.ID
- -2  6.7236999781804746E-03       0                       0                
+ -2  6.7276959163429803E-03       0                       0                
   6   388   # tube1.portA.m_flow
  -2       1                       0                       0                
   6   769   # tube1.portB.gasType.fixedMixingRatio
@@ -3560,7 +3560,7 @@ double initialValue(2613,6)
   6   770   # tube1.portB.gasType.condensingIndex
  -2       1                       0                       0                
   6   770   # tube1.portB.gasType.ID
- -2 -6.7246226969766704E-03       0                       0                
+ -2 -6.7286178227257696E-03       0                       0                
   6   388   # tube1.portB.m_flow
  -1       0                       0                       0                
   1  1304   # tube1.cellGeometry.finHeatTransferAreaRatio
@@ -3598,25 +3598,25 @@ double initialValue(2613,6)
   6  1281   # tube1.gas[1].stateSelectPreferForInputs
  -2       1                       0                       0                
   6  1281   # tube1.gas[1].computeTransportProperties
- -2  2.5239456497404454E+01       0                 1.7976931348623157E+308
+ -2  2.5252930954990198E+01       0                 1.7976931348623157E+308
   6  1280   # tube1.gas[1].d
- -2 -1.4716118041865520E+04       0                       0                
+ -2 -1.4717228430700990E+04       0                       0                
   6  1280   # tube1.gas[1].s
  -2  5.1931000000000004E+03       0                       0                
   6  1280   # tube1.gas[1].cp
  -2  3.1144850380000003E+03       0                       0                
   6  1280   # tube1.gas[1].cv
- -2  1.2977111303781590E-02       0                       0                
+ -2  1.2977115499160786E-02       0                       0                
   6  1280   # tube1.gas[1].beta
- -2  2.4735687289148682E-07       0                       0                
+ -2  2.4722496814961591E-07       0                       0                
   6  1280   # tube1.gas[1].kappa
- -2  5.1679491063417640E+02       0                       0                
+ -2  5.1679482709670640E+02       0                       0                
   6  1280   # tube1.gas[1].w
- -2 -6.3071236104402190E-05       0                       0                
+ -2 -6.3104928018956004E-05       0                       0                
   6  1280   # tube1.gas[1].drhodh_pxi
- -2  6.2431530326786848E-06       0                       0                
+ -2  6.2431550510319013E-06       0                       0                
   6  1280   # tube1.gas[1].drhodp_hxi
- -2  4.0427419230784457E+06       0                 1.7976931348623157E+308
+ -2  4.0448988930390668E+06       0                 1.7976931348623157E+308
   6  1280   # tube1.gas[1].p_i[1]
  -2       0                       0                       1                
   6  1280   # tube1.gas[1].xi_gas
@@ -3630,7 +3630,7 @@ double initialValue(2613,6)
   6  1280   # tube1.gas[1].delta_hv
  -2      -1                       0                       0                
   6  1280   # tube1.gas[1].delta_hd
- -2 -1.1481489606428850E+06       0                       0                
+ -2 -1.1481490900153061E+06       0                       0                
   6  1280   # tube1.gas[1].h_i[1]
  -2  4.0000000000000001E-03       0                 1.7976931348623157E+308
   6  1280   # tube1.gas[1].M_i[1]
@@ -3640,37 +3640,37 @@ double initialValue(2613,6)
   6  1280   # tube1.gas[1].humRatio_s
  -2      -1                       0                       0                
   6  1280   # tube1.gas[1].h1px
- -2  6.4687603075550215E-01       0                       0                
+ -2  6.4687602360075924E-01       0                       0                
   6  1280   # tube1.gas[1].transp.Pr
- -2  6.7985229653006587E-02       0                       0                
+ -2  6.7985219049287948E-02       0                       0                
   6  1280   # tube1.gas[1].transp.lambda
- -2  8.4685477860888798E-06      -1                 1.7976931348623157E+308
+ -2  8.4685463715757402E-06      -1                 1.7976931348623157E+308
   6  1280   # tube1.gas[1].transp.eta
  -2       0                       0                       0                
   6  1280   # tube1.gas[1].transp.sigma
  -2       5                       0                       0                
   6  1282   # tube1.gas[1].computeFlags
- -2  6.7992968129264586E-02       0                 1.7976931348623157E+308
+ -2  6.8029267182109915E-02       0                 1.7976931348623157E+308
   6  1280   # tube1.cellMass[1]
- -2 -3.4251955101662253E-04       0                       0                
+ -2 -3.4221797758335879E-04       0                       0                
   6  1280   # tube1.drhodt[1]
- -2  4.0427419230784457E+06       0                 1.7976931348623157E+308
+ -2  4.0448988930390668E+06       0                 1.7976931348623157E+308
   2  1296   # tube1.p[1]
- -2 -5.5785858509278242E+01       0                       0                
+ -2 -5.5735610309192417E+01       0                       0                
   3  1312   # tube1.der(p[1])
- -2 -1.1481489606428938E+06       0                       0                
+ -2 -1.1481490900153057E+06       0                       0                
   2  1296   # tube1.h[1]
- -2 -9.1326903861964431E-02       0                       0                
+ -2 -9.1087647530394444E-02       0                       0                
   3  1312   # tube1.der(h[1])
- -2 -7.4921118124794766E+03       0                       0                
+ -2 -7.4966922755258893E+03       0                       0                
   6  1280   # tube1.H_flow[1]
- -2 -7.7208685602493779E+03       0                       0                
+ -2 -7.7254564302233593E+03       0                       0                
   6  1280   # tube1.H_flow[2]
- -2  6.7236999781804746E-03       0                       0                
+ -2  6.7276959163429803E-03       0                       0                
   6  1280   # tube1.mdotHydraulic
- -2 -2.2755325633024538E+02       0                       0                
+ -2 -2.2756171831321606E+02       0                       0                
   6  1280   # tube1.heatTransfer[1].QdotHydraulic
- -2  7.7001727147145218E+01       0                 1.7976931348623157E+308
+ -2  7.7001727211368078E+01       0                 1.7976931348623157E+308
   6  1280   # tube1.heatTransfer[1].wallTemperature
  -2       0                       0                       1                
   6  1280   # tube1.heatTransfer[1].properties.q
@@ -3722,7 +3722,7 @@ double initialValue(2613,6)
   6  1280   # tube1.heatTransfer[1].cellGeometry.hydraulicCrossSectionalArea
  -2       1                       1                 1.7976931348623157E+308
   6  1280   # tube1.heatTransfer[1].cellGeometry.nParallelHydraulicFlows
- -2  3.9904313215031602E+03       0                       0                
+ -2  3.9923283360549426E+03       0                       0                
   6  1280   # tube1.heatTransfer[1].alphaA
  -2       1                       0                       0                
   6  1281   # tube1.heatTransfer[1].heatTransfer.computeTransportProperties
@@ -3772,29 +3772,29 @@ double initialValue(2613,6)
   6  1280   # tube1.heatTransfer[1].heatTransfer.gdb.properties.VLETransp.eta_l
  -2       0                      -1                 1.7976931348623157E+308
   6  1280   # tube1.heatTransfer[1].heatTransfer.gdb.properties.VLETransp.eta_v
- -2  2.5922321219834785E+03       0                       0                
+ -2  2.5934644454244312E+03       0                       0                
   6  1280   # tube1.heatTransfer[1].heatTransfer.gdb.alpha
  -2  7.0000000000000001E-03       0                 1.7976931348623157E+308
   6  1280   # tube1.heatTransfer[1].heatTransfer.gdb.hydraulicDiameter
  -2  3.8484510006474965E-05       0                       0                
   6  1280   # tube1.heatTransfer[1].heatTransfer.gdb.hydraulicCrossSectionalArea
- -2  1.4441471996308715E+05       0                       0                
+ -2  1.4450057069656526E+05       0                       0                
   6  1280   # tube1.heatTransfer[1].heatTransfer.gdb.Re
- -2  2.6690539910652308E+02       0                       0                
+ -2  2.6703232514128609E+02       0                       0                
   6  1280   # tube1.heatTransfer[1].heatTransfer.gdb.Nu
- -2  6.9221716807220641E+00       0                       0                
+ -2  6.9225898447992451E+00       0                       0                
   6  1280   # tube1.heatTransfer[1].heatTransfer.gdb.averageVelocity
  -2       0                       0                       0                
   6  1280   # tube1.heatTransfer[1].heatTransfer.gdb.weightingFactor1
  -2       0                       0                       0                
   6  1280   # tube1.heatTransfer[1].heatTransfer.gdb.weightingFactor2
- -2  2.2636868377531098E+02       0                       0                
+ -2  2.2647438540950697E+02       0                       0                
   6  1280   # tube1.heatTransfer[1].heatTransfer.gdb.Nu1
- -2  2.2636868377531098E+02       0                       0                
+ -2  2.2647438540950697E+02       0                       0                
   6  1280   # tube1.heatTransfer[1].heatTransfer.gdb.Nu_Gnielinski
- -2  2.6690539910652308E+02       0                       0                
+ -2  2.6703232514128609E+02       0                       0                
   6  1280   # tube1.heatTransfer[1].heatTransfer.gdb.Nu_DittusBoelter
- -2  1.6668455206135972E-02       0                       0                
+ -2  1.6666434681635350E-02       0                       0                
   6  1280   # tube1.heatTransfer[1].heatTransfer.gdb.zeta
  -1       1                       0                       0                
   1  1304   # tube1.heatTransfer[1].heatTransfer.correctionFactor
@@ -3848,7 +3848,7 @@ double initialValue(2613,6)
   6  1280   # tube1.pressureDrop[1].cellGeometry.hydraulicCrossSectionalArea
  -2       1                       1                 1.7976931348623157E+308
   6  1280   # tube1.pressureDrop[1].cellGeometry.nParallelHydraulicFlows
- -2  9.9715082569127437E+04       0                       0                
+ -2  9.9768466732619330E+04       0                       0                
   6  1280   # tube1.pressureDrop[1].pressureDrop
  -2       1                       0                       0                
   6  1281   # tube1.pressureDrop[1].pressureDropModel.computeTransportProperties
@@ -3896,15 +3896,15 @@ double initialValue(2613,6)
   6  1280   # tube1.pressureDrop[1].pressureDropModel.konakov.properties.VLETransp.eta_l
  -2       0                      -1                 1.7976931348623157E+308
   6  1280   # tube1.pressureDrop[1].pressureDropModel.konakov.properties.VLETransp.eta_v
- -2  9.9715082569127437E+04       0                       0                
+ -2  9.9768466732619330E+04       0                       0                
   6  1280   # tube1.pressureDrop[1].pressureDropModel.konakov.pressureDrop
  -2  7.0000000000000001E-03       0                 1.7976931348623157E+308
   6  1280   # tube1.pressureDrop[1].pressureDropModel.konakov.hydraulicDiameter
  -2  3.8484510006474965E-05       0                       0                
   6  1280   # tube1.pressureDrop[1].pressureDropModel.konakov.hydraulicCrossSectionalArea
- -2  1.4441471996308721E+05       0                       0                
+ -2  1.4450057069656526E+05       0                       0                
   6  1280   # tube1.pressureDrop[1].pressureDropModel.konakov.Re
- -2  6.9221716807220659E+00       0                       0                
+ -2  6.9225898447992451E+00       0                       0                
   6  1312   # tube1.pressureDrop[1].pressureDropModel.konakov.v
  -1    2250                       0                       0                
   1  1304   # tube1.pressureDrop[1].pressureDropModel.konakov.Re_transitionBegin
@@ -3912,11 +3912,11 @@ double initialValue(2613,6)
   1  1304   # tube1.pressureDrop[1].pressureDropModel.konakov.Re_transitionEnd
  -1  1.0000000000000000E-03       0                       0                
   1  1304   # tube1.pressureDrop[1].pressureDropModel.konakov.vLimit
- -2  1.6490207392642578E-02       0                       0                
+ -2  1.6488240001929461E-02       0                       0                
   6  1280   # tube1.pressureDrop[1].pressureDropModel.konakov.lambdaTurbulent
- -2  2.6798053331065594E+03       0                       0                
+ -2  2.6799667708380207E+03       0                       0                
   6  1280   # tube1.pressureDrop[1].pressureDropModel.konakov.pressureDropLaminar
- -2  9.9715082569127480E+04       0                       0                
+ -2  9.9768466732619316E+04       0                       0                
   6  1280   # tube1.pressureDrop[1].pressureDropModel.konakov.pressureDropTurbulent
  -2       0                       0                       0                
   6  1280   # tube1.pressureDrop[1].pressureDropModel.konakov.weightingFactor
@@ -3948,13 +3948,13 @@ double initialValue(2613,6)
   6   257   # tube1.connectWallCells
  -2  8.2466807156732094E-04       0                       0                
   6  1280   # tube1.wallCell[1].cellGeometry.volume
- -2  2.2755325633024538E+02       0                       0                
+ -2  2.2756171831321606E+02       0                       0                
   6  1412   # tube1.wallCell[1].portS.Q_flow
- -2  7.7000863575174719E+01       0                 1.7976931348623157E+308
+ -2  7.7000863607284074E+01       0                 1.7976931348623157E+308
   6  1284   # tube1.wallCell[1].portW.T
  -2       0                       0                       0                
   6  1412   # tube1.wallCell[1].portW.Q_flow
- -2  7.7000863575174719E+01       0                 1.7976931348623157E+308
+ -2  7.7000863607284074E+01       0                 1.7976931348623157E+308
   6  1284   # tube1.wallCell[1].portE.T
  -2       0                       0                       0                
   6  1412   # tube1.wallCell[1].portE.Q_flow
@@ -3972,9 +3972,9 @@ double initialValue(2613,6)
   6  1280   # tube1.wallCell[1].properties.cp
  -2      40                       0                       0                
   6  1280   # tube1.wallCell[1].properties.lambda
- -2  7.7000863575174719E+01       0                 1.7976931348623157E+308
+ -2  7.7000863607284074E+01       0                 1.7976931348623157E+308
   2  1296   # tube1.wallCell[1].wallStateTemperature
- -2 -2.6787720299596336E-07       0                       0                
+ -2 -2.6753075827273033E-07       0                       0                
   3  1280   # tube1.wallCell[1].der(wallStateTemperature)
  -2    7800                       0                 1.7976931348623157E+308
   6  1280   # tube1.wallCell[1].wallMaterial.d
@@ -4008,7 +4008,7 @@ double initialValue(2613,6)
   6  1280   # tube1.wallCell[1].heatTransfer.R_WE_total
  -2  6.4324109582251037E+00       0                 1.7976931348623157E+308
   6  1280   # tube1.wallCell[1].geometricMass
- -2  7.7251064835692773E-05       0                       0                
+ -2  7.7241813429829165E-05       0                       0                
   6  1280   # tube1.wallCell[1].SProd_dot
  -2       1                       0                       0                
   6   257   # tube1.includeDefaultSummary
@@ -4016,41 +4016,41 @@ double initialValue(2613,6)
   1  1305   # tube1.includeSummaryArrays
  -2       1                       0                       0                
   6  1281   # tube1.includeSummary
- -2  8.3579882872448692E+01       0                 1.7976931348623157E+308
+ -2  8.3576223411158239E+01       0                 1.7976931348623157E+308
   6   256   # tube1.summary.T_gas_A
- -2  7.7058751874045598E+01       0                 1.7976931348623157E+308
+ -2  7.7058726961678772E+01       0                 1.7976931348623157E+308
   6   256   # tube1.summary.T_gas_B
- -2 -1.8957011712755127E+02       0                       0                
+ -2 -1.8957377658884172E+02       0                       0                
   6   256   # tube1.summary.T_degC_gas_A
- -2 -1.9609124812595439E+02       0                       0                
+ -2 -1.9609127303832122E+02       0                       0                
   6   256   # tube1.summary.T_degC_gas_B
- -2 -1.1142840752550866E+06       0                       0                
+ -2 -1.1143030792035139E+06       0                       0                
   6   256   # tube1.summary.h_gas_A
- -2 -1.1481489606428938E+06       0                       0                
+ -2 -1.1481490900153057E+06       0                       0                
   6   256   # tube1.summary.h_gas_B
- -2  2.3844169606567430E+01       0                 1.7976931348623157E+308
+ -2  2.3857937100562086E+01       0                 1.7976931348623157E+308
   6   256   # tube1.summary.d_gas_A
- -2  2.5239456497405016E+01       0                 1.7976931348623157E+308
+ -2  2.5252930954990180E+01       0                 1.7976931348623157E+308
   6   256   # tube1.summary.d_gas_B
- -2  7.3272357094385248E+00       0                       0                
+ -2  7.3273595551692958E+00       0                       0                
   6   256   # tube1.summary.w_gas_A
- -2 -6.9231216365410324E+00       0                       0                
+ -2 -6.9235384577928674E+00       0                       0                
   6   256   # tube1.summary.w_gas_B
- -2  9.9715082569127437E+04       0                       0                
+ -2  9.9768466732619330E+04       0                       0                
   6   256   # tube1.summary.dp_gas
- -2  6.7992968129264586E-02       0                 1.7976931348623157E+308
+ -2  6.8029267182109915E-02       0                 1.7976931348623157E+308
   6   256   # tube1.summary.mass_gas
- -2  2.5922321219834785E+03       0                       0                
+ -2  2.5934644454244312E+03       0                       0                
   6   256   # tube1.summary.alpha_average_gas
  -2       1                       0                       0                
   6   258   # tube1.summary.arrays.n
- -2 -1.9609124812595269E+02       0                       0                
+ -2 -1.9609127303832128E+02       0                       0                
   6   256   # tube1.summary.arrays.T_degC_gas_cell[1]
- -2 -1.9614913642482526E+02       0                       0                
+ -2 -1.9614913639271589E+02       0                       0                
   6   256   # tube1.summary.arrays.T_degC_wall_cell[1]
- -2  2.5922321219834785E+03       0                       0                
+ -2  2.5934644454244312E+03       0                       0                
   6   256   # tube1.summary.arrays.alpha_gas_cell[1]
- -2  7.7058751874047303E+01       0                 1.7976931348623157E+308
+ -2  7.7058726961678715E+01       0                 1.7976931348623157E+308
   6  1280   # tube1.T_gas_cell_[1]
  -2       1                       0                       0                
   6   769   # tube1.gasA.gasType.fixedMixingRatio
@@ -4156,27 +4156,27 @@ double initialValue(2613,6)
   6  1281   # volume.gas.stateSelectPreferForInputs
  -2       0                       0                       0                
   6  1281   # volume.gas.computeTransportProperties
- -2  2.4127392814520583E+01       0                 1.7976931348623157E+308
+ -2  2.4110877510338572E+01       0                 1.7976931348623157E+308
   6  1280   # volume.gas.d
- -2 -1.4482113432020291E+04       0                       0                
+ -2 -1.4476896230865077E+04       0                       0                
   6  1280   # volume.gas.s
- -2  8.0610492535324596E+01       0                 1.7976931348623157E+308
+ -2  8.0708747050246203E+01       0                 1.7976931348623157E+308
   6  1280   # volume.gas.T
  -2  5.1931000000000004E+03       0                       0                
   6  1280   # volume.gas.cp
  -2  3.1144850380000003E+03       0                       0                
   6  1280   # volume.gas.cv
- -2  1.2405332960368486E-02       0                       0                
+ -2  1.2390230756245514E-02       0                       0                
   6  1280   # volume.gas.beta
- -2  2.4735687254778610E-07       0                       0                
+ -2  2.4722496780676228E-07       0                       0                
   6  1280   # volume.gas.kappa
- -2  5.2857063283859077E+02       0                       0                
+ -2  5.2889266681748222E+02       0                       0                
   6  1280   # volume.gas.w
- -2 -5.7635774649001547E-05       0                       0                
+ -2 -5.7526205173916381E-05       0                       0                
   6  1280   # volume.gas.drhodh_pxi
- -2  5.9680764293317367E-06       0                       0                
+ -2  5.9608109162862429E-06       0                       0                
   6  1280   # volume.gas.drhodp_hxi
- -2  4.0427419286958086E+06       0                 1.7976931348623157E+308
+ -2  4.0448988986485661E+06       0                 1.7976931348623157E+308
   6  1280   # volume.gas.p_i[1]
  -2       0                       0                       1                
   6  1280   # volume.gas.xi_gas
@@ -4190,7 +4190,7 @@ double initialValue(2613,6)
   6  1280   # volume.gas.delta_hv
  -2      -1                       0                       0                
   6  1280   # volume.gas.delta_hd
- -2 -1.1297044162148058E+06       0                       0                
+ -2 -1.1291941706933663E+06       0                       0                
   6  1280   # volume.gas.h_i[1]
  -2  4.0000000000000001E-03       0                 1.7976931348623157E+308
   6  1280   # volume.gas.M_i[1]
@@ -4230,29 +4230,29 @@ double initialValue(2613,6)
   6  1281   # volume.gasArray[1].stateSelectPreferForInputs
  -2       0                       0                       0                
   6  1281   # volume.gasArray[1].computeTransportProperties
- -2  2.4127392814520292E+01       0                 1.7976931348623157E+308
+ -2  2.4110877510338330E+01       0                 1.7976931348623157E+308
   6  1280   # volume.gasArray[1].d
- -2 -1.1297044162148007E+06       0                       0                
+ -2 -1.1291941706933621E+06       0                       0                
   6  1280   # volume.gasArray[1].h
- -2 -1.4482113432020233E+04       0                       0                
+ -2 -1.4476896230865026E+04       0                       0                
   6  1280   # volume.gasArray[1].s
- -2  8.0610492535325562E+01       0                 1.7976931348623157E+308
+ -2  8.0708747050247027E+01       0                 1.7976931348623157E+308
   6  1280   # volume.gasArray[1].T
  -2  5.1931000000000004E+03       0                       0                
   6  1280   # volume.gasArray[1].cp
  -2  3.1144850380000003E+03       0                       0                
   6  1280   # volume.gasArray[1].cv
- -2  1.2405332960368337E-02       0                       0                
+ -2  1.2390230756245388E-02       0                       0                
   6  1280   # volume.gasArray[1].beta
- -2  2.4735687254778610E-07       0                       0                
+ -2  2.4722496780676228E-07       0                       0                
   6  1280   # volume.gasArray[1].kappa
- -2  5.2857063283859395E+02       0                       0                
+ -2  5.2889266681748484E+02       0                       0                
   6  1280   # volume.gasArray[1].w
- -2 -5.7635774649000151E-05       0                       0                
+ -2 -5.7526205173915222E-05       0                       0                
   6  1280   # volume.gasArray[1].drhodh_pxi
- -2  5.9680764293316647E-06       0                       0                
+ -2  5.9608109162861819E-06       0                       0                
   6  1280   # volume.gasArray[1].drhodp_hxi
- -2  4.0427419286958086E+06       0                 1.7976931348623157E+308
+ -2  4.0448988986485661E+06       0                 1.7976931348623157E+308
   6  1280   # volume.gasArray[1].p_i[1]
  -2       0                       0                       1                
   6  1280   # volume.gasArray[1].xi_gas
@@ -4266,7 +4266,7 @@ double initialValue(2613,6)
   6  1280   # volume.gasArray[1].delta_hv
  -2      -1                       0                       0                
   6  1280   # volume.gasArray[1].delta_hd
- -2 -1.1297044162148007E+06       0                       0                
+ -2 -1.1291941706933621E+06       0                       0                
   6  1280   # volume.gasArray[1].h_i[1]
  -2  4.0000000000000001E-03       0                 1.7976931348623157E+308
   6  1280   # volume.gasArray[1].M_i[1]
@@ -4304,31 +4304,31 @@ double initialValue(2613,6)
   6   256   # volume.mixingRatioInitial[1]
  -1       1                       0                       0                
   1   280   # volume.molarMixingRatioInitial[1]
- -2  4.8254785629041169E-01       0                 1.7976931348623157E+308
+ -2  4.8221755020677143E-01       0                 1.7976931348623157E+308
   6   256   # volume.mass
- -2 -1.9965796740310592E-04       0                       0                
+ -2 -1.9924200642224850E-04       0                       0                
   6   256   # volume.drhodt
- -2  4.0427419286958086E+06       0                 1.7976931348623157E+308
+ -2  4.0448988986485661E+06       0                 1.7976931348623157E+308
   2   272   # volume.p
- -2 -5.5781823348178442E+01       0                       0                
+ -2 -5.5733458989756770E+01       0                       0                
   3   256   # volume.der(p)
- -2 -1.1297044162148007E+06       0                       0                
+ -2 -1.1291941706933621E+06       0                       0                
   2   272   # volume.h
- -2 -2.3119706209867514E+00       0                       0                
+ -2 -2.3115483443461842E+00       0                       0                
   3   256   # volume.der(h)
- -2 -1.1297044162148007E+06       0                       0                
+ -2 -1.1291941706933621E+06       0                       0                
   6   256   # volume.h_actualStream[1]
  -2       1                       0                       0                
   6  1281   # volume.includeSummary
- -2 -1.9253950746467538E+02       0                       0                
+ -2 -1.9244125294975379E+02       0                       0                
   6   256   # volume.summary.T_degC_gas
- -2  8.0610492535324596E+01       0                 1.7976931348623157E+308
+ -2  8.0708747050246203E+01       0                 1.7976931348623157E+308
   6   256   # volume.summary.T_gas_portArray[1]
- -2 -1.1297044162148007E+06       0                       0                
+ -2 -1.1291941706933621E+06       0                       0                
   6   256   # volume.summary.h_gas_portArray[1]
- -2  2.4127392814520583E+01       0                 1.7976931348623157E+308
+ -2  2.4110877510338572E+01       0                 1.7976931348623157E+308
   6   256   # volume.summary.d_gas_portArray[1]
- -2 -1.6550314320156948E-07       0                       0                
+ -2 -1.6527146831285173E-07       0                       0                
   6   256   # volume.summary.V_flow_gas_portArray[1]
  -2       0                       0                       0                
   6   256   # volume.summary.Q_flow_gas
@@ -4354,13 +4354,13 @@ double initialValue(2613,6)
   6   770   # volume.portArray[1].gasType.condensingIndex
  -2       1                       0                       0                
   6   770   # volume.portArray[1].gasType.ID
- -2 -3.9931593480621185E-06       0                       0                
+ -2 -3.9848401284449704E-06       0                       0                
   6   388   # volume.portArray[1].m_flow
- -2  2.4127392814520583E+01       0                 1.7976931348623157E+308
+ -2  2.4110877510338572E+01       0                 1.7976931348623157E+308
   6  1280   # valve.propertiesInA.d
- -2 -1.4482113432020291E+04       0                       0                
+ -2 -1.4476896230865077E+04       0                       0                
   6  1280   # valve.propertiesInA.s
- -2  8.0610492535324596E+01       0                 1.7976931348623157E+308
+ -2  8.0708747050246203E+01       0                 1.7976931348623157E+308
   6  1280   # valve.propertiesInA.T
  -2       0                       0                       1                
   6  1280   # valve.propertiesInA.q
@@ -4420,11 +4420,11 @@ double initialValue(2613,6)
   6  1280   # valve.propertiesInA.gamma
  -2       0                       0                       0                
   6  1280   # valve.propertiesInA.w
- -2  2.5238771111812717E+01       0                 1.7976931348623157E+308
+ -2  2.5252227982664387E+01       0                 1.7976931348623157E+308
   6  1280   # valve.propertiesInB.d
- -2 -1.4715977019643258E+04       0                       0                
+ -2 -1.4717083867030186E+04       0                       0                
   6  1280   # valve.propertiesInB.s
- -2  7.7060844486164498E+01       0                 1.7976931348623157E+308
+ -2  7.7060872124970984E+01       0                 1.7976931348623157E+308
   6  1280   # valve.propertiesInB.T
  -2       0                       0                       1                
   6  1280   # valve.propertiesInB.q
@@ -4642,17 +4642,17 @@ double initialValue(2613,6)
   6  1281   # valve.gasInA.computeTransportProperties
  -2  3.1144850380000003E+03       0                       0                
   6  1280   # valve.gasInA.cv
- -2  1.2405332960368486E-02       0                       0                
+ -2  1.2390230756245514E-02       0                       0                
   6  1280   # valve.gasInA.beta
- -2  2.4735687254778610E-07       0                       0                
+ -2  2.4722496780676228E-07       0                       0                
   6  1280   # valve.gasInA.kappa
- -2  5.2857063283859077E+02       0                       0                
+ -2  5.2889266681748222E+02       0                       0                
   6  1280   # valve.gasInA.w
- -2 -5.7635774649001547E-05       0                       0                
+ -2 -5.7526205173916381E-05       0                       0                
   6  1280   # valve.gasInA.drhodh_pxi
- -2  5.9680764293317367E-06       0                       0                
+ -2  5.9608109162862429E-06       0                       0                
   6  1280   # valve.gasInA.drhodp_hxi
- -2  4.0427419286958086E+06       0                 1.7976931348623157E+308
+ -2  4.0448988986485661E+06       0                 1.7976931348623157E+308
   6  1280   # valve.gasInA.p_i[1]
  -2       0                       0                       1                
   6  1280   # valve.gasInA.xi_gas
@@ -4666,7 +4666,7 @@ double initialValue(2613,6)
   6  1280   # valve.gasInA.delta_hv
  -2      -1                       0                       0                
   6  1280   # valve.gasInA.delta_hd
- -2 -1.1297044162148058E+06       0                       0                
+ -2 -1.1291941706933663E+06       0                       0                
   6  1280   # valve.gasInA.h_i[1]
  -2  4.0000000000000001E-03       0                 1.7976931348623157E+308
   6  1280   # valve.gasInA.M_i[1]
@@ -4708,17 +4708,17 @@ double initialValue(2613,6)
   6  1281   # valve.gasInB.computeTransportProperties
  -2  3.1144850380000003E+03       0                       0                
   6  1280   # valve.gasInB.cv
- -2  1.2976758906133451E-02       0                       0                
+ -2  1.2976754251863154E-02       0                       0                
   6  1280   # valve.gasInB.beta
- -2  2.4735687289148682E-07       0                       0                
+ -2  2.4722496814961591E-07       0                       0                
   6  1280   # valve.gasInB.kappa
- -2  5.1680192764343167E+02       0                       0                
+ -2  5.1680202032206296E+02       0                       0                
   6  1280   # valve.gasInB.w
- -2 -6.3067810711343758E-05       0                       0                
+ -2 -6.3101414731674287E-05       0                       0                
   6  1280   # valve.gasInB.drhodh_pxi
- -2  6.2429834978419871E-06       0                       0                
+ -2  6.2429812587210425E-06       0                       0                
   6  1280   # valve.gasInB.drhodp_hxi
- -2  4.0427419230784457E+06       0                 1.7976931348623157E+308
+ -2  4.0448988930390668E+06       0                 1.7976931348623157E+308
   6  1280   # valve.gasInB.p_i[1]
  -2       0                       0                       1                
   6  1280   # valve.gasInB.xi_gas
@@ -4732,7 +4732,7 @@ double initialValue(2613,6)
   6  1280   # valve.gasInB.delta_hv
  -2      -1                       0                       0                
   6  1280   # valve.gasInB.delta_hd
- -2 -1.1481380934988991E+06       0                       0                
+ -2 -1.1481379499678130E+06       0                       0                
   6  1280   # valve.gasInB.h_i[1]
  -2  4.0000000000000001E-03       0                 1.7976931348623157E+308
   6  1280   # valve.gasInB.M_i[1]
@@ -4754,11 +4754,11 @@ double initialValue(2613,6)
   6  1282   # valve.gasInB.computeFlags
  -2       0                       0                       0                
   6  1281   # valve.generateEventsAtFlowReversal
- -2  5.2857063269160437E+02       0                       0                
+ -2  5.2889266667069046E+02       0                       0                
   6   768   # valve.flowPrinciple.w_gas
- -2  2.1578740207971240E-02       0                       0                
+ -2  2.1571011404742168E-02       0                       0                
   6   768   # valve.flowPrinciple.velocity_gas
- -2  4.0824705107219608E-05       0                       0                
+ -2  4.0785234441855357E-05       0                       0                
   6   768   # valve.flowPrinciple.Ma_gas
  -2       1                       0                       0                
   6  1281   # valve.flowPrinciple.enableChokedFlow
@@ -4768,31 +4768,31 @@ double initialValue(2613,6)
   1   281   # valve.use_mdotLinearization
  -1    1000                       0                 1.7976931348623157E+308
   1   280   # valve.d_nominal
- -2  2.0329848384286874E-03       0                       0                
+ -2  2.0287493832727523E-03       0                       0                
   6  1280   # valve.massFlowRateDensity
  -2  1.6666666666666666E+02       0                       0                
   6  1280   # valve.massFlowRateDensityLinearization
  -2       1                       0                       0                
   6   257   # valve.includeSummary
- -2  8.0610492535325562E+01       0                 1.7976931348623157E+308
+ -2  8.0708747050247027E+01       0                 1.7976931348623157E+308
   6   256   # valve.summary.T_gas_A
- -2  8.0610492535325562E+01       0                 1.7976931348623157E+308
+ -2  8.0708747050247027E+01       0                 1.7976931348623157E+308
   6   256   # valve.summary.T_gas_B
- -2 -1.9253950746467441E+02       0                       0                
+ -2 -1.9244125294975294E+02       0                       0                
   6   256   # valve.summary.T_degC_gas_A
- -2 -1.9253950746467441E+02       0                       0                
+ -2 -1.9244125294975294E+02       0                       0                
   6   256   # valve.summary.T_degC_gas_B
- -2 -1.1297044162148007E+06       0                       0                
+ -2 -1.1291941706933621E+06       0                       0                
   6   256   # valve.summary.h_gas_A
- -2 -1.1297044162148007E+06       0                       0                
+ -2 -1.1291941706933621E+06       0                       0                
   6   256   # valve.summary.h_gas_B
- -2  2.4127392814520292E+01       0                 1.7976931348623157E+308
+ -2  2.4110877510338330E+01       0                 1.7976931348623157E+308
   6   256   # valve.summary.d_gas_A
- -2  2.4127392780995443E+01       0                 1.7976931348623157E+308
+ -2  2.4110877476901170E+01       0                 1.7976931348623157E+308
   6   256   # valve.summary.d_gas_B
- -2  1.6550314320157146E-07       0                       0                
+ -2  1.6527146831285337E-07       0                       0                
   6   256   # valve.summary.V_flow_gas_A
- -2 -1.6550314343153696E-07       0                       0                
+ -2 -1.6527146854205320E-07       0                       0                
   6   256   # valve.summary.V_flow_gas_B
  -2       0                       0                     100                
   6   256   # valve.summary.phi_gas_A
@@ -4800,11 +4800,11 @@ double initialValue(2613,6)
   6   256   # valve.summary.phi_gas_B
  -2  7.7160493827160513E-06       0                       0                
   6   256   # valve.summary.Kv
- -2  2.1578740207971240E-02       0                       0                
+ -2  2.1571011404742168E-02       0                       0                
   6   256   # valve.summary.velocity_gas
- -2  4.0824705107219608E-05       0                       0                
+ -2  4.0785234441855357E-05       0                       0                
   6   256   # valve.summary.Ma_gas
- -2  5.6173629127442837E-03       0                       0                
+ -2  5.6094992905855179E-03       0                       0                
   6   256   # valve.summary.dp_gas
  -2       1                       0                       0                
   6   258   # valve.summary.nc_gas
@@ -4924,27 +4924,27 @@ double initialValue(2613,6)
   6  1281   # junction2.gas.stateSelectPreferForInputs
  -2       0                       0                       0                
   6  1281   # junction2.gas.computeTransportProperties
- -2  2.5238771111812717E+01       0                 1.7976931348623157E+308
+ -2  2.5252227982664387E+01       0                 1.7976931348623157E+308
   6  1280   # junction2.gas.d
- -2 -1.4715977019643258E+04       0                       0                
+ -2 -1.4717083867030186E+04       0                       0                
   6  1280   # junction2.gas.s
- -2  7.7060844486164498E+01       0                 1.7976931348623157E+308
+ -2  7.7060872124970984E+01       0                 1.7976931348623157E+308
   6  1280   # junction2.gas.T
  -2  5.1931000000000004E+03       0                       0                
   6  1280   # junction2.gas.cp
  -2  3.1144850380000003E+03       0                       0                
   6  1280   # junction2.gas.cv
- -2  1.2976758906133451E-02       0                       0                
+ -2  1.2976754251863154E-02       0                       0                
   6  1280   # junction2.gas.beta
- -2  2.4735687289148682E-07       0                       0                
+ -2  2.4722496814961591E-07       0                       0                
   6  1280   # junction2.gas.kappa
- -2  5.1680192764343167E+02       0                       0                
+ -2  5.1680202032206296E+02       0                       0                
   6  1280   # junction2.gas.w
- -2 -6.3067810711343758E-05       0                       0                
+ -2 -6.3101414731674287E-05       0                       0                
   6  1280   # junction2.gas.drhodh_pxi
- -2  6.2429834978419871E-06       0                       0                
+ -2  6.2429812587210425E-06       0                       0                
   6  1280   # junction2.gas.drhodp_hxi
- -2  4.0427419230784457E+06       0                 1.7976931348623157E+308
+ -2  4.0448988930390668E+06       0                 1.7976931348623157E+308
   6  1280   # junction2.gas.p_i[1]
  -2       0                       0                       1                
   6  1280   # junction2.gas.xi_gas
@@ -4958,7 +4958,7 @@ double initialValue(2613,6)
   6  1280   # junction2.gas.delta_hv
  -2      -1                       0                       0                
   6  1280   # junction2.gas.delta_hd
- -2 -1.1481380934988991E+06       0                       0                
+ -2 -1.1481379499678130E+06       0                       0                
   6  1280   # junction2.gas.h_i[1]
  -2  4.0000000000000001E-03       0                 1.7976931348623157E+308
   6  1280   # junction2.gas.M_i[1]
@@ -4994,13 +4994,13 @@ double initialValue(2613,6)
   6   256   # junction2.mixingRatioInitial[1]
  -1       1                       0                       0                
   1   280   # junction2.molarMixingRatioInitial[1]
- -2 -1.1481380934988989E+06       0                       0                
+ -2 -1.1481379499677385E+06       0                       0                
   2   272   # junction2.h
- -2 -1.0575387449332647E-01       0                       0                
+ -2 -1.0512685388722003E-01       0                       0                
   3   288   # junction2.der(h)
- -2  2.5238771111812719E-04       0                 1.7976931348623157E+308
+ -2  2.5252227982664388E-04       0                 1.7976931348623157E+308
   6   256   # junction2.mass
- -2 -3.4160052874783573E-04       0                       0                
+ -2 -3.4132271739709396E-04       0                       0                
   6   256   # junction2.drhodt
  -2 -1.1328747649999999E+06       0                       0                
   6   768   # junction2.hInitial
@@ -5086,7 +5086,7 @@ double initialValue(2613,6)
   1   280   # PF1U.prescribedHeatFlow.alpha
  -2       0                       0                       0                
   6   256   # PF1U.prescribedHeatFlow.Q_flow
- -2  8.3314849617330310E+01       0                 1.7976931348623157E+308
+ -2  8.3311522546110083E+01       0                 1.7976931348623157E+308
   6   260   # PF1U.prescribedHeatFlow.port.T
  -2       0                       0                       0                
   6   388   # PF1U.prescribedHeatFlow.port.Q_flow
@@ -5220,7 +5220,7 @@ double initialValue(2613,6)
   6   770   # PF1U.tube2.portA.gasType.condensingIndex
  -2       1                       0                       0                
   6   770   # PF1U.tube2.portA.gasType.ID
- -2  4.1450742714404566E+06       0                 1.7976931348623157E+308
+ -2  4.1472858047561450E+06       0                 1.7976931348623157E+308
   6   260   # PF1U.tube2.portA.p
  -2       1                       0                       0                
   6   769   # PF1U.tube2.portB.gasType.fixedMixingRatio
@@ -5272,25 +5272,25 @@ double initialValue(2613,6)
   6  1281   # PF1U.tube2.gas[1].stateSelectPreferForInputs
  -2       1                       0                       0                
   6  1281   # PF1U.tube2.gas[1].computeTransportProperties
- -2  2.3922360884091937E+01       0                 1.7976931348623157E+308
+ -2  2.3936075457611508E+01       0                 1.7976931348623157E+308
   6  1280   # PF1U.tube2.gas[1].d
- -2 -1.4361906150734425E+04       0                       0                
+ -2 -1.4363221055202423E+04       0                       0                
   6  1280   # PF1U.tube2.gas[1].s
  -2  5.1931000000000004E+03       0                       0                
   6  1280   # PF1U.tube2.gas[1].cp
  -2  3.1144850380000003E+03       0                       0                
   6  1280   # PF1U.tube2.gas[1].cv
- -2  1.2003836658351434E-02       0                       0                
+ -2  1.2004313074835765E-02       0                       0                
   6  1280   # PF1U.tube2.gas[1].beta
- -2  2.4140262617974333E-07       0                       0                
+ -2  2.4127388598323754E-07       0                       0                
   6  1280   # PF1U.tube2.gas[1].kappa
- -2  5.3733756669301374E+02       0                       0                
+ -2  5.3732690389986521E+02       0                       0                
   6  1280   # PF1U.tube2.gas[1].w
- -2 -5.5296472730117882E-05       0                       0                
+ -2 -5.5330369832289244E-05       0                       0                
   6  1280   # PF1U.tube2.gas[1].drhodh_pxi
- -2  5.7749207418393598E-06       0                       0                
+ -2  5.7751499408459296E-06       0                       0                
   6  1280   # PF1U.tube2.gas[1].drhodp_hxi
- -2  4.1424570056475727E+06       0                 1.7976931348623157E+308
+ -2  4.1446673597716861E+06       0                 1.7976931348623157E+308
   6  1280   # PF1U.tube2.gas[1].p_i[1]
  -2       0                       0                       1                
   6  1280   # PF1U.tube2.gas[1].xi_gas
@@ -5304,7 +5304,7 @@ double initialValue(2613,6)
   6  1280   # PF1U.tube2.gas[1].delta_hv
  -2      -1                       0                       0                
   6  1280   # PF1U.tube2.gas[1].delta_hd
- -2 -1.1157027495995902E+06       0                       0                
+ -2 -1.1157199190374000E+06       0                       0                
   6  1280   # PF1U.tube2.gas[1].h_i[1]
  -2  4.0000000000000001E-03       0                 1.7976931348623157E+308
   6  1280   # PF1U.tube2.gas[1].M_i[1]
@@ -5314,37 +5314,37 @@ double initialValue(2613,6)
   6  1280   # PF1U.tube2.gas[1].humRatio_s
  -2      -1                       0                       0                
   6  1280   # PF1U.tube2.gas[1].h1px
- -2  6.4859236649519159E-01       0                       0                
+ -2  6.4859149788413972E-01       0                       0                
   6  1280   # PF1U.tube2.gas[1].transp.Pr
- -2  7.0637126806424450E-02       0                       0                
+ -2  7.0635727457740508E-02       0                       0                
   6  1280   # PF1U.tube2.gas[1].transp.lambda
- -2  8.8222258839228517E-06      -1                 1.7976931348623157E+308
+ -2  8.8220392975201258E-06      -1                 1.7976931348623157E+308
   6  1280   # PF1U.tube2.gas[1].transp.eta
  -2       0                       0                       0                
   6  1280   # PF1U.tube2.gas[1].transp.sigma
  -2       5                       0                       0                
   6  1282   # PF1U.tube2.gas[1].computeFlags
- -2  2.3568392622651940E-01       0                 1.7976931348623157E+308
+ -2  2.3581904267883261E-01       0                 1.7976931348623157E+308
   6  1280   # PF1U.tube2.cellMass[1]
- -2  1.9182531292100596E-04       0                       0                
+ -2  1.9131537420042575E-04       0                       0                
   6  1280   # PF1U.tube2.drhodt[1]
- -2  4.1424570056475732E+06       0                 1.7976931348623157E+308
+ -2  4.1446673597716861E+06       0                 1.7976931348623157E+308
   2  1296   # PF1U.tube2.p[1]
- -2 -5.7061952488107892E+01       0                       0                
+ -2 -5.7012433971251951E+01       0                       0                
   3  1312   # PF1U.tube2.der(p[1])
- -2 -1.1157027495995690E+06       0                       0                
+ -2 -1.1157199190373826E+06       0                       0                
   2  1296   # PF1U.tube2.h[1]
- -2 -9.4283331318250774E+00       0                       0                
+ -2 -9.4084086272127809E+00       0                       0                
   3  1312   # PF1U.tube2.der(h[1])
- -2 -3.9405312246683320E+03       0                       0                
+ -2 -3.9428531268987840E+03       0                       0                
   6  1280   # PF1U.tube2.H_flow[1]
- -2 -3.9156999855621348E+03       0                       0                
+ -2 -3.9180748996985453E+03       0                       0                
   6  1280   # PF1U.tube2.H_flow[2]
- -2  8.7787910348243001E-04       0                       0                
+ -2  8.7839649375197402E-04       0                       0                
   6  1280   # PF1U.tube2.mdotHydraulic
- -2  5.2656940351783543E+00       0                       0                
+ -2  5.2545684716048902E+00       0                       0                
   6  1280   # PF1U.tube2.heatTransfer[1].QdotHydraulic
- -2  8.3314827760399893E+01       0                 1.7976931348623157E+308
+ -2  8.3311500735359843E+01       0                 1.7976931348623157E+308
   6  1280   # PF1U.tube2.heatTransfer[1].wallTemperature
  -2       0                       0                       1                
   6  1280   # PF1U.tube2.heatTransfer[1].properties.q
@@ -5396,7 +5396,7 @@ double initialValue(2613,6)
   6  1280   # PF1U.tube2.heatTransfer[1].cellGeometry.hydraulicCrossSectionalArea
  -2       4                       1                 1.7976931348623157E+308
   6  1280   # PF1U.tube2.heatTransfer[1].cellGeometry.nParallelHydraulicFlows
- -2  2.5909474860093483E+03       0                       0                
+ -2  2.5921128051426181E+03       0                       0                
   6  1280   # PF1U.tube2.heatTransfer[1].alphaA
  -2       1                       0                       0                
   6  1281   # PF1U.tube2.heatTransfer[1].heatTransfer.computeTransportProperties
@@ -5446,29 +5446,29 @@ double initialValue(2613,6)
   6  1280   # PF1U.tube2.heatTransfer[1].heatTransfer.gdb.properties.VLETransp.eta_l
  -2       0                      -1                 1.7976931348623157E+308
   6  1280   # PF1U.tube2.heatTransfer[1].heatTransfer.gdb.properties.VLETransp.eta_v
- -2  4.6022555768962854E+02       0                       0                
+ -2  4.6043255132840022E+02       0                       0                
   6  1280   # PF1U.tube2.heatTransfer[1].heatTransfer.gdb.alpha
  -2  7.0000000000000001E-03       0                 1.7976931348623157E+308
   6  1280   # PF1U.tube2.heatTransfer[1].heatTransfer.gdb.hydraulicDiameter
  -2  3.8484510006474965E-05       0                       0                
   6  1280   # PF1U.tube2.heatTransfer[1].heatTransfer.gdb.hydraulicCrossSectionalArea
- -2  1.8099584985809372E+04       0                       0                
+ -2  1.8110635260555609E+04       0                       0                
   6  1280   # PF1U.tube2.heatTransfer[1].heatTransfer.gdb.Re
- -2  4.5607445397034425E+01       0                       0                
+ -2  4.5628861983860141E+01       0                       0                
   6  1280   # PF1U.tube2.heatTransfer[1].heatTransfer.gdb.Nu
- -2  9.5355272669509039E-01       0                       0                
+ -2  9.5356804033319864E-01       0                       0                
   6  1280   # PF1U.tube2.heatTransfer[1].heatTransfer.gdb.averageVelocity
  -2       0                       0                       0                
   6  1280   # PF1U.tube2.heatTransfer[1].heatTransfer.gdb.weightingFactor1
  -2       1                       0                       0                
   6  1280   # PF1U.tube2.heatTransfer[1].heatTransfer.gdb.weightingFactor2
- -2  4.5607445397034425E+01       0                       0                
+ -2  4.5628861983860141E+01       0                       0                
   6  1280   # PF1U.tube2.heatTransfer[1].heatTransfer.gdb.Nu1
- -2  4.5607445397034425E+01       0                       0                
+ -2  4.5628861983860141E+01       0                       0                
   6  1280   # PF1U.tube2.heatTransfer[1].heatTransfer.gdb.Nu_Gnielinski
- -2  5.0720867612682170E+01       0                       0                
+ -2  5.0745616590902777E+01       0                       0                
   6  1280   # PF1U.tube2.heatTransfer[1].heatTransfer.gdb.Nu_DittusBoelter
- -2  2.6831557353172223E-02       0                       0                
+ -2  2.6827319495393988E-02       0                       0                
   6  1280   # PF1U.tube2.heatTransfer[1].heatTransfer.gdb.zeta
  -1       1                       0                       0                
   1  1304   # PF1U.tube2.heatTransfer[1].heatTransfer.correctionFactor
@@ -5522,7 +5522,7 @@ double initialValue(2613,6)
   6  1280   # PF1U.tube2.pressureDrop[1].cellGeometry.hydraulicCrossSectionalArea
  -2       4                       1                 1.7976931348623157E+308
   6  1280   # PF1U.tube2.pressureDrop[1].cellGeometry.nParallelHydraulicFlows
- -2  2.6172657928836888E+03       0                       0                
+ -2  2.6184449844587380E+03       0                       0                
   6  1280   # PF1U.tube2.pressureDrop[1].pressureDrop
  -2       1                       0                       0                
   6  1281   # PF1U.tube2.pressureDrop[1].pressureDropModel.computeTransportProperties
@@ -5570,15 +5570,15 @@ double initialValue(2613,6)
   6  1280   # PF1U.tube2.pressureDrop[1].pressureDropModel.konakov.properties.VLETransp.eta_l
  -2       0                      -1                 1.7976931348623157E+308
   6  1280   # PF1U.tube2.pressureDrop[1].pressureDropModel.konakov.properties.VLETransp.eta_v
- -2  2.6172657928836888E+03       0                       0                
+ -2  2.6184449844587380E+03       0                       0                
   6  1280   # PF1U.tube2.pressureDrop[1].pressureDropModel.konakov.pressureDrop
  -2  7.0000000000000001E-03       0                 1.7976931348623157E+308
   6  1280   # PF1U.tube2.pressureDrop[1].pressureDropModel.konakov.hydraulicDiameter
  -2  3.8484510006474965E-05       0                       0                
   6  1280   # PF1U.tube2.pressureDrop[1].pressureDropModel.konakov.hydraulicCrossSectionalArea
- -2  1.8099584985809372E+04       0                       0                
+ -2  1.8110635260555609E+04       0                       0                
   6  1280   # PF1U.tube2.pressureDrop[1].pressureDropModel.konakov.Re
- -2  9.5355272669509039E-01       0                       0                
+ -2  9.5356804033319853E-01       0                       0                
   6  1280   # PF1U.tube2.pressureDrop[1].pressureDropModel.konakov.v
  -1    2250                       0                       0                
   1  1304   # PF1U.tube2.pressureDrop[1].pressureDropModel.konakov.Re_transitionBegin
@@ -5586,11 +5586,11 @@ double initialValue(2613,6)
   1  1304   # PF1U.tube2.pressureDrop[1].pressureDropModel.konakov.Re_transitionEnd
  -1  1.0000000000000000E-03       0                       0                
   1  1304   # PF1U.tube2.pressureDrop[1].pressureDropModel.konakov.vLimit
- -2  2.6321002615896420E-02       0                       0                
+ -2  2.6316928231972125E-02       0                       0                
   6  1280   # PF1U.tube2.pressureDrop[1].pressureDropModel.konakov.lambdaTurbulent
- -2  3.5160638890881103E+02       0                       0                
+ -2  3.5160459910493967E+02       0                       0                
   6  1280   # PF1U.tube2.pressureDrop[1].pressureDropModel.konakov.pressureDropLaminar
- -2  2.6172657928836888E+03       0                       0                
+ -2  2.6184449844587380E+03       0                       0                
   6  1280   # PF1U.tube2.pressureDrop[1].pressureDropModel.konakov.pressureDropTurbulent
  -2       0                       0                       0                
   6  1280   # PF1U.tube2.pressureDrop[1].pressureDropModel.konakov.weightingFactor
@@ -5622,13 +5622,13 @@ double initialValue(2613,6)
   6   257   # PF1U.tube2.connectWallCells
  -2  3.0159289474462024E-03       0                       0                
   6  1280   # PF1U.tube2.wallCell[1].cellGeometry.volume
- -2 -2.1062776140713417E+01       0                       0                
+ -2 -2.1018273886419561E+01       0                       0                
   6  1412   # PF1U.tube2.wallCell[1].portS.Q_flow
- -2  8.3314849617330310E+01       0                 1.7976931348623157E+308
+ -2  8.3311522546110083E+01       0                 1.7976931348623157E+308
   6  1284   # PF1U.tube2.wallCell[1].portW.T
  -2       0                       0                       0                
   6  1412   # PF1U.tube2.wallCell[1].portW.Q_flow
- -2  8.3314849617330310E+01       0                 1.7976931348623157E+308
+ -2  8.3311522546110083E+01       0                 1.7976931348623157E+308
   6  1284   # PF1U.tube2.wallCell[1].portE.T
  -2       0                       0                       0                
   6  1412   # PF1U.tube2.wallCell[1].portE.Q_flow
@@ -5646,9 +5646,9 @@ double initialValue(2613,6)
   6  1280   # PF1U.tube2.wallCell[1].properties.cp
  -2      40                       0                       0                
   6  1280   # PF1U.tube2.wallCell[1].properties.lambda
- -2  8.3314849617330310E+01       0                 1.7976931348623157E+308
+ -2  8.3311522546110083E+01       0                 1.7976931348623157E+308
   2  1296   # PF1U.tube2.wallCell[1].wallStateTemperature
- -2 -1.8272746260861318E-03       0                       0                
+ -2 -1.8234138890431352E-03       0                       0                
   3  1280   # PF1U.tube2.wallCell[1].der(wallStateTemperature)
  -2    7800                       0                 1.7976931348623157E+308
   6  1280   # PF1U.tube2.wallCell[1].wallMaterial.d
@@ -5682,7 +5682,7 @@ double initialValue(2613,6)
   6  1280   # PF1U.tube2.wallCell[1].heatTransfer.R_WE_total
  -2  2.3524245790080379E+01       0                 1.7976931348623157E+308
   6  1280   # PF1U.tube2.wallCell[1].geometricMass
- -2  2.5280945429409746E-01       0                       0                
+ -2  2.5228538318118171E-01       0                       0                
   6  1280   # PF1U.tube2.wallCell[1].SProd_dot
  -2       1                       0                       0                
   6   257   # PF1U.tube2.includeDefaultSummary
@@ -5690,41 +5690,41 @@ double initialValue(2613,6)
   1  1305   # PF1U.tube2.includeSummaryArrays
  -2       1                       0                       0                
   6  1281   # PF1U.tube2.includeSummary
- -2  8.2060639210583105E+01       0                 1.7976931348623157E+308
+ -2  8.2060666870732135E+01       0                 1.7976931348623157E+308
   6   256   # PF1U.tube2.summary.T_gas_A
- -2  8.3306698388328940E+01       0                 1.7976931348623157E+308
+ -2  8.3303392186288960E+01       0                 1.7976931348623157E+308
   6   256   # PF1U.tube2.summary.T_gas_B
- -2 -1.9108936078941687E+02       0                       0                
+ -2 -1.9108933312926786E+02       0                       0                
   6   256   # PF1U.tube2.summary.T_degC_gas_A
- -2 -1.8984330161167105E+02       0                       0                
+ -2 -1.8984660781371102E+02       0                       0                
   6   256   # PF1U.tube2.summary.T_degC_gas_B
- -2 -1.1221736595155208E+06       0                       0                
+ -2 -1.1221735158736007E+06       0                       0                
   6   256   # PF1U.tube2.summary.h_gas_A
- -2 -1.1157027495995690E+06       0                       0                
+ -2 -1.1157199190373826E+06       0                       0                
   6   256   # PF1U.tube2.summary.h_gas_B
- -2  2.4300956724119324E+01       0                 1.7976931348623157E+308
+ -2  2.4313913887489704E+01       0                 1.7976931348623157E+308
   6   256   # PF1U.tube2.summary.d_gas_A
- -2  2.3922360884090761E+01       0                 1.7976931348623157E+308
+ -2  2.3936075457610549E+01       0                 1.7976931348623157E+308
   6   256   # PF1U.tube2.summary.d_gas_B
- -2  9.3869688790355743E-01       0                       0                
+ -2  9.3874958482625093E-01       0                       0                
   6   256   # PF1U.tube2.summary.w_gas_A
- -2 -9.5303953236258654E-01       0                       0                
+ -2 -9.5305650351215232E-01       0                       0                
   6   256   # PF1U.tube2.summary.w_gas_B
- -2  2.6172657928834669E+03       0                       0                
+ -2  2.6184449844588526E+03       0                       0                
   6   256   # PF1U.tube2.summary.dp_gas
- -2  2.3568392622651940E-01       0                 1.7976931348623157E+308
+ -2  2.3581904267883261E-01       0                 1.7976931348623157E+308
   6   256   # PF1U.tube2.summary.mass_gas
- -2  4.6022555768962849E+02       0                       0                
+ -2  4.6043255132840017E+02       0                       0                
   6   256   # PF1U.tube2.summary.alpha_average_gas
  -2       1                       0                       0                
   6   258   # PF1U.tube2.summary.arrays.n
- -2 -1.8984330161167514E+02       0                       0                
+ -2 -1.8984660781371434E+02       0                       0                
   6   256   # PF1U.tube2.summary.arrays.T_degC_gas_cell[1]
- -2 -1.8983515038266967E+02       0                       0                
+ -2 -1.8983847745388988E+02       0                       0                
   6   256   # PF1U.tube2.summary.arrays.T_degC_wall_cell[1]
- -2  4.6022555768962849E+02       0                       0                
+ -2  4.6043255132840017E+02       0                       0                
   6   256   # PF1U.tube2.summary.arrays.alpha_gas_cell[1]
- -2  8.3306698388324833E+01       0                 1.7976931348623157E+308
+ -2  8.3303392186285620E+01       0                 1.7976931348623157E+308
   6  1280   # PF1U.tube2.T_gas_cell_[1]
  -2       1                       0                       0                
   6   769   # PF1U.tube2.gasA.gasType.fixedMixingRatio
@@ -5764,11 +5764,11 @@ double initialValue(2613,6)
   1  1305   # PF1U.tube2.gasB.computeTransportProperties
  -2       0                       0                       0                
   6   257   # PF1U.tube2.fixedTInitialWall
- -2  2.4300985477900980E+01       0                 1.7976931348623157E+308
+ -2  2.4313942642871119E+01       0                 1.7976931348623157E+308
   6  1280   # PF1U.valve1.propertiesInA.d
- -2 -1.4441483991270657E+04       0                       0                
+ -2 -1.4442590931981322E+04       0                       0                
   6  1280   # PF1U.valve1.propertiesInA.s
- -2  8.2060639210583091E+01       0                 1.7976931348623157E+308
+ -2  8.2060666870749799E+01       0                 1.7976931348623157E+308
   6  1280   # PF1U.valve1.propertiesInA.T
  -2       0                       0                       1                
   6  1280   # PF1U.valve1.propertiesInA.q
@@ -5828,11 +5828,11 @@ double initialValue(2613,6)
   6  1280   # PF1U.valve1.propertiesInA.gamma
  -2       0                       0                       0                
   6  1280   # PF1U.valve1.propertiesInA.w
- -2  2.3937475386606170E+01       0                 1.7976931348623157E+308
+ -2  2.3951197370008614E+01       0                 1.7976931348623157E+308
   6  1280   # PF1U.valve1.propertiesInB.d
- -2 -1.4363219010558278E+04       0                       0                
+ -2 -1.4364533806096329E+04       0                       0                
   6  1280   # PF1U.valve1.propertiesInB.s
- -2  8.3306698388324833E+01       0                 1.7976931348623157E+308
+ -2  8.3303392186285620E+01       0                 1.7976931348623157E+308
   6  1280   # PF1U.valve1.propertiesInB.T
  -2       0                       0                       1                
   6  1280   # PF1U.valve1.propertiesInB.q
@@ -6050,17 +6050,17 @@ double initialValue(2613,6)
   6  1281   # PF1U.valve1.gasInA.computeTransportProperties
  -2  3.1144850380000003E+03       0                       0                
   6  1280   # PF1U.valve1.gasInA.cv
- -2  1.2186110291364063E-02       0                       0                
+ -2  1.2186106183795176E-02       0                       0                
   6  1280   # PF1U.valve1.gasInA.beta
- -2  2.4124991526805139E-07       0                       0                
+ -2  2.4112126928472835E-07       0                       0                
   6  1280   # PF1U.valve1.gasInA.kappa
- -2  5.3330381529885426E+02       0                       0                
+ -2  5.3330390517916305E+02       0                       0                
   6  1280   # PF1U.valve1.gasInA.w
- -2 -5.7024607502751292E-05       0                       0                
+ -2 -5.7054993509220483E-05       0                       0                
   6  1280   # PF1U.valve1.gasInA.drhodh_pxi
- -2  5.8626106874737590E-06       0                       0                
+ -2  5.8626087113651664E-06       0                       0                
   6  1280   # PF1U.valve1.gasInA.drhodp_hxi
- -2  4.1450791760440855E+06       0                 1.7976931348623157E+308
+ -2  4.1472907096351958E+06       0                 1.7976931348623157E+308
   6  1280   # PF1U.valve1.gasInA.p_i[1]
  -2       0                       0                       1                
   6  1280   # PF1U.valve1.gasInA.xi_gas
@@ -6074,7 +6074,7 @@ double initialValue(2613,6)
   6  1280   # PF1U.valve1.gasInA.delta_hv
  -2      -1                       0                       0                
   6  1280   # PF1U.valve1.gasInA.delta_hd
- -2 -1.1221736595155208E+06       0                       0                
+ -2 -1.1221735158735090E+06       0                       0                
   6  1280   # PF1U.valve1.gasInA.h_i[1]
  -2  4.0000000000000001E-03       0                 1.7976931348623157E+308
   6  1280   # PF1U.valve1.gasInA.M_i[1]
@@ -6116,17 +6116,17 @@ double initialValue(2613,6)
   6  1281   # PF1U.valve1.gasInB.computeTransportProperties
  -2  3.1144850380000003E+03       0                       0                
   6  1280   # PF1U.valve1.gasInB.cv
- -2  1.2003836658351434E-02       0                       0                
+ -2  1.2004313074835765E-02       0                       0                
   6  1280   # PF1U.valve1.gasInB.beta
- -2  2.4125020072378330E-07       0                       0                
+ -2  2.4112155445211681E-07       0                       0                
   6  1280   # PF1U.valve1.gasInB.kappa
- -2  5.3733756669301374E+02       0                       0                
+ -2  5.3732690389986521E+02       0                       0                
   6  1280   # PF1U.valve1.gasInB.w
- -2 -5.5331409861956876E-05       0                       0                
+ -2 -5.5365325479341127E-05       0                       0                
   6  1280   # PF1U.valve1.gasInB.drhodh_pxi
- -2  5.7749207418393615E-06       0                       0                
+ -2  5.7751499408459296E-06       0                       0                
   6  1280   # PF1U.valve1.gasInB.drhodp_hxi
- -2  4.1450742714404566E+06       0                 1.7976931348623157E+308
+ -2  4.1472858047561455E+06       0                 1.7976931348623157E+308
   6  1280   # PF1U.valve1.gasInB.p_i[1]
  -2       0                       0                       1                
   6  1280   # PF1U.valve1.gasInB.xi_gas
@@ -6140,7 +6140,7 @@ double initialValue(2613,6)
   6  1280   # PF1U.valve1.gasInB.delta_hv
  -2      -1                       0                       0                
   6  1280   # PF1U.valve1.gasInB.delta_hd
- -2 -1.1157027495995902E+06       0                       0                
+ -2 -1.1157199190374000E+06       0                       0                
   6  1280   # PF1U.valve1.gasInB.h_i[1]
  -2  4.0000000000000001E-03       0                 1.7976931348623157E+308
   6  1280   # PF1U.valve1.gasInB.M_i[1]
@@ -6162,11 +6162,11 @@ double initialValue(2613,6)
   6  1282   # PF1U.valve1.gasInB.computeFlags
  -2       0                       0                       0                
   6  1281   # PF1U.valve1.generateEventsAtFlowReversal
- -2  5.3330368901048678E+02       0                       0                
+ -2  5.3330377895102936E+02       0                       0                
   6   768   # PF1U.valve1.flowPrinciple.w_gas
- -2  6.3533837738224574E-01       0                       0                
+ -2  6.3518689923477156E-01       0                       0                
   6   768   # PF1U.valve1.flowPrinciple.velocity_gas
- -2  1.1913256751722048E-03       0                       0                
+ -2  1.1910414369913881E-03       0                       0                
   6   768   # PF1U.valve1.flowPrinciple.Ma_gas
  -2       1                       0                       0                
   6  1281   # PF1U.valve1.flowPrinciple.enableChokedFlow
@@ -6176,31 +6176,31 @@ double initialValue(2613,6)
   1   281   # PF1U.valve1.use_mdotLinearization
  -1    1000                       0                 1.7976931348623157E+308
   1   280   # PF1U.valve1.d_nominal
- -2  1.7877722894886301E+00       0                       0                
+ -2  1.7888259373871824E+00       0                       0                
   6  1280   # PF1U.valve1.massFlowRateDensity
  -2  1.6666666666666666E+02       0                       0                
   6  1280   # PF1U.valve1.massFlowRateDensityLinearization
  -2       1                       0                       0                
   6   257   # PF1U.valve1.includeSummary
- -2  8.2060639210583105E+01       0                 1.7976931348623157E+308
+ -2  8.2060666870732135E+01       0                 1.7976931348623157E+308
   6   256   # PF1U.valve1.summary.T_gas_A
- -2  8.2060639210583105E+01       0                 1.7976931348623157E+308
+ -2  8.2060666870732135E+01       0                 1.7976931348623157E+308
   6   256   # PF1U.valve1.summary.T_gas_B
- -2 -1.9108936078941687E+02       0                       0                
+ -2 -1.9108933312926786E+02       0                       0                
   6   256   # PF1U.valve1.summary.T_degC_gas_A
- -2 -1.9108936078941687E+02       0                       0                
+ -2 -1.9108933312926786E+02       0                       0                
   6   256   # PF1U.valve1.summary.T_degC_gas_B
- -2 -1.1221736595155208E+06       0                       0                
+ -2 -1.1221735158736007E+06       0                       0                
   6   256   # PF1U.valve1.summary.h_gas_A
- -2 -1.1221736595155208E+06       0                       0                
+ -2 -1.1221735158736007E+06       0                       0                
   6   256   # PF1U.valve1.summary.h_gas_B
- -2  2.4300985477900976E+01       0                 1.7976931348623157E+308
+ -2  2.4313942642876352E+01       0                 1.7976931348623157E+308
   6   256   # PF1U.valve1.summary.d_gas_A
- -2  2.4300956724119324E+01       0                 1.7976931348623157E+308
+ -2  2.4313913887489704E+01       0                 1.7976931348623157E+308
   6   256   # PF1U.valve1.summary.d_gas_B
- -2  1.4450098812342614E-04       0                       0                
+ -2  1.4450910025640484E-04       0                       0                
   6   256   # PF1U.valve1.summary.V_flow_gas_A
- -2 -1.4450115910228547E-04       0                       0                
+ -2 -1.4450927116328027E-04       0                       0                
   6   256   # PF1U.valve1.summary.V_flow_gas_B
  -2       0                       0                     100                
   6   256   # PF1U.valve1.summary.phi_gas_A
@@ -6208,11 +6208,11 @@ double initialValue(2613,6)
   6   256   # PF1U.valve1.summary.phi_gas_B
  -2  7.7160493827160513E-06       0                       0                
   6   256   # PF1U.valve1.summary.Kv
- -2  6.3533837738224574E-01       0                       0                
+ -2  6.3518689923477156E-01       0                       0                
   6   256   # PF1U.valve1.summary.velocity_gas
- -2  1.1913256751722048E-03       0                       0                
+ -2  1.1910414369913881E-03       0                       0                
   6   256   # PF1U.valve1.summary.Ma_gas
- -2  4.9046036289073527E+00       0                       0                
+ -2  4.9048790503293276E+00       0                       0                
   6   256   # PF1U.valve1.summary.dp_gas
  -2       1                       0                       0                
   6   258   # PF1U.valve1.summary.nc_gas
@@ -6242,7 +6242,7 @@ double initialValue(2613,6)
   6   770   # PF1U.portA1.gasType.condensingIndex
  -2       1                       0                       0                
   6   770   # PF1U.portA1.gasType.ID
- -2  3.5115164139297200E-03       0                       0                
+ -2  3.5135859750078961E-03       0                       0                
   6   388   # PF1U.portA1.m_flow
  -2       1                       0                       0                
   6   769   # PF1U.portB1.gasType.fixedMixingRatio
@@ -6258,7 +6258,7 @@ double initialValue(2613,6)
   6   770   # PF1U.portB1.gasType.condensingIndex
  -2       1                       0                       0                
   6   770   # PF1U.portB1.gasType.ID
- -2 -3.5096265443170216E-03       0                       0                
+ -2 -3.5117011293290972E-03       0                       0                
   6   388   # PF1U.portB1.m_flow
  -1      74                       0                       0                
   1   280   # PF1L.length
@@ -6284,7 +6284,7 @@ double initialValue(2613,6)
   1   280   # PF1L.prescribedHeatFlow.alpha
  -2       0                       0                       0                
   6   256   # PF1L.prescribedHeatFlow.Q_flow
- -2  8.3888120052997621E+01       0                 1.7976931348623157E+308
+ -2  8.3884051603713118E+01       0                 1.7976931348623157E+308
   6   260   # PF1L.prescribedHeatFlow.port.T
  -2       0                       0                       0                
   6   388   # PF1L.prescribedHeatFlow.port.Q_flow
@@ -6418,7 +6418,7 @@ double initialValue(2613,6)
   6   770   # PF1L.tube2.portA.gasType.condensingIndex
  -2       1                       0                       0                
   6   770   # PF1L.tube2.portA.gasType.ID
- -2  4.1450746826601205E+06       0                 1.7976931348623157E+308
+ -2  4.1472862159693022E+06       0                 1.7976931348623157E+308
   6   260   # PF1L.tube2.portA.p
  -2       1                       0                       0                
   6   769   # PF1L.tube2.portB.gasType.fixedMixingRatio
@@ -6470,25 +6470,25 @@ double initialValue(2613,6)
   6  1281   # PF1L.tube2.gas[1].stateSelectPreferForInputs
  -2       1                       0                       0                
   6  1281   # PF1L.tube2.gas[1].computeTransportProperties
- -2  2.3759401235639345E+01       0                 1.7976931348623157E+308
+ -2  2.3773225918091871E+01       0                 1.7976931348623157E+308
   6  1280   # PF1L.tube2.gas[1].d
- -2 -1.4326409599949724E+04       0                       0                
+ -2 -1.4327768964991988E+04       0                       0                
   6  1280   # PF1L.tube2.gas[1].s
  -2  5.1931000000000004E+03       0                       0                
   6  1280   # PF1L.tube2.gas[1].cp
  -2  3.1144850380000003E+03       0                       0                
   6  1280   # PF1L.tube2.gas[1].cv
- -2  1.1922066259041551E-02       0                       0                
+ -2  1.1922641505077033E-02       0                       0                
   6  1280   # PF1L.tube2.gas[1].beta
- -2  2.4140262617974333E-07       0                       0                
+ -2  2.4127388598323754E-07       0                       0                
   6  1280   # PF1L.tube2.gas[1].kappa
- -2  5.3917714815935062E+02       0                       0                
+ -2  5.3916414083802761E+02       0                       0                
   6  1280   # PF1L.tube2.gas[1].w
- -2 -5.4545677111252627E-05       0                       0                
+ -2 -5.4580048533749627E-05       0                       0                
   6  1280   # PF1L.tube2.gas[1].drhodh_pxi
- -2  5.7355818547415767E-06       0                       0                
+ -2  5.7358585996154455E-06       0                       0                
   6  1280   # PF1L.tube2.gas[1].drhodp_hxi
- -2  4.1424570056475727E+06       0                 1.7976931348623157E+308
+ -2  4.1446673597716861E+06       0                 1.7976931348623157E+308
   6  1280   # PF1L.tube2.gas[1].p_i[1]
  -2       0                       0                       1                
   6  1280   # PF1L.tube2.gas[1].xi_gas
@@ -6502,7 +6502,7 @@ double initialValue(2613,6)
   6  1280   # PF1L.tube2.gas[1].delta_hv
  -2      -1                       0                       0                
   6  1280   # PF1L.tube2.gas[1].delta_hd
- -2 -1.1127355197050313E+06       0                       0                
+ -2 -1.1127565360071533E+06       0                       0                
   6  1280   # PF1L.tube2.gas[1].h_i[1]
  -2  4.0000000000000001E-03       0                 1.7976931348623157E+308
   6  1280   # PF1L.tube2.gas[1].M_i[1]
@@ -6512,35 +6512,35 @@ double initialValue(2613,6)
   6  1280   # PF1L.tube2.gas[1].humRatio_s
  -2      -1                       0                       0                
   6  1280   # PF1L.tube2.gas[1].h1px
- -2  6.4874187782526904E-01       0                       0                
+ -2  6.4874082306285819E-01       0                       0                
   6  1280   # PF1L.tube2.gas[1].transp.Pr
- -2  7.0878900328266575E-02       0                       0                
+ -2  7.0877188331435789E-02       0                       0                
   6  1280   # PF1L.tube2.gas[1].transp.lambda
- -2  8.8544628251236700E-06      -1                 1.7976931348623157E+308
+ -2  8.8542345601888772E-06      -1                 1.7976931348623157E+308
   6  1280   # PF1L.tube2.gas[1].transp.eta
  -2       0                       0                       0                
   6  1280   # PF1L.tube2.gas[1].transp.sigma
  -2       5                       0                       0                
   6  1282   # PF1L.tube2.gas[1].computeFlags
- -2  2.7065319872184157E-01       0                 1.7976931348623157E+308
+ -2  2.7081068141637499E-01       0                 1.7976931348623157E+308
   6  1280   # PF1L.tube2.cellMass[1]
- -2  2.6602486772121613E-04       0                       0                
+ -2  2.6566574447880613E-04       0                       0                
   6  1280   # PF1L.tube2.drhodt[1]
- -2  4.1424570056475732E+06       0                 1.7976931348623157E+308
+ -2  4.1446673597716861E+06       0                 1.7976931348623157E+308
   6  1280   # PF1L.tube2.p[1]
- -2 -1.1127355197050080E+06       0                       0                
+ -2 -1.1127565360071331E+06       0                       0                
   2  1296   # PF1L.tube2.h[1]
- -2 -1.0877275678474176E+01       0                       0                
+ -2 -1.0858931424205943E+01       0                       0                
   3  1312   # PF1L.tube2.der(h[1])
- -2 -3.6101517346851624E+03       0                       0                
+ -2 -3.6123027685597726E+03       0                       0                
   6  1280   # PF1L.tube2.H_flow[1]
- -2 -3.5764162041102572E+03       0                       0                
+ -2 -3.5786217455037672E+03       0                       0                
   6  1280   # PF1L.tube2.H_flow[2]
- -2  8.0427652709380635E-04       0                       0                
+ -2  8.0475584155709451E-04       0                       0                
   6  1280   # PF1L.tube2.mdotHydraulic
- -2  7.0173860399177457E+00       0                       0                
+ -2  7.0055539760936023E+00       0                       0                
   6  1280   # PF1L.tube2.heatTransfer[1].QdotHydraulic
- -2  8.3888094861315253E+01       0                 1.7976931348623157E+308
+ -2  8.3884026454506625E+01       0                 1.7976931348623157E+308
   6  1280   # PF1L.tube2.heatTransfer[1].wallTemperature
  -2       0                       0                       1                
   6  1280   # PF1L.tube2.heatTransfer[1].properties.q
@@ -6592,7 +6592,7 @@ double initialValue(2613,6)
   6  1280   # PF1L.tube2.heatTransfer[1].cellGeometry.hydraulicCrossSectionalArea
  -2       4                       1                 1.7976931348623157E+308
   6  1280   # PF1L.tube2.heatTransfer[1].cellGeometry.nParallelHydraulicFlows
- -2  2.8021450861326034E+03       0                       0                
+ -2  2.8034206706543096E+03       0                       0                
   6  1280   # PF1L.tube2.heatTransfer[1].alphaA
  -2       1                       0                       0                
   6  1281   # PF1L.tube2.heatTransfer[1].heatTransfer.computeTransportProperties
@@ -6642,29 +6642,29 @@ double initialValue(2613,6)
   6  1280   # PF1L.tube2.heatTransfer[1].heatTransfer.gdb.properties.VLETransp.eta_l
  -2       0                      -1                 1.7976931348623157E+308
   6  1280   # PF1L.tube2.heatTransfer[1].heatTransfer.gdb.properties.VLETransp.eta_v
- -2  4.3047803254697749E+02       0                       0                
+ -2  4.3067399353342637E+02       0                       0                
   6  1280   # PF1L.tube2.heatTransfer[1].heatTransfer.gdb.alpha
  -2  7.0000000000000001E-03       0                 1.7976931348623157E+308
   6  1280   # PF1L.tube2.heatTransfer[1].heatTransfer.gdb.hydraulicDiameter
  -2  3.8484510006474965E-05       0                       0                
   6  1280   # PF1L.tube2.heatTransfer[1].heatTransfer.gdb.hydraulicCrossSectionalArea
- -2  1.6521719844604271E+04       0                       0                
+ -2  1.6531992273008280E+04       0                       0                
   6  1280   # PF1L.tube2.heatTransfer[1].heatTransfer.gdb.Re
- -2  4.2514009301398779E+01       0                       0                
+ -2  4.2534389776250229E+01       0                       0                
   6  1280   # PF1L.tube2.heatTransfer[1].heatTransfer.gdb.Nu
- -2  8.7959740784159046E-01       0                       0                
+ -2  8.7960979919640780E-01       0                       0                
   6  1280   # PF1L.tube2.heatTransfer[1].heatTransfer.gdb.averageVelocity
  -2       0                       0                       0                
   6  1280   # PF1L.tube2.heatTransfer[1].heatTransfer.gdb.weightingFactor1
  -2       1                       0                       0                
   6  1280   # PF1L.tube2.heatTransfer[1].heatTransfer.gdb.weightingFactor2
- -2  4.2514009301398779E+01       0                       0                
+ -2  4.2534389776250229E+01       0                       0                
   6  1280   # PF1L.tube2.heatTransfer[1].heatTransfer.gdb.Nu1
- -2  4.2514009301398779E+01       0                       0                
+ -2  4.2534389776250229E+01       0                       0                
   6  1280   # PF1L.tube2.heatTransfer[1].heatTransfer.gdb.Nu_Gnielinski
- -2  4.7155173827438134E+01       0                       0                
+ -2  4.7178601896421220E+01       0                       0                
   6  1280   # PF1L.tube2.heatTransfer[1].heatTransfer.gdb.Nu_DittusBoelter
- -2  2.7476358703684454E-02       0                       0                
+ -2  2.7471886457265844E-02       0                       0                
   6  1280   # PF1L.tube2.heatTransfer[1].heatTransfer.gdb.zeta
  -1       1                       0                       0                
   1  1304   # PF1L.tube2.heatTransfer[1].heatTransfer.correctionFactor
@@ -6718,7 +6718,7 @@ double initialValue(2613,6)
   6  1280   # PF1L.tube2.pressureDrop[1].cellGeometry.hydraulicCrossSectionalArea
  -2       4                       1                 1.7976931348623157E+308
   6  1280   # PF1L.tube2.pressureDrop[1].cellGeometry.nParallelHydraulicFlows
- -2  2.6176770125475055E+03       0                       0                
+ -2  2.6188561976159808E+03       0                       0                
   6  1280   # PF1L.tube2.pressureDrop[1].pressureDrop
  -2       1                       0                       0                
   6  1281   # PF1L.tube2.pressureDrop[1].pressureDropModel.computeTransportProperties
@@ -6766,15 +6766,15 @@ double initialValue(2613,6)
   6  1280   # PF1L.tube2.pressureDrop[1].pressureDropModel.konakov.properties.VLETransp.eta_l
  -2       0                      -1                 1.7976931348623157E+308
   6  1280   # PF1L.tube2.pressureDrop[1].pressureDropModel.konakov.properties.VLETransp.eta_v
- -2  2.6176770125475055E+03       0                       0                
+ -2  2.6188561976159808E+03       0                       0                
   6  1280   # PF1L.tube2.pressureDrop[1].pressureDropModel.konakov.pressureDrop
  -2  7.0000000000000001E-03       0                 1.7976931348623157E+308
   6  1280   # PF1L.tube2.pressureDrop[1].pressureDropModel.konakov.hydraulicDiameter
  -2  3.8484510006474965E-05       0                       0                
   6  1280   # PF1L.tube2.pressureDrop[1].pressureDropModel.konakov.hydraulicCrossSectionalArea
- -2  1.6521719844604271E+04       0                       0                
+ -2  1.6531992273008284E+04       0                       0                
   6  1280   # PF1L.tube2.pressureDrop[1].pressureDropModel.konakov.Re
- -2  8.7959740784159046E-01       0                       0                
+ -2  8.7960979919640780E-01       0                       0                
   6  1280   # PF1L.tube2.pressureDrop[1].pressureDropModel.konakov.v
  -1    2250                       0                       0                
   1  1304   # PF1L.tube2.pressureDrop[1].pressureDropModel.konakov.Re_transitionBegin
@@ -6782,11 +6782,11 @@ double initialValue(2613,6)
   1  1304   # PF1L.tube2.pressureDrop[1].pressureDropModel.konakov.Re_transitionEnd
  -1  1.0000000000000000E-03       0                       0                
   1  1304   # PF1L.tube2.pressureDrop[1].pressureDropModel.konakov.vLimit
- -2  2.6940707813628603E-02       0                       0                
+ -2  2.6936411150990477E-02       0                       0                
   6  1280   # PF1L.tube2.pressureDrop[1].pressureDropModel.konakov.lambdaTurbulent
- -2  3.7638454113425593E+02       0                       0                
+ -2  3.7638014026507540E+02       0                       0                
   6  1280   # PF1L.tube2.pressureDrop[1].pressureDropModel.konakov.pressureDropLaminar
- -2  2.6176770125475055E+03       0                       0                
+ -2  2.6188561976159808E+03       0                       0                
   6  1280   # PF1L.tube2.pressureDrop[1].pressureDropModel.konakov.pressureDropTurbulent
  -2       0                       0                       0                
   6  1280   # PF1L.tube2.pressureDrop[1].pressureDropModel.konakov.weightingFactor
@@ -6818,13 +6818,13 @@ double initialValue(2613,6)
   6   257   # PF1L.tube2.connectWallCells
  -2  3.4871678454846716E-03       0                       0                
   6  1280   # PF1L.tube2.wallCell[1].cellGeometry.volume
- -2 -2.8069544159670983E+01       0                       0                
+ -2 -2.8022215904374409E+01       0                       0                
   6  1412   # PF1L.tube2.wallCell[1].portS.Q_flow
- -2  8.3888120052997621E+01       0                 1.7976931348623157E+308
+ -2  8.3884051603713118E+01       0                 1.7976931348623157E+308
   6  1284   # PF1L.tube2.wallCell[1].portW.T
  -2       0                       0                       0                
   6  1412   # PF1L.tube2.wallCell[1].portW.Q_flow
- -2  8.3888120052997621E+01       0                 1.7976931348623157E+308
+ -2  8.3884051603713118E+01       0                 1.7976931348623157E+308
   6  1284   # PF1L.tube2.wallCell[1].portE.T
  -2       0                       0                       0                
   6  1412   # PF1L.tube2.wallCell[1].portE.Q_flow
@@ -6842,9 +6842,9 @@ double initialValue(2613,6)
   6  1280   # PF1L.tube2.wallCell[1].properties.cp
  -2      40                       0                       0                
   6  1280   # PF1L.tube2.wallCell[1].properties.lambda
- -2  8.3888120052997621E+01       0                 1.7976931348623157E+308
+ -2  8.3884051603713118E+01       0                 1.7976931348623157E+308
   2  1296   # PF1L.tube2.wallCell[1].wallStateTemperature
- -2 -2.1060652662149796E-03       0                       0                
+ -2 -2.1025142147969847E-03       0                       0                
   3  1280   # PF1L.tube2.wallCell[1].der(wallStateTemperature)
  -2    7800                       0                 1.7976931348623157E+308
   6  1280   # PF1L.tube2.wallCell[1].wallMaterial.d
@@ -6878,7 +6878,7 @@ double initialValue(2613,6)
   6  1280   # PF1L.tube2.wallCell[1].heatTransfer.R_WE_total
  -2  2.7199909194780439E+01       0                 1.7976931348623157E+308
   6  1280   # PF1L.tube2.wallCell[1].geometricMass
- -2  3.3460700479699618E-01       0                       0                
+ -2  3.3405902278155286E-01       0                       0                
   6  1280   # PF1L.tube2.wallCell[1].SProd_dot
  -2       1                       0                       0                
   6   257   # PF1L.tube2.includeDefaultSummary
@@ -6886,41 +6886,41 @@ double initialValue(2613,6)
   1  1305   # PF1L.tube2.includeSummaryArrays
  -2       1                       0                       0                
   6  1281   # PF1L.tube2.includeSummary
- -2  8.2060639210583105E+01       0                 1.7976931348623157E+308
+ -2  8.2060666870732135E+01       0                 1.7976931348623157E+308
   6   256   # PF1L.tube2.summary.T_gas_A
- -2  8.3878077698290397E+01       0                 1.7976931348623157E+308
+ -2  8.3874030731714541E+01       0                 1.7976931348623157E+308
   6   256   # PF1L.tube2.summary.T_gas_B
- -2 -1.9108936078941687E+02       0                       0                
+ -2 -1.9108933312926786E+02       0                       0                
   6   256   # PF1L.tube2.summary.T_degC_gas_A
- -2 -1.8927192230170959E+02       0                       0                
+ -2 -1.8927596926828545E+02       0                       0                
   6   256   # PF1L.tube2.summary.T_degC_gas_B
- -2 -1.1221736595155208E+06       0                       0                
+ -2 -1.1221735158736007E+06       0                       0                
   6   256   # PF1L.tube2.summary.h_gas_A
- -2 -1.1127355197050080E+06       0                       0                
+ -2 -1.1127565360071331E+06       0                       0                
   6   256   # PF1L.tube2.summary.h_gas_B
- -2  2.4300959134940118E+01       0                 1.7976931348623157E+308
+ -2  2.4313916298271543E+01       0                 1.7976931348623157E+308
   6   256   # PF1L.tube2.summary.d_gas_A
- -2  2.3759401235638073E+01       0                 1.7976931348623157E+308
+ -2  2.3773225918090766E+01       0                 1.7976931348623157E+308
   6   256   # PF1L.tube2.summary.d_gas_B
- -2  8.5999518054776347E-01       0                       0                
+ -2  8.6004912657983401E-01       0                       0                
   6   256   # PF1L.tube2.summary.w_gas_A
- -2 -8.7876885833333429E-01       0                       0                
+ -2 -8.7878284936813489E-01       0                       0                
   6   256   # PF1L.tube2.summary.w_gas_B
- -2  2.6176770125473849E+03       0                       0                
+ -2  2.6188561976160854E+03       0                       0                
   6   256   # PF1L.tube2.summary.dp_gas
- -2  2.7065319872184157E-01       0                 1.7976931348623157E+308
+ -2  2.7081068141637499E-01       0                 1.7976931348623157E+308
   6   256   # PF1L.tube2.summary.mass_gas
- -2  4.3047803254697749E+02       0                       0                
+ -2  4.3067399353342637E+02       0                       0                
   6   256   # PF1L.tube2.summary.alpha_average_gas
  -2       1                       0                       0                
   6   258   # PF1L.tube2.summary.arrays.n
- -2 -1.8927192230171408E+02       0                       0                
+ -2 -1.8927596926828932E+02       0                       0                
   6   256   # PF1L.tube2.summary.arrays.T_degC_gas_cell[1]
- -2 -1.8926187994700234E+02       0                       0                
+ -2 -1.8926594839628686E+02       0                       0                
   6   256   # PF1L.tube2.summary.arrays.T_degC_wall_cell[1]
- -2  4.3047803254697749E+02       0                       0                
+ -2  4.3067399353342637E+02       0                       0                
   6   256   # PF1L.tube2.summary.arrays.alpha_gas_cell[1]
- -2  8.3878077698285907E+01       0                 1.7976931348623157E+308
+ -2  8.3874030731710647E+01       0                 1.7976931348623157E+308
   6  1280   # PF1L.tube2.T_gas_cell_[1]
  -2       1                       0                       0                
   6   769   # PF1L.tube2.gasA.gasType.fixedMixingRatio
@@ -6960,11 +6960,11 @@ double initialValue(2613,6)
   1  1305   # PF1L.tube2.gasB.computeTransportProperties
  -2       0                       0                       0                
   6   257   # PF1L.tube2.fixedTInitialWall
- -2  2.4300985477900980E+01       0                 1.7976931348623157E+308
+ -2  2.4313942642871119E+01       0                 1.7976931348623157E+308
   6  1280   # PF1L.valve1.propertiesInA.d
- -2 -1.4441483991270657E+04       0                       0                
+ -2 -1.4442590931981322E+04       0                       0                
   6  1280   # PF1L.valve1.propertiesInA.s
- -2  8.2060639210583091E+01       0                 1.7976931348623157E+308
+ -2  8.2060666870749799E+01       0                 1.7976931348623157E+308
   6  1280   # PF1L.valve1.propertiesInA.T
  -2       0                       0                       1                
   6  1280   # PF1L.valve1.propertiesInA.q
@@ -7024,11 +7024,11 @@ double initialValue(2613,6)
   6  1280   # PF1L.valve1.propertiesInA.gamma
  -2       0                       0                       0                
   6  1280   # PF1L.valve1.propertiesInA.w
- -2  2.3774415136414085E+01       0                 1.7976931348623157E+308
+ -2  2.3788247306934121E+01       0                 1.7976931348623157E+308
   6  1280   # PF1L.valve1.propertiesInB.d
- -2 -1.4327722665982394E+04       0                       0                
+ -2 -1.4329081921981493E+04       0                       0                
   6  1280   # PF1L.valve1.propertiesInB.s
- -2  8.3878077698285907E+01       0                 1.7976931348623157E+308
+ -2  8.3874030731710647E+01       0                 1.7976931348623157E+308
   6  1280   # PF1L.valve1.propertiesInB.T
  -2       0                       0                       1                
   6  1280   # PF1L.valve1.propertiesInB.q
@@ -7246,17 +7246,17 @@ double initialValue(2613,6)
   6  1281   # PF1L.valve1.gasInA.computeTransportProperties
  -2  3.1144850380000003E+03       0                       0                
   6  1280   # PF1L.valve1.gasInA.cv
- -2  1.2186110291364063E-02       0                       0                
+ -2  1.2186106183795176E-02       0                       0                
   6  1280   # PF1L.valve1.gasInA.beta
- -2  2.4124991526805139E-07       0                       0                
+ -2  2.4112126928472835E-07       0                       0                
   6  1280   # PF1L.valve1.gasInA.kappa
- -2  5.3330381529885426E+02       0                       0                
+ -2  5.3330390517916305E+02       0                       0                
   6  1280   # PF1L.valve1.gasInA.w
- -2 -5.7024607502751292E-05       0                       0                
+ -2 -5.7054993509220483E-05       0                       0                
   6  1280   # PF1L.valve1.gasInA.drhodh_pxi
- -2  5.8626106874737590E-06       0                       0                
+ -2  5.8626087113651664E-06       0                       0                
   6  1280   # PF1L.valve1.gasInA.drhodp_hxi
- -2  4.1450791760440855E+06       0                 1.7976931348623157E+308
+ -2  4.1472907096351958E+06       0                 1.7976931348623157E+308
   6  1280   # PF1L.valve1.gasInA.p_i[1]
  -2       0                       0                       1                
   6  1280   # PF1L.valve1.gasInA.xi_gas
@@ -7270,7 +7270,7 @@ double initialValue(2613,6)
   6  1280   # PF1L.valve1.gasInA.delta_hv
  -2      -1                       0                       0                
   6  1280   # PF1L.valve1.gasInA.delta_hd
- -2 -1.1221736595155208E+06       0                       0                
+ -2 -1.1221735158735090E+06       0                       0                
   6  1280   # PF1L.valve1.gasInA.h_i[1]
  -2  4.0000000000000001E-03       0                 1.7976931348623157E+308
   6  1280   # PF1L.valve1.gasInA.M_i[1]
@@ -7312,17 +7312,17 @@ double initialValue(2613,6)
   6  1281   # PF1L.valve1.gasInB.computeTransportProperties
  -2  3.1144850380000003E+03       0                       0                
   6  1280   # PF1L.valve1.gasInB.cv
- -2  1.1922066259041551E-02       0                       0                
+ -2  1.1922641505077033E-02       0                       0                
   6  1280   # PF1L.valve1.gasInB.beta
- -2  2.4125017679011887E-07       0                       0                
+ -2  2.4112153054434908E-07       0                       0                
   6  1280   # PF1L.valve1.gasInB.kappa
- -2  5.3917714815935062E+02       0                       0                
+ -2  5.3916414083802761E+02       0                       0                
   6  1280   # PF1L.valve1.gasInB.w
- -2 -5.4580145294003414E-05       0                       0                
+ -2 -5.4614535571179008E-05       0                       0                
   6  1280   # PF1L.valve1.gasInB.drhodh_pxi
- -2  5.7355818547415767E-06       0                       0                
+ -2  5.7358585996154455E-06       0                       0                
   6  1280   # PF1L.valve1.gasInB.drhodp_hxi
- -2  4.1450746826601210E+06       0                 1.7976931348623157E+308
+ -2  4.1472862159693022E+06       0                 1.7976931348623157E+308
   6  1280   # PF1L.valve1.gasInB.p_i[1]
  -2       0                       0                       1                
   6  1280   # PF1L.valve1.gasInB.xi_gas
@@ -7336,7 +7336,7 @@ double initialValue(2613,6)
   6  1280   # PF1L.valve1.gasInB.delta_hv
  -2      -1                       0                       0                
   6  1280   # PF1L.valve1.gasInB.delta_hd
- -2 -1.1127355197050313E+06       0                       0                
+ -2 -1.1127565360071533E+06       0                       0                
   6  1280   # PF1L.valve1.gasInB.h_i[1]
  -2  4.0000000000000001E-03       0                 1.7976931348623157E+308
   6  1280   # PF1L.valve1.gasInB.M_i[1]
@@ -7358,11 +7358,11 @@ double initialValue(2613,6)
   6  1282   # PF1L.valve1.gasInB.computeFlags
  -2       0                       0                       0                
   6  1281   # PF1L.valve1.generateEventsAtFlowReversal
- -2  5.3330369959896382E+02       0                       0                
+ -2  5.3330378953369438E+02       0                       0                
   6   768   # PF1L.valve1.flowPrinciple.w_gas
- -2  6.0812084604864503E-01       0                       0                
+ -2  6.0797785948397698E-01       0                       0                
   6   768   # PF1L.valve1.flowPrinciple.velocity_gas
- -2  1.1402899445586868E-03       0                       0                
+ -2  1.1400216376027919E-03       0                       0                
   6   768   # PF1L.valve1.flowPrinciple.Ma_gas
  -2       1                       0                       0                
   6  1281   # PF1L.valve1.flowPrinciple.enableChokedFlow
@@ -7372,31 +7372,31 @@ double initialValue(2613,6)
   1   281   # PF1L.valve1.use_mdotLinearization
  -1    1000                       0                 1.7976931348623157E+308
   1   280   # PF1L.valve1.d_nominal
- -2  1.6378830323158495E+00       0                       0                
+ -2  1.6388591402795101E+00       0                       0                
   6  1280   # PF1L.valve1.massFlowRateDensity
  -2  1.6666666666666666E+02       0                       0                
   6  1280   # PF1L.valve1.massFlowRateDensityLinearization
  -2       1                       0                       0                
   6   257   # PF1L.valve1.includeSummary
- -2  8.2060639210583105E+01       0                 1.7976931348623157E+308
+ -2  8.2060666870732135E+01       0                 1.7976931348623157E+308
   6   256   # PF1L.valve1.summary.T_gas_A
- -2  8.2060639210583105E+01       0                 1.7976931348623157E+308
+ -2  8.2060666870732135E+01       0                 1.7976931348623157E+308
   6   256   # PF1L.valve1.summary.T_gas_B
- -2 -1.9108936078941687E+02       0                       0                
+ -2 -1.9108933312926786E+02       0                       0                
   6   256   # PF1L.valve1.summary.T_degC_gas_A
- -2 -1.9108936078941687E+02       0                       0                
+ -2 -1.9108933312926786E+02       0                       0                
   6   256   # PF1L.valve1.summary.T_degC_gas_B
- -2 -1.1221736595155208E+06       0                       0                
+ -2 -1.1221735158736007E+06       0                       0                
   6   256   # PF1L.valve1.summary.h_gas_A
- -2 -1.1221736595155208E+06       0                       0                
+ -2 -1.1221735158736007E+06       0                       0                
   6   256   # PF1L.valve1.summary.h_gas_B
- -2  2.4300985477900976E+01       0                 1.7976931348623157E+308
+ -2  2.4313942642876352E+01       0                 1.7976931348623157E+308
   6   256   # PF1L.valve1.summary.d_gas_A
- -2  2.4300959134940118E+01       0                 1.7976931348623157E+308
+ -2  2.4313916298271543E+01       0                 1.7976931348623157E+308
   6   256   # PF1L.valve1.summary.d_gas_B
- -2  1.3238582901507526E-04       0                       0                
+ -2  1.3239413342004848E-04       0                       0                
   6   256   # PF1L.valve1.summary.V_flow_gas_A
- -2 -1.3238597252524258E-04       0                       0                
+ -2 -1.3239427687168669E-04       0                       0                
   6   256   # PF1L.valve1.summary.V_flow_gas_B
  -2       0                       0                     100                
   6   256   # PF1L.valve1.summary.phi_gas_A
@@ -7404,11 +7404,11 @@ double initialValue(2613,6)
   6   256   # PF1L.valve1.summary.phi_gas_B
  -2  7.7160493827160513E-06       0                       0                
   6   256   # PF1L.valve1.summary.Kv
- -2  6.0812084604864503E-01       0                       0                
+ -2  6.0797785948397698E-01       0                       0                
   6   256   # PF1L.valve1.summary.velocity_gas
- -2  1.1402899445586868E-03       0                       0                
+ -2  1.1400216376027919E-03       0                       0                
   6   256   # PF1L.valve1.summary.Ma_gas
- -2  4.4933839649893343E+00       0                       0                
+ -2  4.4936658930964768E+00       0                       0                
   6   256   # PF1L.valve1.summary.dp_gas
  -2       1                       0                       0                
   6   258   # PF1L.valve1.summary.nc_gas
@@ -7438,7 +7438,7 @@ double initialValue(2613,6)
   6   770   # PF1L.portA1.gasType.condensingIndex
  -2       1                       0                       0                
   6   770   # PF1L.portA1.gasType.ID
- -2  3.2171061083752254E-03       0                       0                
+ -2  3.2190233662283780E-03       0                       0                
   6   388   # PF1L.portA1.m_flow
  -2       1                       0                       0                
   6   769   # PF1L.portB1.gasType.fixedMixingRatio
@@ -7454,7 +7454,7 @@ double initialValue(2613,6)
   6   770   # PF1L.portB1.gasType.condensingIndex
  -2       1                       0                       0                
   6   770   # PF1L.portB1.gasType.ID
- -2 -3.2140757087168242E-03       0                       0                
+ -2 -3.2159970574918532E-03       0                       0                
   6   388   # PF1L.portB1.m_flow
  -2       1                       0                       0                
   6   769   # junction1.gasType.fixedMixingRatio
@@ -7560,27 +7560,27 @@ double initialValue(2613,6)
   6  1281   # junction1.gas.stateSelectPreferForInputs
  -2       0                       0                       0                
   6  1281   # junction1.gas.computeTransportProperties
- -2  2.4300985477900980E+01       0                 1.7976931348623157E+308
+ -2  2.4313942642871119E+01       0                 1.7976931348623157E+308
   6  1280   # junction1.gas.d
- -2 -1.4441483991270657E+04       0                       0                
+ -2 -1.4442590931981322E+04       0                       0                
   6  1280   # junction1.gas.s
- -2  8.2060639210583091E+01       0                 1.7976931348623157E+308
+ -2  8.2060666870749799E+01       0                 1.7976931348623157E+308
   6  1280   # junction1.gas.T
  -2  5.1931000000000004E+03       0                       0                
   6  1280   # junction1.gas.cp
  -2  3.1144850380000003E+03       0                       0                
   6  1280   # junction1.gas.cv
- -2  1.2186110291364063E-02       0                       0                
+ -2  1.2186106183795176E-02       0                       0                
   6  1280   # junction1.gas.beta
- -2  2.4124991526805139E-07       0                       0                
+ -2  2.4112126928472835E-07       0                       0                
   6  1280   # junction1.gas.kappa
- -2  5.3330381529885426E+02       0                       0                
+ -2  5.3330390517916305E+02       0                       0                
   6  1280   # junction1.gas.w
- -2 -5.7024607502751292E-05       0                       0                
+ -2 -5.7054993509220483E-05       0                       0                
   6  1280   # junction1.gas.drhodh_pxi
- -2  5.8626106874737590E-06       0                       0                
+ -2  5.8626087113651664E-06       0                       0                
   6  1280   # junction1.gas.drhodp_hxi
- -2  4.1450791760440855E+06       0                 1.7976931348623157E+308
+ -2  4.1472907096351958E+06       0                 1.7976931348623157E+308
   6  1280   # junction1.gas.p_i[1]
  -2       0                       0                       1                
   6  1280   # junction1.gas.xi_gas
@@ -7594,7 +7594,7 @@ double initialValue(2613,6)
   6  1280   # junction1.gas.delta_hv
  -2      -1                       0                       0                
   6  1280   # junction1.gas.delta_hd
- -2 -1.1221736595155208E+06       0                       0                
+ -2 -1.1221735158735090E+06       0                       0                
   6  1280   # junction1.gas.h_i[1]
  -2  4.0000000000000001E-03       0                 1.7976931348623157E+308
   6  1280   # junction1.gas.M_i[1]
@@ -7630,17 +7630,17 @@ double initialValue(2613,6)
   6   256   # junction1.mixingRatioInitial[1]
  -1       1                       0                       0                
   1   280   # junction1.molarMixingRatioInitial[1]
- -2 -1.1221736595155208E+06       0                       0                
+ -2 -1.1221735158736007E+06       0                       0                
   2   272   # junction1.h
- -2 -5.5964557494912796E-02       0                       0                
+ -2 -7.9299632396675770E-02       0                       0                
   3   256   # junction1.der(h)
- -2  4.1450791760440855E+06       0                 1.7976931348623157E+308
+ -2  4.1472907096351953E+06       0                 1.7976931348623157E+308
   2   272   # junction1.p
- -2 -5.5979983478933967E+01       0                       0                
+ -2 -5.6466318138374000E+01       0                       0                
   3   256   # junction1.der(p)
- -2  2.4300985477900981E-04       0                 1.7976931348623157E+308
+ -2  2.4313942642871121E-04       0                 1.7976931348623157E+308
   6   256   # junction1.mass
- -2 -3.2499749250299026E-04       0                       0                
+ -2 -3.2651548860507251E-04       0                       0                
   6   256   # junction1.drhodt
  -2 -1.1328747649999999E+06       0                       0                
   6   768   # junction1.hInitial
@@ -7806,27 +7806,27 @@ double initialValue(2613,6)
   6  1281   # junction3.gas.stateSelectPreferForInputs
  -2       0                       0                       0                
   6  1281   # junction3.gas.computeTransportProperties
- -2  2.3844169606568645E+01       0                 1.7976931348623157E+308
+ -2  2.3857937100562072E+01       0                 1.7976931348623157E+308
   6  1280   # junction3.gas.d
- -2 -1.4344904476891943E+04       0                       0                
+ -2 -1.4346240657792354E+04       0                       0                
   6  1280   # junction3.gas.s
- -2  8.3579882872444429E+01       0                 1.7976931348623157E+308
+ -2  8.3576223411158281E+01       0                 1.7976931348623157E+308
   6  1280   # junction3.gas.T
  -2  5.1931000000000004E+03       0                       0                
   6  1280   # junction3.gas.cp
  -2  3.1144850380000003E+03       0                       0                
   6  1280   # junction3.gas.cv
- -2  1.1964601595890623E-02       0                       0                
+ -2  1.1965125476900764E-02       0                       0                
   6  1280   # junction3.gas.beta
- -2  2.4140262617974333E-07       0                       0                
+ -2  2.4127388598323754E-07       0                       0                
   6  1280   # junction3.gas.kappa
- -2  5.3821788090014275E+02       0                       0                
+ -2  5.3820609810630197E+02       0                       0                
   6  1280   # junction3.gas.w
- -2 -5.4935585628514346E-05       0                       0                
+ -2 -5.4969711930875812E-05       0                       0                
   6  1280   # junction3.gas.drhodh_pxi
- -2  5.7560451621008873E-06       0                       0                
+ -2  5.7562971957962664E-06       0                       0                
   6  1280   # junction3.gas.drhodp_hxi
- -2  4.1424570056475727E+06       0                 1.7976931348623157E+308
+ -2  4.1446673597716861E+06       0                 1.7976931348623157E+308
   6  1280   # junction3.gas.p_i[1]
  -2       0                       0                       1                
   6  1280   # junction3.gas.xi_gas
@@ -7840,7 +7840,7 @@ double initialValue(2613,6)
   6  1280   # junction3.gas.delta_hv
  -2      -1                       0                       0                
   6  1280   # junction3.gas.delta_hd
- -2 -1.1142840752551088E+06       0                       0                
+ -2 -1.1143030792035139E+06       0                       0                
   6  1280   # junction3.gas.h_i[1]
  -2  4.0000000000000001E-03       0                 1.7976931348623157E+308
   6  1280   # junction3.gas.M_i[1]
@@ -7876,13 +7876,13 @@ double initialValue(2613,6)
   6   256   # junction3.mixingRatioInitial[1]
  -1       1                       0                       0                
   1   280   # junction3.molarMixingRatioInitial[1]
- -2 -1.1142840752550866E+06       0                       0                
+ -2 -1.1143030792035139E+06       0                       0                
   2   272   # junction3.h
- -2 -1.0119788590742472E+01       0                       0                
+ -2 -1.0100622529890339E+01       0                       0                
   3   288   # junction3.der(h)
- -2  2.3844169606568647E-04       0                 1.7976931348623157E+308
+ -2  2.3857937100562075E-04       0                 1.7976931348623157E+308
   6   256   # junction3.mass
- -2  2.2748533710999143E-04       0                       0                
+ -2  2.2704779699634866E-04       0                       0                
   6   256   # junction3.drhodt
  -2 -1.1328747649999999E+06       0                       0                
   6   768   # junction3.hInitial

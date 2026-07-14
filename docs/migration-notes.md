@@ -12,6 +12,90 @@ way to recognize the same bug again.
 
 ---
 
+## 2026-07-14 — `PFCircuit` Newton-solver convergence warnings ("wobbling")
+
+**Symptom:** `dslog.txt` showed 7595 occurrences of
+`Warning: Failed to solve nonlinear system using Newton solver.` (tag
+`simulation.nonlinear[3]`) during a `CoilLoopCompassU.PF.PFCircuit`
+simulation with two parallel coil branches (`PF1U`, `PF1L`, both
+`CoilAssembly` instances). Simulation still completed the full 1800s and
+`result.mat` was a normal size — not the runaway/bloat failure mode from
+the 2026-07-13 chattering entry below, just persistent solver noise.
+
+**False lead (ruled out, recorded so it isn't retried):** because the
+symptom superficially resembled the 2026-07-13 branch-split-degeneracy
+chattering issue, the first hypothesis was that `PF1U`/`PF1L`'s isolation
+valves (`valveKvNominal=100` on both, identical) dominated flow resistance
+and kept the branch split numerically degenerate even after giving the two
+coils different tube lengths (64 vs 74). This was **wrong on two counts**:
+(1) `Kv=100` at full opening is a large/non-restrictive flow coefficient
+for a 7mm helium tube — asserted as fact without checking, should have
+been a hypothesis; (2) actually reading the `.mat` result data (via
+`scipy.io.loadmat` on the host — see "How it was found") showed the two
+branches split ~15% asymmetrically from early in the run
+(`PF1U.valve1.portA.m_flow` vs `PF1L.valve1.portA.m_flow` at t=3.6s:
+3.62e-4 vs 3.14e-4 kg/s, tracking the tube-length ratio), i.e. the split
+was never actually degenerate. Don't reach for the 2026-07-13 fix pattern
+just because the symptom (Newton/solver warnings) looks similar — check
+the actual trajectory data first.
+
+**Root cause (confirmed from `dslog.txt` warning timestamps bucketed
+against the model's own timeline):** two distinct, benign, self-recovering
+stiff transients, unrelated to branch symmetry:
+1. **Near-zero-flow startup** (t < 1s, before `fan2ndOrder`'s
+   `smoothStep` even begins ramping at `startTime=1`) — 3722 of the 7595
+   warnings (49%). Mass flow is ~1e-16 to 1e-4 kg/s in this window;
+   turbulent-flow correlations (`Konakov` pressure drop,
+   `GnielinskiDittusBoelter` heat transfer) are steep/ill-conditioned near
+   zero Reynolds number, a standard Newton-convergence trap.
+2. **Heat-pulse onset** (t=5–8.79s) — 2830 warnings (37%). `CoilAssembly`'s
+   `stepSource` injects `dischargeLoad=50000` W into both coils
+   simultaneously over `transitionTime=0.5`s, a fast transient into a
+   small gas volume.
+
+Zero warnings after t=8.79s for the remaining ~1791s of the run in either
+case.
+
+**Fix applied:** loosened `tolerance` in `PF/auto_translate_log.mos`'s
+`simulateModel(...)` call from `1e-6` to `1e-5`. Result: startup-window
+warnings dropped 96% (3722→154, and the t=1–5s ramp window 845→36) — a
+looser tolerance absorbs exactly this kind of transient Newton noise
+without changing the settled result. **Did not fix the heat-pulse window**
+(2830→3310, slightly worse in absolute count) — total warnings roughly
+halved overall (7595→3642) but the pulse-onset stiffness needs a different
+lever. Not yet applied: soften `transitionTime` (currently hardcoded
+`0.5` in `CoilAssembly.mo`'s `stepSource`) to ~1–2s to smooth the 50kW
+step into more of a ramp.
+
+**How it was found:** `dslog.txt`/`buildlog.txt`/`dsfinal.txt` for a
+package-structured model (`CoilLoopCompassU/`, directory-based, opened via
+its root `package.mo`) land in **the package's root folder**
+(`CoilLoopCompassU/dslog.txt`), not in wherever `resultFile`/`logFile` in
+the `.mos` script point (`PF/debugging/`) — different from the flat
+single-file `Test/CoilLoopThermalSystems.mo` case where they landed
+alongside the model. Worth checking both locations. To actually confirm
+the branch-split hypothesis (rather than guess), the host-side result
+`.mat` was read directly: `pip install scipy numpy` on the host (has
+internet, unlike the VM), then
+`scipy.io.loadmat('result.mat')` — Dymola's MAT-v4 format stores variable
+names as a character matrix (`d['name']`, shape `(nameLength, nVars)`,
+needs transposing back into per-variable strings) and trajectories via
+`d['dataInfo']` (row 0 = which of `data_1`/`data_2` holds the variable,
+row 1 = signed 1-based row index, negative sign means negate the stored
+value) indexing into `d['data_1']` (constants) or `d['data_2']`
+(time-varying, first row is `Time`).
+
+**General lesson:** don't assume a component's parameter value implies
+its physical significance (e.g. "Kv=100 sounds like a normal number, must
+be restrictive") — check the actual unit/reference-condition definition,
+or better, check the real simulated trajectory before building a fix on
+top of an assumption. When the host has internet and the VM doesn't,
+`scipy.io.loadmat` on the shared-folder `result.mat` is a fast way to get
+ground truth on what a model actually did, instead of reasoning from logs
+and warnings alone.
+
+---
+
 ## 2026-07-13 — "Circular equalities detected" / model is structurally singular
 
 **Symptom:** Translation aborted with:
