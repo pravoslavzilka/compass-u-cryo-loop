@@ -25,14 +25,34 @@ Modelica.Utilities.Streams.print("RUNNING: translate started", statusFile);
 // so edits made outside Dymola (e.g. by Claude Code) to CoilAssembly.mo or
 // Test.mo are actually picked up.
 modelFile := packagePath + "/package.mo";
-Declaring variable: String modelFile ;
 loaded := openModel(modelFile, mustRead=true);
-Declaring variable: Boolean loaded ;
 
 ok := translateModel(modelName);
-Declaring variable: Boolean ok ;
 
 // --- 4. Export CELÉHO Command/Translation logu --------------------------
 // getLastErrorLog() dáva len poslednú chybu, savelog() uloží všetko,
 // čo Dymola za tento beh vypísala (warnings, errors, info o solveri...)
 savelog(logFile);
+ = true
+
+// --- 5. Krátky status súbor, nech Claude Code vie na prvý pohľad,
+//        či má vôbec čo opravovať -----------------------------------------
+if ok then
+  Modelica.Utilities.Streams.print("OK: translation successful", statusFile);
+else
+  Modelica.Utilities.Streams.print("FAIL: translation failed", statusFile);
+  errMsg := getLastErrorLog();
+  Modelica.Utilities.Streams.print(errMsg, errFile);
+end if;
+
+// --- 6. (Voliteľné) rovno aj simulácia, ak translate prešiel -------------
+if ok then
+  simOk := simulateModel(modelName, stopTime=1800, tolerance=1e-6,
+                          resultFile=debugPath + "/result");
+  savelog(logFile);  // prepíše log aj o priebehu simulácie (napr. solver chattering)
+  if not simOk then
+    Modelica.Utilities.Streams.print("FAIL: simulation failed", statusFile);
+    errMsg := getLastErrorLog();
+    Modelica.Utilities.Streams.print(errMsg, errFile);
+  end if;
+end if;

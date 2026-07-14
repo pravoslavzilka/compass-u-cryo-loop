@@ -14,7 +14,7 @@
 // Test.mo je uzavretý (simulovateľný) príklad, ktorý používa CoilAssembly
 // vo vnútri slučky (portA1/portB1) — CoilAssembly samotné má nezapojené
 // porty, preto sa netranslatuje samostatne.
-modelName    := "CoilLoopCompassU.PF.Test";
+modelName    := "CoilLoopCompassU.PF.PFCircuit";
 packagePath  := "Z:/compass-u-cryo-loop/dymola-thermal-systems/CoilLoopCompassU";
 debugPath    := packagePath + "/PF/debugging";
 logFile      := debugPath + "/translation_log.txt";
@@ -71,7 +71,7 @@ end if;
 
 // --- 6. (Voliteľné) rovno aj simulácia, ak translate prešiel -------------
 if ok then
-  simOk := simulateModel(modelName, stopTime=10, tolerance=1e-6,
+  simOk := simulateModel(modelName, stopTime=1800, tolerance=1e-6,
                           resultFile=debugPath + "/result");
   savelog(logFile);  // prepíše log aj o priebehu simulácie (napr. solver chattering)
   if not simOk then

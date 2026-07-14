@@ -43,10 +43,22 @@ model CoilAssembly
     use_KvValueInput=false,
     KvValueFixed=valveOpening*valveKvNominal)
     annotation (Placement(transformation(extent={{8,52},{18,58}})));
-  ThermalSystems.Connectors.GasPort portA1
+  ThermalSystems.Connectors.GasPort portA1(gasType(
+      ID=sim.gasType1.ID,
+      fixedMixingRatio=sim.gasType1.fixedMixingRatio,
+      nc_propertyCalculation=sim.gasType1.nc_propertyCalculation,
+      gasNames=sim.gasType1.gasNames,
+      mixingRatio_propertyCalculation=sim.gasType1.mixingRatio_propertyCalculation,
+      condensingIndex=sim.gasType1.condensingIndex))
                   "portA"
     annotation (Placement(transformation(extent={{-138,-10},{-118,10}})));
-  ThermalSystems.Connectors.GasPort portB1
+  ThermalSystems.Connectors.GasPort portB1(gasType(
+      ID=sim.gasType1.ID,
+      fixedMixingRatio=sim.gasType1.fixedMixingRatio,
+      nc_propertyCalculation=sim.gasType1.nc_propertyCalculation,
+      gasNames=sim.gasType1.gasNames,
+      mixingRatio_propertyCalculation=sim.gasType1.mixingRatio_propertyCalculation,
+      condensingIndex=sim.gasType1.condensingIndex))
     annotation (Placement(transformation(extent={{94,-12},{114,8}})));
 equation
   connect(stepSource.y, prescribedHeatFlow.Q_flow)
