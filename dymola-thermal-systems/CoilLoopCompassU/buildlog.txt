@@ -2,11 +2,14 @@
 Compiling and linking the model (Visual C++). 
  
 dsmodel.c
-dsmodel.c(7243): warning C4018: <: signed/unsigned - neshoda
-dsmodel.c(7543): warning C4018: <: signed/unsigned - neshoda
-dsmodel.c(7971): warning C4018: <: signed/unsigned - neshoda
-dsmodel.c(8127): warning C4018: <: signed/unsigned - neshoda
-dsmodel.c(8532): warning C4018: <: signed/unsigned - neshoda
+dsmodel.c(12219): warning C4018: <: signed/unsigned - neshoda
+dsmodel.c(12627): warning C4018: <: signed/unsigned - neshoda
+dsmodel.c(12972): warning C4018: <: signed/unsigned - neshoda
+dsmodel.c(13574): warning C4018: <: signed/unsigned - neshoda
+dsmodel.c(13847): warning C4018: <: signed/unsigned - neshoda
+dsmodel.c(14199): warning C4018: <: signed/unsigned - neshoda
+dsmodel.c(14627): warning C4018: <: signed/unsigned - neshoda
+dsmodel.c(14991): warning C4018: <: signed/unsigned - neshoda
    Vytv ý¡ se knihovna dymosim.lib a objekt dymosim.exp.
  
 Successful generation of Dymosim. 
