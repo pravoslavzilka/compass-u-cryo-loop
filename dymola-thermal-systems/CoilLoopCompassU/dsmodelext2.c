@@ -4546,9 +4546,9 @@ DeclareParameter("PF3L.dischargeLoads[2]", "Per-channel peak discharge heat [W] 
 DeclareParameter("PF3L.dischargeLoads[3]", "Per-channel peak discharge heat [W] (Channel1, Channel2, Channel3) [W]",\
  727, 50000, 0.0,0.0,0.0,0,560)
 DeclareParameter("PF3L.pulseStart", "Discharge start time (after fan finishes accelerating) [s]",\
- 728, 25, 0.0,0.0,0.0,0,560)
+ 728, 185, 0.0,0.0,0.0,0,560)
 DeclareParameter("PF3L.pulseEnd", "Discharge end time (5s heat shock) [s]", 729,\
- 30, 0.0,0.0,0.0,0,560)
+ 190, 0.0,0.0,0.0,0,560)
 DeclareParameter("PF3L.valveOpening", "Isolation valve opening (0-1)", 730, 1.0,\
  0.0,0.0,0.0,0,560)
 DeclareParameter("PF3L.valveKvNominal", "Kv value at fully-open (valveOpening=1)",\
@@ -9275,9 +9275,9 @@ DeclareParameter("PF3U.dischargeLoads[2]", "Per-channel peak discharge heat [W] 
 DeclareParameter("PF3U.dischargeLoads[3]", "Per-channel peak discharge heat [W] (Channel1, Channel2, Channel3) [W]",\
  859, 50000, 0.0,0.0,0.0,0,560)
 DeclareParameter("PF3U.pulseStart", "Discharge start time (after fan finishes accelerating) [s]",\
- 860, 25, 0.0,0.0,0.0,0,560)
+ 860, 185, 0.0,0.0,0.0,0,560)
 DeclareParameter("PF3U.pulseEnd", "Discharge end time (5s heat shock) [s]", 861,\
- 30, 0.0,0.0,0.0,0,560)
+ 190, 0.0,0.0,0.0,0,560)
 DeclareParameter("PF3U.valveOpening", "Isolation valve opening (0-1)", 862, 1.0,\
  0.0,0.0,0.0,0,560)
 DeclareParameter("PF3U.valveKvNominal", "Kv value at fully-open (valveOpening=1)",\
@@ -14010,9 +14010,9 @@ DeclareParameter("PF4L.dischargeLoads[3]", "Per-channel peak discharge heat [W] 
 DeclareParameter("PF4L.dischargeLoads[4]", "Per-channel peak discharge heat [W] (Channel1..Channel4) [W]",\
  994, 50000, 0.0,0.0,0.0,0,560)
 DeclareParameter("PF4L.pulseStart", "Discharge start time (after fan finishes accelerating) [s]",\
- 995, 25, 0.0,0.0,0.0,0,560)
+ 995, 185, 0.0,0.0,0.0,0,560)
 DeclareParameter("PF4L.pulseEnd", "Discharge end time (5s heat shock) [s]", 996,\
- 30, 0.0,0.0,0.0,0,560)
+ 190, 0.0,0.0,0.0,0,560)
 DeclareParameter("PF4L.valveOpening", "Isolation valve opening (0-1)", 997, 1.0,\
  0.0,0.0,0.0,0,560)
 DeclareParameter("PF4L.valveKvNominal", "Kv value at fully-open (valveOpening=1)",\
@@ -20337,9 +20337,9 @@ DeclareParameter("PF4U.dischargeLoads[3]", "Per-channel peak discharge heat [W] 
 DeclareParameter("PF4U.dischargeLoads[4]", "Per-channel peak discharge heat [W] (Channel1..Channel4) [W]",\
  1171, 50000, 0.0,0.0,0.0,0,560)
 DeclareParameter("PF4U.pulseStart", "Discharge start time (after fan finishes accelerating) [s]",\
- 1172, 25, 0.0,0.0,0.0,0,560)
+ 1172, 185, 0.0,0.0,0.0,0,560)
 DeclareParameter("PF4U.pulseEnd", "Discharge end time (5s heat shock) [s]", 1173,\
- 30, 0.0,0.0,0.0,0,560)
+ 190, 0.0,0.0,0.0,0,560)
 DeclareParameter("PF4U.valveOpening", "Isolation valve opening (0-1)", 1174, 1.0,\
  0.0,0.0,0.0,0,560)
 DeclareParameter("PF4U.valveKvNominal", "Kv value at fully-open (valveOpening=1)",\

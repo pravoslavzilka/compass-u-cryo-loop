@@ -630,10 +630,10 @@ DeclareAlias2("fan2ndOrder.rotatoryFlange.tau", "Cut torque in the flange [N.m]"
  "rotatoryBoundary.rotatoryFlange.tau", -1, 5, 14219, 132)
 DeclareParameter("smoothStep.initialValue", "Initial value", 19, 50, 0.0,0.0,0.0,\
 0,560)
-DeclareParameter("smoothStep.endValue", "End value", 20, 2000, 0.0,0.0,0.0,0,560)
+DeclareParameter("smoothStep.endValue", "End value", 20, 4000, 0.0,0.0,0.0,0,560)
 DeclareParameter("smoothStep.startTime", "Start time [s]", 21, 1, 0.0,0.0,0.0,0,560)
-DeclareParameter("smoothStep.stepPeriod", "Step period [s]", 22, 20, 0.0,0.0,0.0,\
-0,560)
+DeclareParameter("smoothStep.stepPeriod", "Step period [s]", 22, 180, 0.0,0.0,\
+0.0,0,560)
 DeclareVariable("smoothStep.y", "Connector of Real output signal [Hz]", 14217, \
 0.0, 0.0,0.0,0.0,0,512)
 DeclareVariable("smoothStep.der(y)", "der(Connector of Real output signal) [s-2]",\
@@ -2543,7 +2543,7 @@ DeclareVariable("junction1.gas.transp.sigma", "Surface tension [N/m]", 779, -1.0
  0.0,0.0,0.0,0,2561)
 DeclareVariable("junction1.gas.computeFlags", "[:#(type=Integer)]", 780, 0, \
 0.0,0.0,0.0,0,2565)
-DeclareParameter("junction1.volume", "[m3]", 70, 1E-05, 0.0,1.7976931348623157E+308,\
+DeclareParameter("junction1.volume", "[m3]", 70, 0.0001, 0.0,1.7976931348623157E+308,\
 0.0,0,560)
 DeclareParameter("junction1.m_flowStart", "Start value for mass flow rate [kg/s]",\
  71, 1E-05, 0.0,0.0,0.0,0,560)
@@ -2834,7 +2834,7 @@ DeclareVariable("junction3.gas.transp.sigma", "Surface tension [N/m]", 874, -1.0
  0.0,0.0,0.0,0,2561)
 DeclareVariable("junction3.gas.computeFlags", "[:#(type=Integer)]", 875, 0, \
 0.0,0.0,0.0,0,2565)
-DeclareParameter("junction3.volume", "[m3]", 79, 1E-05, 0.0,1.7976931348623157E+308,\
+DeclareParameter("junction3.volume", "[m3]", 79, 0.0001, 0.0,1.7976931348623157E+308,\
 0.0,0,560)
 DeclareParameter("junction3.m_flowStart", "Start value for mass flow rate [kg/s]",\
  80, 1E-05, 0.0,0.0,0.0,0,560)
@@ -3655,7 +3655,7 @@ DeclareVariable("junction4.gas.transp.sigma", "Surface tension [N/m]", 1141, \
 -1.0, 0.0,0.0,0.0,0,2561)
 DeclareVariable("junction4.gas.computeFlags", "[:#(type=Integer)]", 1142, 0, \
 0.0,0.0,0.0,0,2565)
-DeclareParameter("junction4.volume", "[m3]", 99, 1E-05, 0.0,1.7976931348623157E+308,\
+DeclareParameter("junction4.volume", "[m3]", 99, 0.0001, 0.0,1.7976931348623157E+308,\
 0.0,0,560)
 DeclareParameter("junction4.m_flowStart", "Start value for mass flow rate [kg/s]",\
  100, 1E-05, 0.0,0.0,0.0,0,560)
@@ -3945,7 +3945,7 @@ DeclareVariable("junction5.gas.transp.sigma", "Surface tension [N/m]", 1236, \
 -1.0, 0.0,0.0,0.0,0,2561)
 DeclareVariable("junction5.gas.computeFlags", "[:#(type=Integer)]", 1237, 0, \
 0.0,0.0,0.0,0,2565)
-DeclareParameter("junction5.volume", "[m3]", 108, 1E-05, 0.0,1.7976931348623157E+308,\
+DeclareParameter("junction5.volume", "[m3]", 108, 0.0001, 0.0,1.7976931348623157E+308,\
 0.0,0,560)
 DeclareParameter("junction5.m_flowStart", "Start value for mass flow rate [kg/s]",\
  109, 1E-05, 0.0,0.0,0.0,0,560)
@@ -4239,7 +4239,7 @@ DeclareVariable("junction2.gas.transp.sigma", "Surface tension [N/m]", 1331, \
 -1.0, 0.0,0.0,0.0,0,2561)
 DeclareVariable("junction2.gas.computeFlags", "[:#(type=Integer)]", 1332, 0, \
 0.0,0.0,0.0,0,2565)
-DeclareParameter("junction2.volume", "[m3]", 117, 1E-05, 0.0,1.7976931348623157E+308,\
+DeclareParameter("junction2.volume", "[m3]", 117, 0.0001, 0.0,1.7976931348623157E+308,\
 0.0,0,560)
 DeclareParameter("junction2.m_flowStart", "Start value for mass flow rate [kg/s]",\
  118, 1E-05, 0.0,0.0,0.0,0,560)
@@ -4529,7 +4529,7 @@ DeclareVariable("junction6.gas.transp.sigma", "Surface tension [N/m]", 1426, \
 -1.0, 0.0,0.0,0.0,0,2561)
 DeclareVariable("junction6.gas.computeFlags", "[:#(type=Integer)]", 1427, 0, \
 0.0,0.0,0.0,0,2565)
-DeclareParameter("junction6.volume", "[m3]", 126, 1E-05, 0.0,1.7976931348623157E+308,\
+DeclareParameter("junction6.volume", "[m3]", 126, 0.0001, 0.0,1.7976931348623157E+308,\
 0.0,0,560)
 DeclareParameter("junction6.m_flowStart", "Start value for mass flow rate [kg/s]",\
  127, 1E-05, 0.0,0.0,0.0,0,560)
@@ -5345,7 +5345,7 @@ DeclareVariable("junction7.gas.transp.sigma", "Surface tension [N/m]", 1693, \
 -1.0, 0.0,0.0,0.0,0,2561)
 DeclareVariable("junction7.gas.computeFlags", "[:#(type=Integer)]", 1694, 0, \
 0.0,0.0,0.0,0,2565)
-DeclareParameter("junction7.volume", "[m3]", 146, 1E-05, 0.0,1.7976931348623157E+308,\
+DeclareParameter("junction7.volume", "[m3]", 146, 0.0001, 0.0,1.7976931348623157E+308,\
 0.0,0,560)
 DeclareParameter("junction7.m_flowStart", "Start value for mass flow rate [kg/s]",\
  147, 1E-05, 0.0,0.0,0.0,0,560)
@@ -5632,7 +5632,7 @@ DeclareVariable("junction8.gas.transp.sigma", "Surface tension [N/m]", 1788, \
 -1.0, 0.0,0.0,0.0,0,2561)
 DeclareVariable("junction8.gas.computeFlags", "[:#(type=Integer)]", 1789, 0, \
 0.0,0.0,0.0,0,2565)
-DeclareParameter("junction8.volume", "[m3]", 155, 1E-05, 0.0,1.7976931348623157E+308,\
+DeclareParameter("junction8.volume", "[m3]", 155, 0.0001, 0.0,1.7976931348623157E+308,\
 0.0,0,560)
 DeclareParameter("junction8.m_flowStart", "Start value for mass flow rate [kg/s]",\
  156, 1E-05, 0.0,0.0,0.0,0,560)
@@ -5923,7 +5923,7 @@ DeclareVariable("junction9.gas.transp.sigma", "Surface tension [N/m]", 1883, \
 -1.0, 0.0,0.0,0.0,0,2561)
 DeclareVariable("junction9.gas.computeFlags", "[:#(type=Integer)]", 1884, 0, \
 0.0,0.0,0.0,0,2565)
-DeclareParameter("junction9.volume", "[m3]", 164, 1E-05, 0.0,1.7976931348623157E+308,\
+DeclareParameter("junction9.volume", "[m3]", 164, 0.0001, 0.0,1.7976931348623157E+308,\
 0.0,0,560)
 DeclareParameter("junction9.m_flowStart", "Start value for mass flow rate [kg/s]",\
  165, 1E-05, 0.0,0.0,0.0,0,560)
@@ -6212,7 +6212,7 @@ DeclareVariable("junction10.gas.transp.sigma", "Surface tension [N/m]", 1978, \
 -1.0, 0.0,0.0,0.0,0,2561)
 DeclareVariable("junction10.gas.computeFlags", "[:#(type=Integer)]", 1979, 0, \
 0.0,0.0,0.0,0,2565)
-DeclareParameter("junction10.volume", "[m3]", 173, 1E-05, 0.0,1.7976931348623157E+308,\
+DeclareParameter("junction10.volume", "[m3]", 173, 0.0001, 0.0,1.7976931348623157E+308,\
 0.0,0,560)
 DeclareParameter("junction10.m_flowStart", "Start value for mass flow rate [kg/s]",\
  174, 1E-05, 0.0,0.0,0.0,0,560)
@@ -6508,7 +6508,7 @@ DeclareVariable("junction11.gas.transp.sigma", "Surface tension [N/m]", 2073, \
 -1.0, 0.0,0.0,0.0,0,2561)
 DeclareVariable("junction11.gas.computeFlags", "[:#(type=Integer)]", 2074, 0, \
 0.0,0.0,0.0,0,2565)
-DeclareParameter("junction11.volume", "[m3]", 182, 1E-05, 0.0,1.7976931348623157E+308,\
+DeclareParameter("junction11.volume", "[m3]", 182, 0.0001, 0.0,1.7976931348623157E+308,\
 0.0,0,560)
 DeclareParameter("junction11.m_flowStart", "Start value for mass flow rate [kg/s]",\
  183, 1E-05, 0.0,0.0,0.0,0,560)
@@ -6614,9 +6614,9 @@ DeclareParameter("PF2U.dischargeLoads[1]", "Per-channel peak discharge heat [W] 
 DeclareParameter("PF2U.dischargeLoads[2]", "Per-channel peak discharge heat [W] (Channel1, Channel2) [W]",\
  196, 50000, 0.0,0.0,0.0,0,560)
 DeclareParameter("PF2U.pulseStart", "Discharge start time (after fan finishes accelerating) [s]",\
- 197, 25, 0.0,0.0,0.0,0,560)
+ 197, 185, 0.0,0.0,0.0,0,560)
 DeclareParameter("PF2U.pulseEnd", "Discharge end time (5s heat shock) [s]", 198,\
- 30, 0.0,0.0,0.0,0,560)
+ 190, 0.0,0.0,0.0,0,560)
 DeclareParameter("PF2U.valveOpening", "Isolation valve opening (0-1)", 199, 1.0,\
  0.0,0.0,0.0,0,560)
 DeclareParameter("PF2U.valveKvNominal", "Kv value at fully-open (valveOpening=1)",\
@@ -9763,9 +9763,9 @@ DeclareParameter("PF2L.dischargeLoads[1]", "Per-channel peak discharge heat [W] 
 DeclareParameter("PF2L.dischargeLoads[2]", "Per-channel peak discharge heat [W] (Channel1, Channel2) [W]",\
  283, 50000, 0.0,0.0,0.0,0,560)
 DeclareParameter("PF2L.pulseStart", "Discharge start time (after fan finishes accelerating) [s]",\
- 284, 25, 0.0,0.0,0.0,0,560)
+ 284, 185, 0.0,0.0,0.0,0,560)
 DeclareParameter("PF2L.pulseEnd", "Discharge end time (5s heat shock) [s]", 285,\
- 30, 0.0,0.0,0.0,0,560)
+ 190, 0.0,0.0,0.0,0,560)
 DeclareParameter("PF2L.valveOpening", "Isolation valve opening (0-1)", 286, 1.0,\
  0.0,0.0,0.0,0,560)
 DeclareParameter("PF2L.valveKvNominal", "Kv value at fully-open (valveOpening=1)",\
@@ -12925,9 +12925,9 @@ DeclareParameter("PF1L.dischargeLoads[3]", "Per-channel peak discharge heat [W] 
 DeclareParameter("PF1L.dischargeLoads[4]", "Per-channel peak discharge heat [W] (Channel1..Channel4) [W]",\
  376, 50000, 0.0,0.0,0.0,0,560)
 DeclareParameter("PF1L.pulseStart", "Discharge start time (after fan finishes accelerating) [s]",\
- 377, 25, 0.0,0.0,0.0,0,560)
+ 377, 185, 0.0,0.0,0.0,0,560)
 DeclareParameter("PF1L.pulseEnd", "Discharge end time (5s heat shock) [s]", 378,\
- 30, 0.0,0.0,0.0,0,560)
+ 190, 0.0,0.0,0.0,0,560)
 DeclareParameter("PF1L.valveOpening", "Isolation valve opening (0-1)", 379, 1.0,\
  0.0,0.0,0.0,0,560)
 DeclareParameter("PF1L.valveKvNominal", "Kv value at fully-open (valveOpening=1)",\
@@ -19233,9 +19233,9 @@ DeclareParameter("PF1U.dischargeLoads[3]", "Per-channel peak discharge heat [W] 
 DeclareParameter("PF1U.dischargeLoads[4]", "Per-channel peak discharge heat [W] (Channel1..Channel4) [W]",\
  553, 50000, 0.0,0.0,0.0,0,560)
 DeclareParameter("PF1U.pulseStart", "Discharge start time (after fan finishes accelerating) [s]",\
- 554, 25, 0.0,0.0,0.0,0,560)
+ 554, 185, 0.0,0.0,0.0,0,560)
 DeclareParameter("PF1U.pulseEnd", "Discharge end time (5s heat shock) [s]", 555,\
- 30, 0.0,0.0,0.0,0,560)
+ 190, 0.0,0.0,0.0,0,560)
 DeclareParameter("PF1U.valveOpening", "Isolation valve opening (0-1)", 556, 1.0,\
  0.0,0.0,0.0,0,560)
 DeclareParameter("PF1U.valveKvNominal", "Kv value at fully-open (valveOpening=1)",\

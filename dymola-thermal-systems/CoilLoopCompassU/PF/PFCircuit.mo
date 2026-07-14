@@ -26,9 +26,9 @@ model  PFCircuit
         origin={-66,122})));
   ThermalSystems.OtherComponents.Sources.SmoothStep smoothStep(
     initialValue=50,
-    endValue=2000,
+    endValue=4000,
     startTime=1,
-    stepPeriod=20)
+    stepPeriod=180)
     annotation (Placement(transformation(extent={{-6,-6},{6,6}},
         rotation=0,
         origin={-118,108})));
@@ -83,7 +83,7 @@ model  PFCircuit
         rotation=90,
         origin={-86,-43})));
   ThermalSystems.GasComponents.JunctionElements.VolumeJunction junction1(
-    volume=1e-5,
+    volume=1e-4,
     m_flowStart=1e-5,
     pInitial=4000000,
     fixedInitialPressure=false,
@@ -92,7 +92,7 @@ model  PFCircuit
         rotation=90,
         origin={20,60})));
   ThermalSystems.GasComponents.JunctionElements.VolumeJunction junction3(
-    volume=1e-5,
+    volume=1e-4,
     m_flowStart=1e-5,
     pInitial=4000000,
     fixedInitialPressure=false,
@@ -109,7 +109,7 @@ model  PFCircuit
         rotation=0,
         origin={-42,101})));
   ThermalSystems.GasComponents.JunctionElements.VolumeJunction junction4(
-    volume=1e-5,
+    volume=1e-4,
     m_flowStart=1e-5,
     pInitial=4000000,
     fixedInitialPressure=false,
@@ -118,7 +118,7 @@ model  PFCircuit
         rotation=180,
         origin={-20,122})));
   ThermalSystems.GasComponents.JunctionElements.VolumeJunction junction5(
-    volume=1e-5,
+    volume=1e-4,
     m_flowStart=1e-5,
     pInitial=4000000,
     fixedInitialPressure=false,
@@ -127,7 +127,7 @@ model  PFCircuit
         rotation=270,
         origin={-86,100})));
   ThermalSystems.GasComponents.JunctionElements.VolumeJunction junction2(
-    volume=1e-5,
+    volume=1e-4,
     m_flowStart=1e-5,
     pInitial=4000000,
     fixedInitialPressure=false,
@@ -136,7 +136,7 @@ model  PFCircuit
         rotation=270,
         origin={-86,-12})));
   ThermalSystems.GasComponents.JunctionElements.VolumeJunction junction6(
-    volume=1e-5,
+    volume=1e-4,
     m_flowStart=1e-5,
     pInitial=4000000,
     fixedInitialPressure=false,
@@ -153,7 +153,7 @@ model  PFCircuit
         rotation=0,
         origin={-58,45})));
   ThermalSystems.GasComponents.JunctionElements.VolumeJunction junction7(
-    volume=1e-5,
+    volume=1e-4,
     m_flowStart=1e-5,
     pInitial=4000000,
     fixedInitialPressure=false,
@@ -162,7 +162,7 @@ model  PFCircuit
         rotation=270,
         origin={-20,20})));
   ThermalSystems.GasComponents.JunctionElements.VolumeJunction junction8(
-    volume=1e-5,
+    volume=1e-4,
     m_flowStart=1e-5,
     pInitial=4000000,
     fixedInitialPressure=false,
@@ -171,7 +171,7 @@ model  PFCircuit
         rotation=90,
         origin={40,80})));
   ThermalSystems.GasComponents.JunctionElements.VolumeJunction junction9(
-    volume=1e-5,
+    volume=1e-4,
     m_flowStart=1e-5,
     pInitial=4000000,
     fixedInitialPressure=false,
@@ -180,7 +180,7 @@ model  PFCircuit
         rotation=-90,
         origin={100,40})));
   ThermalSystems.GasComponents.JunctionElements.VolumeJunction junction10(
-    volume=1e-5,
+    volume=1e-4,
     m_flowStart=1e-5,
     pInitial=4000000,
     fixedInitialPressure=false,
@@ -189,7 +189,7 @@ model  PFCircuit
         rotation=90,
         origin={40,40})));
   ThermalSystems.GasComponents.JunctionElements.VolumeJunction junction11(
-    volume=1e-5,
+    volume=1e-4,
     m_flowStart=1e-5,
     pInitial=4000000,
     fixedInitialPressure=false,
@@ -214,7 +214,7 @@ model  PFCircuit
   CoilAssembly4ch PF4U(lengths={90,90,90,75}, diameters_mm={9,9,9,9})
     annotation (Placement(transformation(extent={{60,-60},{80,-40}})));
   ThermalSystems.GasComponents.JunctionElements.VolumeJunction junction12(
-    volume=1e-5,
+    volume=1e-4,
     m_flowStart=1e-5,
     pInitial=4000000,
     fixedInitialPressure=false,
@@ -223,7 +223,7 @@ model  PFCircuit
         rotation=90,
         origin={20,-20})));
   ThermalSystems.GasComponents.JunctionElements.VolumeJunction junction13(
-    volume=1e-5,
+    volume=1e-4,
     m_flowStart=1e-5,
     pInitial=4000000,
     fixedInitialPressure=false,
@@ -232,7 +232,7 @@ model  PFCircuit
         rotation=90,
         origin={40,0})));
   ThermalSystems.GasComponents.JunctionElements.VolumeJunction junction14(
-    volume=1e-5,
+    volume=1e-4,
     m_flowStart=1e-5,
     pInitial=4000000,
     fixedInitialPressure=false,
@@ -241,7 +241,7 @@ model  PFCircuit
         rotation=90,
         origin={40,-40})));
   ThermalSystems.GasComponents.JunctionElements.VolumeJunction junction15(
-    volume=1e-5,
+    volume=1e-4,
     m_flowStart=1e-5,
     pInitial=4000000,
     fixedInitialPressure=false,
@@ -250,7 +250,7 @@ model  PFCircuit
         rotation=-90,
         origin={100,0})));
   ThermalSystems.GasComponents.JunctionElements.VolumeJunction junction16(
-    volume=1e-5,
+    volume=1e-4,
     m_flowStart=1e-5,
     pInitial=4000000,
     fixedInitialPressure=false,
@@ -259,7 +259,7 @@ model  PFCircuit
         rotation=-90,
         origin={100,-40})));
   ThermalSystems.GasComponents.JunctionElements.VolumeJunction junction17(
-    volume=1e-5,
+    volume=1e-4,
     m_flowStart=1e-5,
     pInitial=4000000,
     fixedInitialPressure=false,
@@ -268,7 +268,7 @@ model  PFCircuit
         rotation=-90,
         origin={120,-20})));
   ThermalSystems.GasComponents.JunctionElements.VolumeJunction junction18(
-    volume=1e-5,
+    volume=1e-4,
     m_flowStart=1e-5,
     pInitial=4000000,
     fixedInitialPressure=false,
@@ -277,7 +277,7 @@ model  PFCircuit
         rotation=-90,
         origin={140,20})));
   ThermalSystems.GasComponents.JunctionElements.VolumeJunction junction19(
-    volume=1e-5,
+    volume=1e-4,
     m_flowStart=1e-5,
     pInitial=4000000,
     fixedInitialPressure=false,

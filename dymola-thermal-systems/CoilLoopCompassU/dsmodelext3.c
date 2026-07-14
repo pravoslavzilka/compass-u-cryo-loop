@@ -5383,7 +5383,7 @@ DeclareVariable("junction12.gas.transp.sigma", "Surface tension [N/m]", 13480, \
 -1.0, 0.0,0.0,0.0,0,2561)
 DeclareVariable("junction12.gas.computeFlags", "[:#(type=Integer)]", 13481, 0, \
 0.0,0.0,0.0,0,2565)
-DeclareParameter("junction12.volume", "[m3]", 1337, 1E-05, 0.0,1.7976931348623157E+308,\
+DeclareParameter("junction12.volume", "[m3]", 1337, 0.0001, 0.0,1.7976931348623157E+308,\
 0.0,0,560)
 DeclareParameter("junction12.m_flowStart", "Start value for mass flow rate [kg/s]",\
  1338, 1E-05, 0.0,0.0,0.0,0,560)
@@ -5676,7 +5676,7 @@ DeclareVariable("junction13.gas.transp.sigma", "Surface tension [N/m]", 13575, \
 -1.0, 0.0,0.0,0.0,0,2561)
 DeclareVariable("junction13.gas.computeFlags", "[:#(type=Integer)]", 13576, 0, \
 0.0,0.0,0.0,0,2565)
-DeclareParameter("junction13.volume", "[m3]", 1346, 1E-05, 0.0,1.7976931348623157E+308,\
+DeclareParameter("junction13.volume", "[m3]", 1346, 0.0001, 0.0,1.7976931348623157E+308,\
 0.0,0,560)
 DeclareParameter("junction13.m_flowStart", "Start value for mass flow rate [kg/s]",\
  1347, 1E-05, 0.0,0.0,0.0,0,560)
@@ -5969,7 +5969,7 @@ DeclareVariable("junction14.gas.transp.sigma", "Surface tension [N/m]", 13670, \
 -1.0, 0.0,0.0,0.0,0,2561)
 DeclareVariable("junction14.gas.computeFlags", "[:#(type=Integer)]", 13671, 0, \
 0.0,0.0,0.0,0,2565)
-DeclareParameter("junction14.volume", "[m3]", 1355, 1E-05, 0.0,1.7976931348623157E+308,\
+DeclareParameter("junction14.volume", "[m3]", 1355, 0.0001, 0.0,1.7976931348623157E+308,\
 0.0,0,560)
 DeclareParameter("junction14.m_flowStart", "Start value for mass flow rate [kg/s]",\
  1356, 1E-05, 0.0,0.0,0.0,0,560)
@@ -6266,7 +6266,7 @@ DeclareVariable("junction15.gas.transp.sigma", "Surface tension [N/m]", 13765, \
 -1.0, 0.0,0.0,0.0,0,2561)
 DeclareVariable("junction15.gas.computeFlags", "[:#(type=Integer)]", 13766, 0, \
 0.0,0.0,0.0,0,2565)
-DeclareParameter("junction15.volume", "[m3]", 1364, 1E-05, 0.0,1.7976931348623157E+308,\
+DeclareParameter("junction15.volume", "[m3]", 1364, 0.0001, 0.0,1.7976931348623157E+308,\
 0.0,0,560)
 DeclareParameter("junction15.m_flowStart", "Start value for mass flow rate [kg/s]",\
  1365, 1E-05, 0.0,0.0,0.0,0,560)
@@ -6563,7 +6563,7 @@ DeclareVariable("junction16.gas.transp.sigma", "Surface tension [N/m]", 13860, \
 -1.0, 0.0,0.0,0.0,0,2561)
 DeclareVariable("junction16.gas.computeFlags", "[:#(type=Integer)]", 13861, 0, \
 0.0,0.0,0.0,0,2565)
-DeclareParameter("junction16.volume", "[m3]", 1373, 1E-05, 0.0,1.7976931348623157E+308,\
+DeclareParameter("junction16.volume", "[m3]", 1373, 0.0001, 0.0,1.7976931348623157E+308,\
 0.0,0,560)
 DeclareParameter("junction16.m_flowStart", "Start value for mass flow rate [kg/s]",\
  1374, 1E-05, 0.0,0.0,0.0,0,560)
@@ -6860,7 +6860,7 @@ DeclareVariable("junction17.gas.transp.sigma", "Surface tension [N/m]", 13955, \
 -1.0, 0.0,0.0,0.0,0,2561)
 DeclareVariable("junction17.gas.computeFlags", "[:#(type=Integer)]", 13956, 0, \
 0.0,0.0,0.0,0,2565)
-DeclareParameter("junction17.volume", "[m3]", 1382, 1E-05, 0.0,1.7976931348623157E+308,\
+DeclareParameter("junction17.volume", "[m3]", 1382, 0.0001, 0.0,1.7976931348623157E+308,\
 0.0,0,560)
 DeclareParameter("junction17.m_flowStart", "Start value for mass flow rate [kg/s]",\
  1383, 1E-05, 0.0,0.0,0.0,0,560)
@@ -7157,7 +7157,7 @@ DeclareVariable("junction18.gas.transp.sigma", "Surface tension [N/m]", 14050, \
 -1.0, 0.0,0.0,0.0,0,2561)
 DeclareVariable("junction18.gas.computeFlags", "[:#(type=Integer)]", 14051, 0, \
 0.0,0.0,0.0,0,2565)
-DeclareParameter("junction18.volume", "[m3]", 1391, 1E-05, 0.0,1.7976931348623157E+308,\
+DeclareParameter("junction18.volume", "[m3]", 1391, 0.0001, 0.0,1.7976931348623157E+308,\
 0.0,0,560)
 DeclareParameter("junction18.m_flowStart", "Start value for mass flow rate [kg/s]",\
  1392, 1E-05, 0.0,0.0,0.0,0,560)
@@ -7450,7 +7450,7 @@ DeclareVariable("junction19.gas.transp.sigma", "Surface tension [N/m]", 14145, \
 -1.0, 0.0,0.0,0.0,0,2561)
 DeclareVariable("junction19.gas.computeFlags", "[:#(type=Integer)]", 14146, 0, \
 0.0,0.0,0.0,0,2565)
-DeclareParameter("junction19.volume", "[m3]", 1400, 1E-05, 0.0,1.7976931348623157E+308,\
+DeclareParameter("junction19.volume", "[m3]", 1400, 0.0001, 0.0,1.7976931348623157E+308,\
 0.0,0,560)
 DeclareParameter("junction19.m_flowStart", "Start value for mass flow rate [kg/s]",\
  1401, 1E-05, 0.0,0.0,0.0,0,560)
