@@ -177,13 +177,6 @@ model  PFCircuit
     annotation (Placement(transformation(extent={{-4,-4},{4,4}},
         rotation=90,
         origin={44,80})));
-  CoilAssembly PF2U(
-    length=80,
-    nChannels=2,
-    TInitial(displayUnit="K"))
-    annotation (Placement(transformation(extent={{60,40},{80,60}})));
-  CoilAssembly PF2L(length=80, nChannels=2)
-    annotation (Placement(transformation(extent={{60,20},{80,40}})));
   ThermalSystems.GasComponents.JunctionElements.VolumeJunction junction9(
     volume=1e-5,
     m_flowStart=1e-5,
@@ -211,6 +204,10 @@ model  PFCircuit
     annotation (Placement(transformation(extent={{-4,-4},{4,4}},
         rotation=-90,
         origin={122,62})));
+  CoilAssembly2ch PF2U(lengths={80,83})
+    annotation (Placement(transformation(extent={{60,20},{80,40}})));
+  CoilAssembly2ch PF2L(lengths={80,83})
+    annotation (Placement(transformation(extent={{60,40},{80,60}})));
 equation
 
   connect(smoothStep.y,rotatoryBoundary. n_in)
@@ -295,22 +292,6 @@ equation
       points={{-2,60},{-2,80},{40,80}},
       color={255,153,0},
       thickness=0.5));
-  connect(PF2U.portB1, junction9.portA) annotation (Line(
-      points={{80.4,49.8},{96,49.8},{96,44}},
-      color={255,153,0},
-      thickness=0.5));
-  connect(junction9.portC, PF2L.portB1) annotation (Line(
-      points={{96,36},{96,29.8},{80.4,29.8}},
-      color={255,153,0},
-      thickness=0.5));
-  connect(PF2U.portA1, junction10.portC) annotation (Line(
-      points={{57.2,50},{44,50},{44,44}},
-      color={255,153,0},
-      thickness=0.5));
-  connect(PF2L.portA1, junction10.portA) annotation (Line(
-      points={{57.2,30},{44,30},{44,36}},
-      color={255,153,0},
-      thickness=0.5));
   connect(junction1.portA, junction10.portB) annotation (Line(
       points={{-2,52},{-2,40},{40,40}},
       color={255,153,0},
@@ -325,6 +306,22 @@ equation
       thickness=0.5));
   connect(junction11.portB, junction4.portA) annotation (Line(
       points={{126,62},{134,62},{134,122},{-16,122}},
+      color={255,153,0},
+      thickness=0.5));
+  connect(junction10.portA, PF2U.portA1) annotation (Line(
+      points={{44,36},{46,36},{46,30},{57.2,30}},
+      color={255,153,0},
+      thickness=0.5));
+  connect(PF2U.portB1, junction9.portC) annotation (Line(
+      points={{80.4,29.8},{96,29.8},{96,36}},
+      color={255,153,0},
+      thickness=0.5));
+  connect(junction10.portC, PF2L.portA1) annotation (Line(
+      points={{44,44},{46,44},{46,50},{57.2,50}},
+      color={255,153,0},
+      thickness=0.5));
+  connect(PF2L.portB1, junction9.portA) annotation (Line(
+      points={{80.4,49.8},{96,49.8},{96,44}},
       color={255,153,0},
       thickness=0.5));
   annotation (Diagram(coordinateSystem(preserveAspectRatio=false, extent={{-100,

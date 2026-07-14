@@ -1,33 +1,61 @@
 within CoilLoopCompassU.PF;
 model CoilAssembly3ch
   outer ThermalSystems.SystemInformationManager sim;
-  parameter Modelica.Units.SI.Length length = 80 "Equivalent channel length";
-  parameter Modelica.Units.SI.Diameter diameter = 0.007 "Equivalent channel diameter";
-  parameter Integer nChannels = 2 "Number of parallel channels (affects flow area)";
-  parameter Modelica.Units.SI.Power dischargeLoad = 50000 "Peak discharge heat [W]";
+
+  record ChannelSummary
+    Modelica.Units.SI.Temperature T_wall "Coil wall temperature";
+    Modelica.Units.SI.Temperature T_gas_out "Helium outlet temperature";
+    Modelica.Units.SI.Temperature T_gas_in "Helium inlet temperature";
+    Modelica.Units.SI.MassFlowRate m_flow "Coil mass flow";
+    Modelica.Units.SI.Length length "Tube length used for this channel";
+    Modelica.Units.SI.Diameter diameter "Tube inner diameter used for this channel";
+  end ChannelSummary;
+
+  parameter Modelica.Units.SI.Length lengths[3] = {90,75,60} "Per-channel tube length [m] (Channel1, Channel2, Channel3)";
+  parameter Real diameters_mm[3](each unit="mm") = {7,7,7} "Per-channel tube inner diameter [mm] (Channel1, Channel2, Channel3)";
+  parameter Modelica.Units.SI.Power dischargeLoads[3] = {50000,50000,50000} "Per-channel peak discharge heat [W] (Channel1, Channel2, Channel3)";
   parameter Modelica.Units.SI.Time pulseStart = 5 "Discharge start time";
   parameter Modelica.Units.SI.Time pulseEnd = 10 "Discharge end time";
   parameter Real valveOpening = 1.0 "Isolation valve opening (0-1)";
   parameter Real valveKvNominal = 100 "Kv value at fully-open (valveOpening=1)";
   parameter Modelica.Units.SI.Temperature TInitial = 80 "Initial coil/gas temperature";
 
-  output Modelica.Units.SI.Temperature T_wall = tube2.heatPort[1].T "Coil wall temperature";
-  output Modelica.Units.SI.Temperature T_gas_out = tube2.summary.T_gas_B "Helium outlet temperature";
-  output Modelica.Units.SI.Temperature T_gas_in = tube2.summary.T_gas_A "Helium inlet temperature";
-  output Modelica.Units.SI.MassFlowRate m_flow = tube2.summary.m_flow_gas_B "Coil mass flow";
+  final parameter Modelica.Units.SI.Diameter diameters[3] = diameters_mm*1e-3 "Per-channel tube inner diameter, converted to m";
+
+  output ChannelSummary Channel1(
+    T_wall=tube2.heatPort[1].T,
+    T_gas_out=tube2.summary.T_gas_B,
+    T_gas_in=tube2.summary.T_gas_A,
+    m_flow=tube2.summary.m_flow_gas_B,
+    length=lengths[1],
+    diameter=diameters[1]) "Channel 1 summary (tube2 branch)";
+  output ChannelSummary Channel2(
+    T_wall=tube1.heatPort[1].T,
+    T_gas_out=tube1.summary.T_gas_B,
+    T_gas_in=tube1.summary.T_gas_A,
+    m_flow=tube1.summary.m_flow_gas_B,
+    length=lengths[2],
+    diameter=diameters[2]) "Channel 2 summary (tube1 branch)";
+  output ChannelSummary Channel3(
+    T_wall=tube3.heatPort[1].T,
+    T_gas_out=tube3.summary.T_gas_B,
+    T_gas_in=tube3.summary.T_gas_A,
+    m_flow=tube3.summary.m_flow_gas_B,
+    length=lengths[3],
+    diameter=diameters[3]) "Channel 3 summary (tube3 branch)";
 
   Modelica.Thermal.HeatTransfer.Sources.PrescribedHeatFlow prescribedHeatFlow
     annotation (Placement(transformation(extent={{-48,88},{-28,108}})));
   ThermalSystems.OtherComponents.Sources.StepSource stepSource(
     transitionTime=0.5,
     stepTimes={pulseStart,pulseEnd},
-    stepValues={dischargeLoad,0})
+    stepValues={dischargeLoads[1],0})
     annotation (Placement(transformation(extent={{-84,92},{-72,104}})));
   ThermalSystems.GasComponents.Tubes.Tube tube2(
     tubeGeometry(
-      innerDiameter=diameter,
-      length=length,
-      nParallelTubes=nChannels,
+      innerDiameter=diameters[1],
+      length=lengths[1],
+      nParallelTubes=1,
       crossSectionType=ThermalSystems.Internals.CrossSectionType.Circular),
     pressureDropPosition=ThermalSystems.Internals.PressureDropPosition.center,
     enableHeatPorts=true,
@@ -88,13 +116,13 @@ model CoilAssembly3ch
   ThermalSystems.OtherComponents.Sources.StepSource stepSource1(
     transitionTime=0.5,
     stepTimes={pulseStart,pulseEnd},
-    stepValues={dischargeLoad,0})
+    stepValues={dischargeLoads[2],0})
     annotation (Placement(transformation(extent={{-84,72},{-72,84}})));
   ThermalSystems.GasComponents.Tubes.Tube tube1(
     tubeGeometry(
-      innerDiameter=diameter,
-      length=length,
-      nParallelTubes=nChannels,
+      innerDiameter=diameters[2],
+      length=lengths[2],
+      nParallelTubes=1,
       crossSectionType=ThermalSystems.Internals.CrossSectionType.Circular),
     pressureDropPosition=ThermalSystems.Internals.PressureDropPosition.center,
     enableHeatPorts=true,
@@ -114,13 +142,13 @@ model CoilAssembly3ch
   ThermalSystems.OtherComponents.Sources.StepSource stepSource2(
     transitionTime=0.5,
     stepTimes={pulseStart,pulseEnd},
-    stepValues={dischargeLoad,0})
+    stepValues={dischargeLoads[3],0})
     annotation (Placement(transformation(extent={{-84,54},{-72,66}})));
   ThermalSystems.GasComponents.Tubes.Tube tube3(
     tubeGeometry(
-      innerDiameter=diameter,
-      length=length,
-      nParallelTubes=nChannels,
+      innerDiameter=diameters[3],
+      length=lengths[3],
+      nParallelTubes=1,
       crossSectionType=ThermalSystems.Internals.CrossSectionType.Circular),
     pressureDropPosition=ThermalSystems.Internals.PressureDropPosition.center,
     enableHeatPorts=true,
