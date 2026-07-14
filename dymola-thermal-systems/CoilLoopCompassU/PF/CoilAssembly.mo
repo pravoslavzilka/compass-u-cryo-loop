@@ -11,6 +11,11 @@ model CoilAssembly
   parameter Real valveKvNominal = 100 "Kv value at fully-open (valveOpening=1)";
   parameter Modelica.Units.SI.Temperature TInitial = 80 "Initial coil/gas temperature";
 
+  output Modelica.Units.SI.Temperature T_wall = tube2.heatPort[1].T "Coil wall temperature";
+  output Modelica.Units.SI.Temperature T_gas_out = tube2.summary.T_gas_B "Helium outlet temperature";
+  output Modelica.Units.SI.Temperature T_gas_in = tube2.summary.T_gas_A "Helium inlet temperature";
+  output Modelica.Units.SI.MassFlowRate m_flow = tube2.summary.m_flow_gas_B "Coil mass flow";
+
   Modelica.Thermal.HeatTransfer.Sources.PrescribedHeatFlow prescribedHeatFlow
     annotation (Placement(transformation(extent={{16,62},{36,82}})));
   ThermalSystems.OtherComponents.Sources.StepSource stepSource(

@@ -1104,10 +1104,13 @@ PF1U.pulseEnd
 PF1U.valveOpening
 PF1U.valveKvNominal
 PF1U.TInitial
+PF1U.T_wall
+PF1U.T_gas_out
+PF1U.T_gas_in
+PF1U.m_flow
 PF1U.prescribedHeatFlow.T_ref
 PF1U.prescribedHeatFlow.alpha
 PF1U.prescribedHeatFlow.Q_flow
-PF1U.prescribedHeatFlow.port.T
 PF1U.prescribedHeatFlow.port.Q_flow
 PF1U.stepSource.transitionTime
 PF1U.stepSource.initialValue
@@ -1409,8 +1412,6 @@ PF1U.tube2.wallCell[1].SProd_dot
 PF1U.tube2.includeDefaultSummary
 PF1U.tube2.includeSummaryArrays
 PF1U.tube2.includeSummary
-PF1U.tube2.summary.T_gas_A
-PF1U.tube2.summary.T_gas_B
 PF1U.tube2.summary.T_degC_gas_A
 PF1U.tube2.summary.T_degC_gas_B
 PF1U.tube2.summary.h_gas_A
@@ -1693,7 +1694,6 @@ PF1U.portB1.gasType.mixingRatio_propertyCalculation[1]
 PF1U.portB1.gasType.defaultMixingRatio[1]
 PF1U.portB1.gasType.condensingIndex
 PF1U.portB1.gasType.ID
-PF1U.portB1.m_flow
 PF1L.length
 PF1L.diameter
 PF1L.nChannels
@@ -1703,10 +1703,13 @@ PF1L.pulseEnd
 PF1L.valveOpening
 PF1L.valveKvNominal
 PF1L.TInitial
+PF1L.T_wall
+PF1L.T_gas_out
+PF1L.T_gas_in
+PF1L.m_flow
 PF1L.prescribedHeatFlow.T_ref
 PF1L.prescribedHeatFlow.alpha
 PF1L.prescribedHeatFlow.Q_flow
-PF1L.prescribedHeatFlow.port.T
 PF1L.prescribedHeatFlow.port.Q_flow
 PF1L.stepSource.transitionTime
 PF1L.stepSource.initialValue
@@ -2007,8 +2010,6 @@ PF1L.tube2.wallCell[1].SProd_dot
 PF1L.tube2.includeDefaultSummary
 PF1L.tube2.includeSummaryArrays
 PF1L.tube2.includeSummary
-PF1L.tube2.summary.T_gas_A
-PF1L.tube2.summary.T_gas_B
 PF1L.tube2.summary.T_degC_gas_A
 PF1L.tube2.summary.T_degC_gas_B
 PF1L.tube2.summary.h_gas_A
@@ -2291,7 +2292,6 @@ PF1L.portB1.gasType.mixingRatio_propertyCalculation[1]
 PF1L.portB1.gasType.defaultMixingRatio[1]
 PF1L.portB1.gasType.condensingIndex
 PF1L.portB1.gasType.ID
-PF1L.portB1.m_flow
 junction1.gasType.fixedMixingRatio
 junction1.gasType.nc_propertyCalculation
 junction1.gasType.nc
@@ -3744,10 +3744,13 @@ PF2U.pulseEnd
 PF2U.valveOpening
 PF2U.valveKvNominal
 PF2U.TInitial
+PF2U.T_wall
+PF2U.T_gas_out
+PF2U.T_gas_in
+PF2U.m_flow
 PF2U.prescribedHeatFlow.T_ref
 PF2U.prescribedHeatFlow.alpha
 PF2U.prescribedHeatFlow.Q_flow
-PF2U.prescribedHeatFlow.port.T
 PF2U.prescribedHeatFlow.port.Q_flow
 PF2U.stepSource.transitionTime
 PF2U.stepSource.initialValue
@@ -4048,8 +4051,6 @@ PF2U.tube2.wallCell[1].SProd_dot
 PF2U.tube2.includeDefaultSummary
 PF2U.tube2.includeSummaryArrays
 PF2U.tube2.includeSummary
-PF2U.tube2.summary.T_gas_A
-PF2U.tube2.summary.T_gas_B
 PF2U.tube2.summary.T_degC_gas_A
 PF2U.tube2.summary.T_degC_gas_B
 PF2U.tube2.summary.h_gas_A
@@ -4332,7 +4333,6 @@ PF2U.portB1.gasType.mixingRatio_propertyCalculation[1]
 PF2U.portB1.gasType.defaultMixingRatio[1]
 PF2U.portB1.gasType.condensingIndex
 PF2U.portB1.gasType.ID
-PF2U.portB1.m_flow
 PF2L.length
 PF2L.diameter
 PF2L.nChannels
@@ -4342,10 +4342,13 @@ PF2L.pulseEnd
 PF2L.valveOpening
 PF2L.valveKvNominal
 PF2L.TInitial
+PF2L.T_wall
+PF2L.T_gas_out
+PF2L.T_gas_in
+PF2L.m_flow
 PF2L.prescribedHeatFlow.T_ref
 PF2L.prescribedHeatFlow.alpha
 PF2L.prescribedHeatFlow.Q_flow
-PF2L.prescribedHeatFlow.port.T
 PF2L.prescribedHeatFlow.port.Q_flow
 PF2L.stepSource.transitionTime
 PF2L.stepSource.initialValue
@@ -4646,8 +4649,6 @@ PF2L.tube2.wallCell[1].SProd_dot
 PF2L.tube2.includeDefaultSummary
 PF2L.tube2.includeSummaryArrays
 PF2L.tube2.includeSummary
-PF2L.tube2.summary.T_gas_A
-PF2L.tube2.summary.T_gas_B
 PF2L.tube2.summary.T_degC_gas_A
 PF2L.tube2.summary.T_degC_gas_B
 PF2L.tube2.summary.h_gas_A
@@ -4930,7 +4931,6 @@ PF2L.portB1.gasType.mixingRatio_propertyCalculation[1]
 PF2L.portB1.gasType.defaultMixingRatio[1]
 PF2L.portB1.gasType.condensingIndex
 PF2L.portB1.gasType.ID
-PF2L.portB1.m_flow
 junction9.gasType.fixedMixingRatio
 junction9.gasType.nc_propertyCalculation
 junction9.gasType.nc
@@ -7299,14 +7299,20 @@ double initialValue(5192,6)
   1   280   # PF1U.valveKvNominal
  -1      80                       0                 1.7976931348623157E+308
   1   280   # PF1U.TInitial
+ -2  8.0905875205163341E+01       0                 1.7976931348623157E+308
+  6   256   # PF1U.T_wall
+ -2  8.0883292205292321E+01       0                 1.7976931348623157E+308
+  6   256   # PF1U.T_gas_out
+ -2  7.7168519348563237E+01       0                 1.7976931348623157E+308
+  6   256   # PF1U.T_gas_in
+ -2 -2.4217895137339162E-03       0                       0                
+  6   256   # PF1U.m_flow
  -1  2.9314999999999998E+02       0                 1.7976931348623157E+308
   1   280   # PF1U.prescribedHeatFlow.T_ref
  -1       0                       0                       0                
   1   280   # PF1U.prescribedHeatFlow.alpha
  -2       0                       0                       0                
   6   256   # PF1U.prescribedHeatFlow.Q_flow
- -2  8.0905875205163341E+01       0                 1.7976931348623157E+308
-  6   260   # PF1U.prescribedHeatFlow.port.T
  -2       0                       0                       0                
   6   388   # PF1U.prescribedHeatFlow.port.Q_flow
  -1  5.0000000000000000E-01       0                       0                
@@ -7909,10 +7915,6 @@ double initialValue(5192,6)
   1  1305   # PF1U.tube2.includeSummaryArrays
  -2       1                       0                       0                
   6  1281   # PF1U.tube2.includeSummary
- -2  7.7168519348563237E+01       0                 1.7976931348623157E+308
-  6   256   # PF1U.tube2.summary.T_gas_A
- -2  8.0883292205292321E+01       0                 1.7976931348623157E+308
-  6   256   # PF1U.tube2.summary.T_gas_B
  -2 -1.9598148065143675E+02       0                       0                
   6   256   # PF1U.tube2.summary.T_degC_gas_A
  -2 -1.9226670779470766E+02       0                       0                
@@ -8477,8 +8479,6 @@ double initialValue(5192,6)
   6   770   # PF1U.portB1.gasType.condensingIndex
  -2       1                       0                       0                
   6   770   # PF1U.portB1.gasType.ID
- -2 -2.4217895137339162E-03       0                       0                
-  6   388   # PF1U.portB1.m_flow
  -1      74                       0                       0                
   1   280   # PF1L.length
  -1  7.0000000000000001E-03       0                 1.7976931348623157E+308
@@ -8497,14 +8497,20 @@ double initialValue(5192,6)
   1   280   # PF1L.valveKvNominal
  -1      80                       0                 1.7976931348623157E+308
   1   280   # PF1L.TInitial
+ -2  8.1928482767810578E+01       0                 1.7976931348623157E+308
+  6   256   # PF1L.T_wall
+ -2  8.1904083940734665E+01       0                 1.7976931348623157E+308
+  6   256   # PF1L.T_gas_out
+ -2  7.7168519348563237E+01       0                 1.7976931348623157E+308
+  6   256   # PF1L.T_gas_in
+ -2 -2.2087992183367072E-03       0                       0                
+  6   256   # PF1L.m_flow
  -1  2.9314999999999998E+02       0                 1.7976931348623157E+308
   1   280   # PF1L.prescribedHeatFlow.T_ref
  -1       0                       0                       0                
   1   280   # PF1L.prescribedHeatFlow.alpha
  -2       0                       0                       0                
   6   256   # PF1L.prescribedHeatFlow.Q_flow
- -2  8.1928482767810578E+01       0                 1.7976931348623157E+308
-  6   260   # PF1L.prescribedHeatFlow.port.T
  -2       0                       0                       0                
   6   388   # PF1L.prescribedHeatFlow.port.Q_flow
  -1  5.0000000000000000E-01       0                       0                
@@ -9105,10 +9111,6 @@ double initialValue(5192,6)
   1  1305   # PF1L.tube2.includeSummaryArrays
  -2       1                       0                       0                
   6  1281   # PF1L.tube2.includeSummary
- -2  7.7168519348563237E+01       0                 1.7976931348623157E+308
-  6   256   # PF1L.tube2.summary.T_gas_A
- -2  8.1904083940734665E+01       0                 1.7976931348623157E+308
-  6   256   # PF1L.tube2.summary.T_gas_B
  -2 -1.9598148065143675E+02       0                       0                
   6   256   # PF1L.tube2.summary.T_degC_gas_A
  -2 -1.9124591605926531E+02       0                       0                
@@ -9673,8 +9675,6 @@ double initialValue(5192,6)
   6   770   # PF1L.portB1.gasType.condensingIndex
  -2       1                       0                       0                
   6   770   # PF1L.portB1.gasType.ID
- -2 -2.2087992183367072E-03       0                       0                
-  6   388   # PF1L.portB1.m_flow
  -2       1                       0                       0                
   6   769   # junction1.gasType.fixedMixingRatio
  -2       1                       1                 1.7976931348623157E+308
@@ -12579,14 +12579,20 @@ double initialValue(5192,6)
   1   280   # PF2U.valveKvNominal
  -1      80                       0                 1.7976931348623157E+308
   1   280   # PF2U.TInitial
+ -2  8.7676887430523578E+01       0                 1.7976931348623157E+308
+  6   256   # PF2U.T_wall
+ -2  8.7628738185546496E+01       0                 1.7976931348623157E+308
+  6   256   # PF2U.T_gas_out
+ -2  7.7168434957181162E+01       0                 1.7976931348623157E+308
+  6   256   # PF2U.T_gas_in
+ -2 -1.0053690875649224E-03       0                       0                
+  6   256   # PF2U.m_flow
  -1  2.9314999999999998E+02       0                 1.7976931348623157E+308
   1   280   # PF2U.prescribedHeatFlow.T_ref
  -1       0                       0                       0                
   1   280   # PF2U.prescribedHeatFlow.alpha
  -2       0                       0                       0                
   6   256   # PF2U.prescribedHeatFlow.Q_flow
- -2  8.7676887430523578E+01       0                 1.7976931348623157E+308
-  6   260   # PF2U.prescribedHeatFlow.port.T
  -2       0                       0                       0                
   6   388   # PF2U.prescribedHeatFlow.port.Q_flow
  -1  5.0000000000000000E-01       0                       0                
@@ -13187,10 +13193,6 @@ double initialValue(5192,6)
   1  1305   # PF2U.tube2.includeSummaryArrays
  -2       1                       0                       0                
   6  1281   # PF2U.tube2.includeSummary
- -2  7.7168434957181162E+01       0                 1.7976931348623157E+308
-  6   256   # PF2U.tube2.summary.T_gas_A
- -2  8.7628738185546496E+01       0                 1.7976931348623157E+308
-  6   256   # PF2U.tube2.summary.T_gas_B
  -2 -1.9598156504281883E+02       0                       0                
   6   256   # PF2U.tube2.summary.T_degC_gas_A
  -2 -1.8552126181445348E+02       0                       0                
@@ -13755,8 +13757,6 @@ double initialValue(5192,6)
   6   770   # PF2U.portB1.gasType.condensingIndex
  -2       1                       0                       0                
   6   770   # PF2U.portB1.gasType.ID
- -2 -1.0053690875649224E-03       0                       0                
-  6   388   # PF2U.portB1.m_flow
  -1      80                       0                       0                
   1   280   # PF2L.length
  -1  7.0000000000000001E-03       0                 1.7976931348623157E+308
@@ -13775,14 +13775,20 @@ double initialValue(5192,6)
   1   280   # PF2L.valveKvNominal
  -1      80                       0                 1.7976931348623157E+308
   1   280   # PF2L.TInitial
+ -2  8.7676887430523323E+01       0                 1.7976931348623157E+308
+  6   256   # PF2L.T_wall
+ -2  8.7628738185546254E+01       0                 1.7976931348623157E+308
+  6   256   # PF2L.T_gas_out
+ -2  7.7168434957181162E+01       0                 1.7976931348623157E+308
+  6   256   # PF2L.T_gas_in
+ -2 -1.0053690875646355E-03       0                       0                
+  6   256   # PF2L.m_flow
  -1  2.9314999999999998E+02       0                 1.7976931348623157E+308
   1   280   # PF2L.prescribedHeatFlow.T_ref
  -1       0                       0                       0                
   1   280   # PF2L.prescribedHeatFlow.alpha
  -2       0                       0                       0                
   6   256   # PF2L.prescribedHeatFlow.Q_flow
- -2  8.7676887430523323E+01       0                 1.7976931348623157E+308
-  6   260   # PF2L.prescribedHeatFlow.port.T
  -2       0                       0                       0                
   6   388   # PF2L.prescribedHeatFlow.port.Q_flow
  -1  5.0000000000000000E-01       0                       0                
@@ -14383,10 +14389,6 @@ double initialValue(5192,6)
   1  1305   # PF2L.tube2.includeSummaryArrays
  -2       1                       0                       0                
   6  1281   # PF2L.tube2.includeSummary
- -2  7.7168434957181162E+01       0                 1.7976931348623157E+308
-  6   256   # PF2L.tube2.summary.T_gas_A
- -2  8.7628738185546254E+01       0                 1.7976931348623157E+308
-  6   256   # PF2L.tube2.summary.T_gas_B
  -2 -1.9598156504281883E+02       0                       0                
   6   256   # PF2L.tube2.summary.T_degC_gas_A
  -2 -1.8552126181445374E+02       0                       0                
@@ -14951,8 +14953,6 @@ double initialValue(5192,6)
   6   770   # PF2L.portB1.gasType.condensingIndex
  -2       1                       0                       0                
   6   770   # PF2L.portB1.gasType.ID
- -2 -1.0053690875646355E-03       0                       0                
-  6   388   # PF2L.portB1.m_flow
  -2       1                       0                       0                
   6   769   # junction9.gasType.fixedMixingRatio
  -2       1                       1                 1.7976931348623157E+308
@@ -16727,10 +16727,13 @@ Discharge end time [s]
 Isolation valve opening (0-1)
 Kv value at fully-open (valveOpening=1)
 Initial coil/gas temperature [K|K]
+Coil wall temperature [K|degC]
+Helium outlet temperature [K|degC]
+Helium inlet temperature [K|degC]
+Coil mass flow [kg/s]
 Reference temperature [K|degC]
 Temperature coefficient of heat flow rate [1/K]
 [W]
-Port temperature [K|degC]
 Heat flow rate (positive if flowing from outside into the component) [W]
 Duration of transition [s]
 Value before first step
@@ -17032,8 +17035,6 @@ Produced entropy [W/K]
 Include summary record in model results [:#(type=Boolean)]
 Obsolete & unused parameter for array entries in summary [:#(type=Boolean)]
 Include summary record in model results [:#(type=Boolean)]
-Temperature at port A [K|degC]
-Temperature at port B [K|degC]
 Temperature at port A [degC;]
 Temperature at port B [degC;]
 Specific enthalpy at port A [J/kg]
@@ -17316,7 +17317,6 @@ Mixing ratio for fluid property calculation (={1} for pure components)
 Default composition for models in Modelica (={1} for pure components)
 Index of condensing component (=0, if no condensation is desired) [:#(type=Integer)]
 ID is used to map the selected Gas to the sim.cumulatedGasMass array item [:#(type=Integer)]
-Mass flow rate [kg/s]
 Equivalent channel length [m]
 Equivalent channel diameter [m]
 Number of parallel channels (affects flow area) [:#(type=Integer)]
@@ -17326,10 +17326,13 @@ Discharge end time [s]
 Isolation valve opening (0-1)
 Kv value at fully-open (valveOpening=1)
 Initial coil/gas temperature [K|degC]
+Coil wall temperature [K|degC]
+Helium outlet temperature [K|degC]
+Helium inlet temperature [K|degC]
+Coil mass flow [kg/s]
 Reference temperature [K|degC]
 Temperature coefficient of heat flow rate [1/K]
 [W]
-Port temperature [K|degC]
 Heat flow rate (positive if flowing from outside into the component) [W]
 Duration of transition [s]
 Value before first step
@@ -17630,8 +17633,6 @@ Produced entropy [W/K]
 Include summary record in model results [:#(type=Boolean)]
 Obsolete & unused parameter for array entries in summary [:#(type=Boolean)]
 Include summary record in model results [:#(type=Boolean)]
-Temperature at port A [K|degC]
-Temperature at port B [K|degC]
 Temperature at port A [degC;]
 Temperature at port B [degC;]
 Specific enthalpy at port A [J/kg]
@@ -17914,7 +17915,6 @@ Mixing ratio for fluid property calculation (={1} for pure components)
 Default composition for models in Modelica (={1} for pure components)
 Index of condensing component (=0, if no condensation is desired) [:#(type=Integer)]
 ID is used to map the selected Gas to the sim.cumulatedGasMass array item [:#(type=Integer)]
-Mass flow rate [kg/s]
 Treat medium as pseudo pure in Modelica if it is a mixture [:#(type=Boolean)]
 Number of components for fluid property calculations [:#(type=Integer)]
 Number of components in Modelica models [:#(type=Integer)]
@@ -19367,10 +19367,13 @@ Discharge end time [s]
 Isolation valve opening (0-1)
 Kv value at fully-open (valveOpening=1)
 Initial coil/gas temperature [K|K]
+Coil wall temperature [K|degC]
+Helium outlet temperature [K|degC]
+Helium inlet temperature [K|degC]
+Coil mass flow [kg/s]
 Reference temperature [K|degC]
 Temperature coefficient of heat flow rate [1/K]
 [W]
-Port temperature [K|degC]
 Heat flow rate (positive if flowing from outside into the component) [W]
 Duration of transition [s]
 Value before first step
@@ -19671,8 +19674,6 @@ Produced entropy [W/K]
 Include summary record in model results [:#(type=Boolean)]
 Obsolete & unused parameter for array entries in summary [:#(type=Boolean)]
 Include summary record in model results [:#(type=Boolean)]
-Temperature at port A [K|degC]
-Temperature at port B [K|degC]
 Temperature at port A [degC;]
 Temperature at port B [degC;]
 Specific enthalpy at port A [J/kg]
@@ -19955,7 +19956,6 @@ Mixing ratio for fluid property calculation (={1} for pure components)
 Default composition for models in Modelica (={1} for pure components)
 Index of condensing component (=0, if no condensation is desired) [:#(type=Integer)]
 ID is used to map the selected Gas to the sim.cumulatedGasMass array item [:#(type=Integer)]
-Mass flow rate [kg/s]
 Equivalent channel length [m]
 Equivalent channel diameter [m]
 Number of parallel channels (affects flow area) [:#(type=Integer)]
@@ -19965,10 +19965,13 @@ Discharge end time [s]
 Isolation valve opening (0-1)
 Kv value at fully-open (valveOpening=1)
 Initial coil/gas temperature [K|degC]
+Coil wall temperature [K|degC]
+Helium outlet temperature [K|degC]
+Helium inlet temperature [K|degC]
+Coil mass flow [kg/s]
 Reference temperature [K|degC]
 Temperature coefficient of heat flow rate [1/K]
 [W]
-Port temperature [K|degC]
 Heat flow rate (positive if flowing from outside into the component) [W]
 Duration of transition [s]
 Value before first step
@@ -20269,8 +20272,6 @@ Produced entropy [W/K]
 Include summary record in model results [:#(type=Boolean)]
 Obsolete & unused parameter for array entries in summary [:#(type=Boolean)]
 Include summary record in model results [:#(type=Boolean)]
-Temperature at port A [K|degC]
-Temperature at port B [K|degC]
 Temperature at port A [degC;]
 Temperature at port B [degC;]
 Specific enthalpy at port A [J/kg]
@@ -20553,7 +20554,6 @@ Mixing ratio for fluid property calculation (={1} for pure components)
 Default composition for models in Modelica (={1} for pure components)
 Index of condensing component (=0, if no condensation is desired) [:#(type=Integer)]
 ID is used to map the selected Gas to the sim.cumulatedGasMass array item [:#(type=Integer)]
-Mass flow rate [kg/s]
 Treat medium as pseudo pure in Modelica if it is a mixture [:#(type=Boolean)]
 Number of components for fluid property calculations [:#(type=Integer)]
 Number of components in Modelica models [:#(type=Integer)]
