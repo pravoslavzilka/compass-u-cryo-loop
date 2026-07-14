@@ -12,6 +12,130 @@ way to recognize the same bug again.
 
 ---
 
+## 2026-07-14 — `Modelica.Utilities.System.getTime()` corrupts `dslog.txt`/`dsfinal.txt` — don't use it for timing
+
+**Symptom:** added wall-clock instrumentation to `PF/auto_translate_log.mos` to
+separate translate+compile time from simulate/integration time, using
+`(ms,sec,min,hour,mday,mon,year) := Modelica.Utilities.System.getTime();`
+at three checkpoints. On the next run: `dslog.txt` was replaced with a
+bogus few-line log for `Modelica.Utilities.System.getTime.exe` (its
+"dymosim input file" was literally `empty.txt`) instead of the real
+`PFCircuit` run, and `dsfinal.txt` — while still containing genuine
+`PFCircuit`/`PF1U`/`fan2ndOrder` variable data (9750 matches) — had a
+corrupted timeline: `StartTime=2.33s`, `StopTime=1802.33s` instead of the
+expected `0`/`1800`.
+
+**Root cause:** not confirmed with certainty (no interactive VM access to
+step through it), but the evidence points to Dymola's script interpreter
+treating that function call as an implicit "simulate this class path"
+request rather than a plain utility call, side-effecting the real model's
+`dsin`/`dsfinal` state in the process.
+
+**Fix:** removed all three `getTime()` checkpoints from
+`auto_translate_log.mos`. Timing is derived instead from the mtimes of
+files Dymola already writes on its own — `statusFile`'s mtime ≈
+translate-done time, `result.mat`'s mtime ≈ simulate-done time — which
+carries zero risk since it never calls into Dymola's scripting API at all,
+just reads filesystem metadata from the host side.
+
+**General lesson:** don't add an unfamiliar Dymola/Modelica scripting API
+call into a script the whole diagnostic workflow depends on without a way
+to verify it's safe first — a "just fetch a timestamp" convenience ended
+up destroying the exact files the script exists to produce. When timing
+info is needed, prefer deriving it from side-effects Dymola already
+produces (file mtimes) over adding new API calls whose behavior in this
+specific scripting context isn't confirmed.
+
+---
+
+## 2026-07-14 — Scaling `PFCircuit` from 2 to 8 coil assemblies: from ~40min/7595 warnings to ~18min/2850 warnings
+
+**Context:** `PFCircuit.mo` grew from 2 `CoilAssembly` instances
+(`PF1U`/`PF1L`) to 8 (`PF1U/PF1L/PF2U/PF2L/PF3U/PF3L/PF4U/PF4L`, mixing
+`CoilAssembly2ch/3ch/4ch`), pushing the DAE to 4579 variables and ~55
+`VolumeJunction`s. This re-surfaced old failure modes at a bigger scale
+and introduced a new one from simultaneously pushing the fan speed target
+much higher. Multiple fixes accumulated over several iterations; recorded
+together since they compound.
+
+**Fixes applied, most impactful first:**
+
+1. **Exact-duplicate channel lengths → degenerate parallel branches.**
+   `PF1U(lengths={61,64,61,64})`, `PF1L(lengths={70,74,70,74})`,
+   `PF4U/PF4L(lengths={90,90,90,75})` all had channels sharing the exact
+   same length within one assembly — the same branch-split-degeneracy
+   category as the entry below, just re-emerging inside the new
+   multi-channel components. Fixed in `CoilAssembly2ch/3ch/4ch.mo` by
+   adding `lengthsAdjusted[i] = lengths[i]*(1 + 0.0001*(i-1))` — a
+   per-channel offset of at most 0.01–0.03%, physically negligible but
+   enough to break the exact tie. All tube geometries and the
+   `Channel*` summary outputs use the adjusted value.
+
+2. **Heat pulse overlapping fan startup stacked two stiff transients.**
+   `pulseStart=5`/`pulseEnd=10` (the original default) fired while the
+   fan was still in its near-zero-flow startup window — combining two
+   independently-known-stiff transients (see the entry below) into one.
+   Fixed by moving the pulse to `pulseStart=25`/`pulseEnd=30` (a 5s heat
+   shock) and tuning the fan's `smoothStep.stepPeriod` so the ramp
+   finishes (~t=21s) before the pulse starts. Result: heat-pulse-window
+   warnings dropped from ~2830–3310 (when overlapping startup) to **10**
+   — confirms the separation strategy works.
+
+3. **Aggressive fan-speed targets caused real (non-recoverable) failures,
+   not just noise.** Pushing `smoothStep.endValue` to 6750 rpm over a
+   fast 20s ramp caused a hard integration termination via a `TSMedia`
+   medium-validity violation — `PF1L` (the highest-resistance branch)
+   collapsed to `p=30.6 Pa`, `T` clamped to `2 K` (near-vacuum, near
+   absolute zero). Root cause: fan pressure rise scales with speed
+   squared (`Δp ∝ n²`), so 6750 rpm vs. the previously-validated 500 rpm
+   baseline is roughly a **182×** pressure-rise increase — physically
+   unsustainable for this network, not a solver-tuning problem. Backing
+   the target down to 2000–3000 rpm avoided the hard failure. Even at
+   2000 rpm, warnings still concentrate 99.5% in the ramp window itself
+   (t=1–21s) — the ramp slope (~97.5 rpm/s) is still ~4× the
+   ~22–25 rpm/s previously validated as quiet, so some residual noise
+   there is expected, not a new bug.
+
+4. **`simulateModel` tolerance progressively loosened `1e-6→1e-5→1e-4`.**
+   Each step cut warning counts and Jacobian-evaluation counts further;
+   combined with fixes 1–3, Jacobian evaluations dropped from 29,642 to
+   **7,657** and CPU-time for integration from 2370s to **1060s**.
+
+5. **`VolumeJunction.volume` bumped `1e-5→1e-4`** inside
+   `CoilAssembly2ch/3ch/4ch.mo`'s internal junctions (numerics-only
+   regularization, not physically meaningful — see the "junctions are a
+   numerical device, not real hardware volume" discussion). Note: at
+   time of writing this is **not** applied on `PFCircuit.mo`'s 19
+   top-level junctions (currently back at `1e-5` there) — asymmetric
+   state, flagged here in case it wasn't intentional.
+
+**Current result:** latest successful run completes the full 1800s,
+2850 total warnings (down from 7595 at the start of this investigation),
+99.5% concentrated specifically in the t=1–21s fan-ramp window, CPU-time
+1060s (down from 2370s).
+
+**How it was found:** same technique as the entry below — `dslog.txt`
+warning timestamps bucketed against known model transition points (fan
+ramp end ~t=21s, pulse window t=25–30s) — reapplied at the larger scale.
+Also used `scipy.io.loadmat` on backed-up `result.mat` copies
+(`PF/debugging/result_tol1e-5.mat` etc.) to compare key outputs
+(`Channel1`/`Channel2` `T_wall`/`m_flow`) across tolerance settings before
+trusting the looser one — `auto_translate_log.mos` always overwrites
+`result.mat` at the same path, so a baseline must be copied aside *before*
+the next run if you want to diff against it.
+
+**General lesson:** when scaling a validated small model up in component
+count *and* simultaneously pushing operating parameters (fan speed)
+further from what was validated, those are two independent axes of risk —
+conflating them costs iterations, because a failure could be "the bigger
+circuit re-exposed an old degeneracy" or "the new operating point is
+itself unphysical," and each needs different evidence to tell apart
+(compare against a known-good baseline's `.mat` data, and bucket warning
+timestamps against the model's own timeline, rather than guessing from
+symptom shape alone).
+
+---
+
 ## 2026-07-14 — `PFCircuit` Newton-solver convergence warnings ("wobbling")
 
 **Symptom:** `dslog.txt` showed 7595 occurrences of
