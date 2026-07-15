@@ -17,6 +17,10 @@ model  PFCircuit
   ThermalSystems.GasComponents.Fans.Fan2ndOrder fan2ndOrder(
     orientation="symmetric",
     use_mechanicalPort=true,
+    n_nominal=10000,
+    dp_nominal(displayUnit="bar") = 200000,
+    V_flow_nominal=0.0042,
+    V_flow0=0.008,
     T_nominal(displayUnit="K") = 80,
     p_nominal=4000000,
     dpInitial(displayUnit="bar") = 4000000,
@@ -26,9 +30,9 @@ model  PFCircuit
         origin={-66,122})));
   ThermalSystems.OtherComponents.Sources.SmoothStep smoothStep(
     initialValue=50,
-    endValue=4000,
+    endValue=8000,
     startTime=1,
-    stepPeriod=180)
+    stepPeriod=720)
     annotation (Placement(transformation(extent={{-6,-6},{6,6}},
         rotation=0,
         origin={-118,108})));
@@ -46,7 +50,7 @@ model  PFCircuit
         origin={-50,10})));
   ThermalSystems.GasComponents.Tubes.Tube tube1(
     tubeGeometry(
-      innerDiameter=0.007,
+      innerDiameter=0.017,
       length=70,
       nParallelTubes=1,
       crossSectionType=ThermalSystems.Internals.CrossSectionType.Circular),
@@ -83,7 +87,7 @@ model  PFCircuit
         rotation=90,
         origin={-86,-43})));
   ThermalSystems.GasComponents.JunctionElements.VolumeJunction junction1(
-    volume=1e-4,
+    volume=1e-2,
     m_flowStart=1e-5,
     pInitial=4000000,
     fixedInitialPressure=false,
@@ -109,7 +113,7 @@ model  PFCircuit
         rotation=0,
         origin={-42,101})));
   ThermalSystems.GasComponents.JunctionElements.VolumeJunction junction4(
-    volume=1e-4,
+    volume=1e-2,
     m_flowStart=1e-5,
     pInitial=4000000,
     fixedInitialPressure=false,
@@ -118,7 +122,7 @@ model  PFCircuit
         rotation=180,
         origin={-20,122})));
   ThermalSystems.GasComponents.JunctionElements.VolumeJunction junction5(
-    volume=1e-4,
+    volume=1e-2,
     m_flowStart=1e-5,
     pInitial=4000000,
     fixedInitialPressure=false,
@@ -127,7 +131,7 @@ model  PFCircuit
         rotation=270,
         origin={-86,100})));
   ThermalSystems.GasComponents.JunctionElements.VolumeJunction junction2(
-    volume=1e-4,
+    volume=1e-2,
     m_flowStart=1e-5,
     pInitial=4000000,
     fixedInitialPressure=false,
@@ -136,7 +140,7 @@ model  PFCircuit
         rotation=270,
         origin={-86,-12})));
   ThermalSystems.GasComponents.JunctionElements.VolumeJunction junction6(
-    volume=1e-4,
+    volume=1e-2,
     m_flowStart=1e-5,
     pInitial=4000000,
     fixedInitialPressure=false,
@@ -153,7 +157,7 @@ model  PFCircuit
         rotation=0,
         origin={-58,45})));
   ThermalSystems.GasComponents.JunctionElements.VolumeJunction junction7(
-    volume=1e-4,
+    volume=1e-2,
     m_flowStart=1e-5,
     pInitial=4000000,
     fixedInitialPressure=false,
@@ -189,7 +193,7 @@ model  PFCircuit
         rotation=90,
         origin={40,40})));
   ThermalSystems.GasComponents.JunctionElements.VolumeJunction junction11(
-    volume=1e-4,
+    volume=1e-2,
     m_flowStart=1e-5,
     pInitial=4000000,
     fixedInitialPressure=false,
@@ -197,24 +201,27 @@ model  PFCircuit
     annotation (Placement(transformation(extent={{-4,-4},{4,4}},
         rotation=-90,
         origin={120,60})));
-  CoilAssembly2ch PF2U(lengths={80,83})
+  CoilAssembly2ch PF2U(lengths={80,83}, dischargeLoads={56300,56300})
     annotation (Placement(transformation(extent={{60,20},{80,40}})));
-  CoilAssembly2ch PF2L(lengths={80,83})
+  CoilAssembly2ch PF2L(lengths={80,83}, dischargeLoads={56300,56300})
     annotation (Placement(transformation(extent={{60,40},{80,60}})));
-  CoilAssembly4ch PF1L(lengths={70,74,70,74}, TInitial(displayUnit="K"))
+  CoilAssembly4ch PF1L(lengths={70,74,70,74},
+    dischargeLoads={53000,53000,53000,53000}, TInitial(displayUnit="K"))
     annotation (Placement(transformation(extent={{60,80},{80,100}})));
   CoilAssembly4ch PF1U(lengths={61,64,61,64})
     annotation (Placement(transformation(extent={{60,60},{80,80}})));
-  CoilAssembly3ch PF3L(lengths={83,84,87})
+  CoilAssembly3ch PF3L(lengths={83,84,87}, dischargeLoads={56300,56300,57500})
     annotation (Placement(transformation(extent={{60,0},{80,20}})));
-  CoilAssembly3ch PF3U(lengths={83,84,87})
+  CoilAssembly3ch PF3U(lengths={83,84,87}, dischargeLoads={56300,56300,57500})
     annotation (Placement(transformation(extent={{60,-20},{80,0}})));
-  CoilAssembly4ch PF4L(lengths={90,90,90,75}, diameters_mm={9,9,9,9})
+  CoilAssembly4ch PF4L(lengths={90,90,90,75}, diameters_mm={9,9,9,9},
+    dischargeLoads={64500,64500,64500,60600})
     annotation (Placement(transformation(extent={{60,-40},{80,-20}})));
-  CoilAssembly4ch PF4U(lengths={90,90,90,75}, diameters_mm={9,9,9,9})
+  CoilAssembly4ch PF4U(lengths={90,90,90,75}, diameters_mm={9,9,9,9},
+    dischargeLoads={64500,64500,64500,60600})
     annotation (Placement(transformation(extent={{60,-60},{80,-40}})));
   ThermalSystems.GasComponents.JunctionElements.VolumeJunction junction12(
-    volume=1e-4,
+    volume=1e-2,
     m_flowStart=1e-5,
     pInitial=4000000,
     fixedInitialPressure=false,
@@ -259,7 +266,7 @@ model  PFCircuit
         rotation=-90,
         origin={100,-40})));
   ThermalSystems.GasComponents.JunctionElements.VolumeJunction junction17(
-    volume=1e-4,
+    volume=1e-2,
     m_flowStart=1e-5,
     pInitial=4000000,
     fixedInitialPressure=false,
@@ -268,7 +275,7 @@ model  PFCircuit
         rotation=-90,
         origin={120,-20})));
   ThermalSystems.GasComponents.JunctionElements.VolumeJunction junction18(
-    volume=1e-4,
+    volume=1e-2,
     m_flowStart=1e-5,
     pInitial=4000000,
     fixedInitialPressure=false,
@@ -277,7 +284,7 @@ model  PFCircuit
         rotation=-90,
         origin={140,20})));
   ThermalSystems.GasComponents.JunctionElements.VolumeJunction junction19(
-    volume=1e-4,
+    volume=1e-2,
     m_flowStart=1e-5,
     pInitial=4000000,
     fixedInitialPressure=false,
@@ -468,7 +475,7 @@ equation
   annotation (Diagram(coordinateSystem(preserveAspectRatio=false, extent={{-100,
             -100},{100,100}})),
     experiment(
-      StopTime=1800,
+      StopTime=2530,
       __Dymola_NumberOfIntervals=50,
       __Dymola_Algorithm="Dassl"),
     __Dymola_experimentSetupOutput,

@@ -14,8 +14,8 @@ model CoilAssembly4ch
   parameter Modelica.Units.SI.Length lengths[4] = {90,75,60,50} "Per-channel tube length [m] (Channel1..Channel4)";
   parameter Real diameters_mm[4](each unit="mm") = {7,7,7,7} "Per-channel tube inner diameter [mm] (Channel1..Channel4)";
   parameter Modelica.Units.SI.Power dischargeLoads[4] = {50000,50000,50000,50000} "Per-channel peak discharge heat [W] (Channel1..Channel4)";
-  parameter Modelica.Units.SI.Time pulseStart = 185 "Discharge start time (after fan finishes accelerating)";
-  parameter Modelica.Units.SI.Time pulseEnd = 190 "Discharge end time (5s heat shock)";
+  parameter Modelica.Units.SI.Time pulseStart = 725 "Discharge start time (after fan finishes accelerating)";
+  parameter Modelica.Units.SI.Time pulseEnd = 730 "Discharge end time (5s heat shock)";
   parameter Real valveOpening = 1.0 "Isolation valve opening (0-1)";
   parameter Real valveKvNominal = 100 "Kv value at fully-open (valveOpening=1)";
   parameter Modelica.Units.SI.Temperature TInitial = 80 "Initial coil/gas temperature";
@@ -54,12 +54,12 @@ model CoilAssembly4ch
     diameter=diameters[4]) "Channel 4 summary (tube4 branch)";
 
   Modelica.Thermal.HeatTransfer.Sources.PrescribedHeatFlow prescribedHeatFlow
-    annotation (Placement(transformation(extent={{-24,72},{-4,92}})));
+    annotation (Placement(transformation(extent={{-50,76},{-30,96}})));
   ThermalSystems.OtherComponents.Sources.StepSource stepSource(
     transitionTime=0.5,
     stepTimes={pulseStart,pulseEnd},
     stepValues={dischargeLoads[1],0})
-    annotation (Placement(transformation(extent={{-60,76},{-48,88}})));
+    annotation (Placement(transformation(extent={{-86,80},{-74,92}})));
   ThermalSystems.GasComponents.Tubes.Tube tube2(
     tubeGeometry(
       innerDiameter=diameters[1],
@@ -78,7 +78,7 @@ model CoilAssembly4ch
     pInitial=4000000,
     TInitial(displayUnit="K") = TInitial,
     TInitialWall(displayUnit="K") = TInitial)
-    annotation (Placement(transformation(extent={{18,22},{34,26}})));
+    annotation (Placement(transformation(extent={{14,38},{30,42}})));
   ThermalSystems.GasComponents.Valves.Valve valve1(
     valveFlowVariableType=ThermalSystems.Internals.ValveFlowVariableType.KvValue,
     use_effectiveFlowAreaInput=false,
@@ -110,14 +110,14 @@ model CoilAssembly4ch
     TInitial(displayUnit="K") = 80)
     annotation (Placement(transformation(extent={{-4,-4},{4,4}},
         rotation=90,
-        origin={-46,0})));
+        origin={-40,0})));
   Modelica.Thermal.HeatTransfer.Sources.PrescribedHeatFlow prescribedHeatFlow1
-    annotation (Placement(transformation(extent={{-24,58},{-4,78}})));
+    annotation (Placement(transformation(extent={{-50,62},{-30,82}})));
   ThermalSystems.OtherComponents.Sources.StepSource stepSource1(
     transitionTime=0.5,
     stepTimes={pulseStart,pulseEnd},
     stepValues={dischargeLoads[2],0})
-    annotation (Placement(transformation(extent={{-60,62},{-48,74}})));
+    annotation (Placement(transformation(extent={{-86,66},{-74,78}})));
   ThermalSystems.GasComponents.Tubes.Tube tube1(
     tubeGeometry(
       innerDiameter=diameters[2],
@@ -136,14 +136,14 @@ model CoilAssembly4ch
     pInitial=4000000,
     TInitial(displayUnit="K") = TInitial,
     TInitialWall(displayUnit="K") = TInitial)
-    annotation (Placement(transformation(extent={{18,8},{34,12}})));
+    annotation (Placement(transformation(extent={{12,-2},{28,2}})));
   Modelica.Thermal.HeatTransfer.Sources.PrescribedHeatFlow prescribedHeatFlow2
-    annotation (Placement(transformation(extent={{-24,46},{-4,66}})));
+    annotation (Placement(transformation(extent={{-50,50},{-30,70}})));
   ThermalSystems.OtherComponents.Sources.StepSource stepSource2(
     transitionTime=0.5,
     stepTimes={pulseStart,pulseEnd},
     stepValues={dischargeLoads[3],0})
-    annotation (Placement(transformation(extent={{-60,50},{-48,62}})));
+    annotation (Placement(transformation(extent={{-86,54},{-74,66}})));
   ThermalSystems.GasComponents.Tubes.Tube tube3(
     tubeGeometry(
       innerDiameter=diameters[3],
@@ -162,14 +162,14 @@ model CoilAssembly4ch
     pInitial=4000000,
     TInitial(displayUnit="K") = TInitial,
     TInitialWall(displayUnit="K") = TInitial)
-    annotation (Placement(transformation(extent={{18,-4},{34,0}})));
+    annotation (Placement(transformation(extent={{12,-22},{28,-18}})));
   Modelica.Thermal.HeatTransfer.Sources.PrescribedHeatFlow prescribedHeatFlow3
-    annotation (Placement(transformation(extent={{-24,32},{-4,52}})));
+    annotation (Placement(transformation(extent={{-50,36},{-30,56}})));
   ThermalSystems.OtherComponents.Sources.StepSource stepSource3(
     transitionTime=0.5,
     stepTimes={pulseStart,pulseEnd},
     stepValues={dischargeLoads[4],0})
-    annotation (Placement(transformation(extent={{-60,36},{-48,48}})));
+    annotation (Placement(transformation(extent={{-86,40},{-74,52}})));
   ThermalSystems.GasComponents.Tubes.Tube tube4(
     tubeGeometry(
       innerDiameter=diameters[4],
@@ -188,7 +188,7 @@ model CoilAssembly4ch
     pInitial=4000000,
     TInitial(displayUnit="K") = TInitial,
     TInitialWall(displayUnit="K") = TInitial)
-    annotation (Placement(transformation(extent={{18,-18},{34,-14}})));
+    annotation (Placement(transformation(extent={{12,-62},{28,-58}})));
   ThermalSystems.GasComponents.JunctionElements.VolumeJunction junction1(
     volume=1e-4,
     m_flowStart=1e-5,
@@ -197,7 +197,7 @@ model CoilAssembly4ch
     TInitial(displayUnit="K") = 80)
     annotation (Placement(transformation(extent={{-4,-4},{4,4}},
         rotation=90,
-        origin={-8,-8})));
+        origin={0,-40})));
   ThermalSystems.GasComponents.JunctionElements.VolumeJunction junction3(
     volume=1e-4,
     m_flowStart=1e-5,
@@ -206,7 +206,7 @@ model CoilAssembly4ch
     TInitial(displayUnit="K") = 80)
     annotation (Placement(transformation(extent={{-4,-4},{4,4}},
         rotation=90,
-        origin={-14,18})));
+        origin={0,20})));
   ThermalSystems.GasComponents.JunctionElements.VolumeJunction junction4(
     volume=1e-4,
     m_flowStart=1e-5,
@@ -215,7 +215,7 @@ model CoilAssembly4ch
     TInitial(displayUnit="K") = 80)
     annotation (Placement(transformation(extent={{-4,-4},{4,4}},
         rotation=-90,
-        origin={50,18})));
+        origin={40,20})));
   ThermalSystems.GasComponents.JunctionElements.VolumeJunction junction5(
     volume=1e-4,
     m_flowStart=1e-5,
@@ -224,7 +224,7 @@ model CoilAssembly4ch
     TInitial(displayUnit="K") = 80)
     annotation (Placement(transformation(extent={{-4,-4},{4,4}},
         rotation=-90,
-        origin={50,-10})));
+        origin={40,-40})));
   ThermalSystems.GasComponents.JunctionElements.VolumeJunction junction6(
     volume=1e-4,
     m_flowStart=1e-5,
@@ -233,51 +233,51 @@ model CoilAssembly4ch
     TInitial(displayUnit="K") = 80)
     annotation (Placement(transformation(extent={{-4,-4},{4,4}},
         rotation=-90,
-        origin={76,0})));
+        origin={80,-2})));
 equation
   connect(stepSource.y, prescribedHeatFlow.Q_flow)
-    annotation (Line(points={{-47,82},{-24,82}},
+    annotation (Line(points={{-73,86},{-50,86}},
                                                color={0,0,127}));
   connect(prescribedHeatFlow.port, tube2.heatPort[1])
-    annotation (Line(points={{-4,82},{26,82},{26,26}}, color={191,0,0}));
+    annotation (Line(points={{-30,86},{22,86},{22,42}},color={191,0,0}));
   connect(stepSource1.y, prescribedHeatFlow1.Q_flow)
-    annotation (Line(points={{-47,68},{-24,68}}, color={0,0,127}));
-  connect(prescribedHeatFlow1.port, tube1.heatPort[1]) annotation (Line(points=
-          {{-4,68},{12,68},{12,16},{26,16},{26,12}}, color={191,0,0}));
+    annotation (Line(points={{-73,72},{-50,72}}, color={0,0,127}));
+  connect(prescribedHeatFlow1.port, tube1.heatPort[1]) annotation (Line(points={{-30,72},
+          {-24,72},{-24,8},{20,8},{20,2}},           color={191,0,0}));
   connect(stepSource2.y, prescribedHeatFlow2.Q_flow)
-    annotation (Line(points={{-47,56},{-24,56}}, color={0,0,127}));
-  connect(prescribedHeatFlow2.port, tube3.heatPort[1]) annotation (Line(points=
-          {{-4,56},{10,56},{10,4},{26,4},{26,0}}, color={191,0,0}));
+    annotation (Line(points={{-73,60},{-50,60}}, color={0,0,127}));
+  connect(prescribedHeatFlow2.port, tube3.heatPort[1]) annotation (Line(points={{-30,60},
+          {-20,60},{-20,-12},{20,-12},{20,-18}},  color={191,0,0}));
   connect(stepSource3.y, prescribedHeatFlow3.Q_flow)
-    annotation (Line(points={{-47,42},{-24,42}}, color={0,0,127}));
-  connect(prescribedHeatFlow3.port, tube4.heatPort[1]) annotation (Line(points=
-          {{-4,42},{8,42},{8,-8},{26,-8},{26,-14}}, color={191,0,0}));
+    annotation (Line(points={{-73,46},{-50,46}}, color={0,0,127}));
+  connect(prescribedHeatFlow3.port, tube4.heatPort[1]) annotation (Line(points={{-30,46},
+          {-16,46},{-16,-32},{20,-32},{20,-58}},    color={191,0,0}));
   connect(junction2.portC, junction3.portB) annotation (Line(
-      points={{-46,4},{-42,4},{-42,16},{-18,16},{-18,18}},
+      points={{-40,4},{-40,20},{-4,20}},
       color={255,153,0},
       thickness=0.5));
   connect(junction2.portA, junction1.portB) annotation (Line(
-      points={{-46,-4},{-38,-4},{-38,-8},{-12,-8}},
+      points={{-40,-4},{-40,-40},{-4,-40}},
       color={255,153,0},
       thickness=0.5));
   connect(junction1.portC, tube3.portA) annotation (Line(
-      points={{-8,-4},{-8,-2},{18,-2}},
+      points={{0,-36},{0,-20},{12,-20}},
       color={255,153,0},
       thickness=0.5));
   connect(junction1.portA, tube4.portA) annotation (Line(
-      points={{-8,-12},{-8,-16},{18,-16}},
+      points={{0,-44},{0,-60},{12,-60}},
       color={255,153,0},
       thickness=0.5));
   connect(junction3.portC, tube2.portA) annotation (Line(
-      points={{-14,22},{-8,22},{-8,24},{18,24}},
+      points={{0,24},{0,40},{14,40}},
       color={255,153,0},
       thickness=0.5));
   connect(junction3.portA, tube1.portA) annotation (Line(
-      points={{-14,14},{-4,14},{-4,10},{18,10}},
+      points={{0,16},{0,0},{12,0}},
       color={255,153,0},
       thickness=0.5));
   connect(valve1.portB, junction2.portB) annotation (Line(
-      points={{-76,1},{-54,1},{-54,0},{-50,0}},
+      points={{-76,1},{-54,1},{-54,0},{-44,0}},
       color={255,153,0},
       thickness=0.5));
   connect(valve1.portA, portA1) annotation (Line(
@@ -285,31 +285,31 @@ equation
       color={255,153,0},
       thickness=0.5));
   connect(tube3.portB, junction5.portA) annotation (Line(
-      points={{34,-2},{50,-2},{50,-6}},
+      points={{28,-20},{40,-20},{40,-36}},
       color={255,153,0},
       thickness=0.5));
   connect(tube4.portB, junction5.portC) annotation (Line(
-      points={{34,-16},{42,-16},{42,-18},{50,-18},{50,-14}},
+      points={{28,-60},{40,-60},{40,-44}},
       color={255,153,0},
       thickness=0.5));
   connect(tube1.portB, junction4.portC) annotation (Line(
-      points={{34,10},{50,10},{50,14}},
+      points={{28,0},{40,0},{40,16}},
       color={255,153,0},
       thickness=0.5));
   connect(tube2.portB, junction4.portA) annotation (Line(
-      points={{34,24},{40,24},{40,26},{50,26},{50,22}},
+      points={{30,40},{40,40},{40,24}},
       color={255,153,0},
       thickness=0.5));
   connect(junction4.portB, junction6.portA) annotation (Line(
-      points={{54,18},{64,18},{64,14},{76,14},{76,4}},
+      points={{44,20},{80,20},{80,2}},
       color={255,153,0},
       thickness=0.5));
   connect(junction5.portB, junction6.portC) annotation (Line(
-      points={{54,-10},{62,-10},{62,-4},{76,-4}},
+      points={{44,-40},{80,-40},{80,-6}},
       color={255,153,0},
       thickness=0.5));
   connect(junction6.portB, portB1) annotation (Line(
-      points={{80,0},{92,0},{92,-2},{104,-2}},
+      points={{84,-2},{104,-2}},
       color={255,153,0},
       thickness=0.5));
   annotation (Icon(coordinateSystem(preserveAspectRatio=false)), Diagram(

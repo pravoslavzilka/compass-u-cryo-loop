@@ -40,6 +40,17 @@ Modelica.Utilities.Streams.print("run_start: see this file's own mtime", timingF
 modelFile := packagePath + "/package.mo";
 loaded := openModel(modelFile, mustRead=true);
 
+// openModel(..., mustRead=true) resets Dymola's working directory to the
+// opened file's folder as a side effect (confirmed: an earlier attempt to
+// cd(debugPath) before openModel() got silently undone -- this run's
+// dsmodel.c/dsmodelext*.c/dymosim.exe/buildlog.txt/dslog.txt/dsfinal.txt all
+// landed back in packagePath instead of debugPath). cd() has to come AFTER
+// openModel() and immediately before translateModel()/simulateModel() so it
+// actually sticks for the files those two calls write.
+cd(debugPath);
+Z:/compass-u-cryo-loop/dymola-thermal-systems/CoilLoopCompassU/PF/debugging
+ = true
+
 ok := translateModel(modelName);
 
 // Translate+compile checkpoint: use statusFile's own mtime (written right
@@ -72,7 +83,7 @@ end if;
 // before trusting 1e-4 results for real analysis; back off to 1e-5 if the
 // key outputs shift meaningfully.
 if ok then
-  simOk := simulateModel(modelName, stopTime=1800, tolerance=1e-4,
+  simOk := simulateModel(modelName, stopTime=2530, tolerance=1e-4,
                           resultFile=debugPath + "/result");
   savelog(logFile);  // overwrite the log with the simulation run too (e.g. solver chattering)
 
