@@ -51,15 +51,15 @@ model  PFCircuit
   ThermalSystems.GasComponents.Tubes.Tube tube1(
     tubeGeometry(
       innerDiameter=0.012,
-      length=5,
-      nParallelTubes=50,
+      length=3,
+      nParallelTubes=60,
       wallThickness=0.001,
       crossSectionType=ThermalSystems.Internals.CrossSectionType.Circular),
     pressureDropPosition=ThermalSystems.Internals.PressureDropPosition.center,
     enableHeatPorts=true,
     redeclare model HeatTransferModel =
         ThermalSystems.GasComponents.Tubes.TransportPhenomena.HeatTransfer.GnielinskiDittusBoelter,
-    redeclare model WallMaterial = TSMedia.SolidTypes.TSMedia_Copper,
+    redeclare model WallMaterial = TSMedia.SolidTypes.TSMedia_StainlessSteel,
     fixedTInitialWall=false,
 
     redeclare model PressureDropModel =
