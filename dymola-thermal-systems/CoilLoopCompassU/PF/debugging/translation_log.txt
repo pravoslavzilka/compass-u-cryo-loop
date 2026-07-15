@@ -38,9 +38,12 @@ Modelica.Utilities.Streams.print("run_start: see this file's own mtime", timingF
 // so edits made outside Dymola (e.g. by Claude Code) to CoilAssembly.mo or
 // Test.mo are actually picked up.
 modelFile := packagePath + "/package.mo";
+Declaring variable: String modelFile ;
 loaded := openModel(modelFile, mustRead=true);
+Declaring variable: Boolean loaded ;
 
 ok := translateModel(modelName);
+Declaring variable: Boolean ok ;
 
 // Translate+compile checkpoint: use statusFile's own mtime (written right
 // below) rather than a scripted timestamp -- see note above on why.
@@ -86,3 +89,4 @@ if ok then
     Modelica.Utilities.Streams.print(errMsg, errFile);
   end if;
 end if;
+Declaring variable: Boolean simOk ;

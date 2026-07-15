@@ -26,6 +26,15 @@ timingFile   := debugPath + "/timing.txt";
 Modelica.Utilities.Files.createDirectory(debugPath);
 clearlog();
 
+// translateModel()/simulateModel() also write their OWN default byproducts
+// (dsin.txt, dsmodel.c, dsmodelext*.c, dymosim.exe, dslog.txt, dsfinal.txt,
+// buildlog.txt, funcin.mat, funcout.mat) to Dymola's current working
+// directory -- these are NOT controlled by logFile/errFile/statusFile/
+// resultFile above. Without this cd(), they land wherever Dymola's cwd
+// happens to be (observed: the CoilLoopCompassU package root) instead of
+// debugging/, littering the package tree with stale build artifacts.
+cd(debugPath);
+
 // Streams.print(string, fileName) only takes 2 arguments (no append flag) —
 // it always APPENDS, so stale status/error files from a previous run must
 // be removed explicitly, otherwise old and new statuses stack up forever.
