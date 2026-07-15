@@ -14,8 +14,8 @@ model CoilAssembly4ch
   parameter Modelica.Units.SI.Length lengths[4] = {90,75,60,50} "Per-channel tube length [m] (Channel1..Channel4)";
   parameter Real diameters_mm[4](each unit="mm") = {7,7,7,7} "Per-channel tube inner diameter [mm] (Channel1..Channel4)";
   parameter Modelica.Units.SI.Power dischargeLoads[4] = {50000,50000,50000,50000} "Per-channel peak discharge heat [W] (Channel1..Channel4)";
-  parameter Modelica.Units.SI.Time pulseStart = 185 "Discharge start time (after fan finishes accelerating)";
-  parameter Modelica.Units.SI.Time pulseEnd = 190 "Discharge end time (5s heat shock)";
+  parameter Modelica.Units.SI.Time pulseStart = 725 "Discharge start time (after fan finishes accelerating)";
+  parameter Modelica.Units.SI.Time pulseEnd = 730 "Discharge end time (5s heat shock)";
   parameter Real valveOpening = 1.0 "Isolation valve opening (0-1)";
   parameter Real valveKvNominal = 100 "Kv value at fully-open (valveOpening=1)";
   parameter Modelica.Units.SI.Temperature TInitial = 80 "Initial coil/gas temperature";
