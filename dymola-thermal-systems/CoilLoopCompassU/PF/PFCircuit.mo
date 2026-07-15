@@ -29,7 +29,7 @@ model  PFCircuit
         rotation=90,
         origin={-66,122})));
   ThermalSystems.OtherComponents.Sources.SmoothStep smoothStep(
-    initialValue=50,
+    initialValue=8000,
     endValue=8000,
     startTime=1,
     stepPeriod=720)
@@ -50,14 +50,16 @@ model  PFCircuit
         origin={-50,10})));
   ThermalSystems.GasComponents.Tubes.Tube tube1(
     tubeGeometry(
-      innerDiameter=0.017,
-      length=70,
-      nParallelTubes=1,
+      innerDiameter=0.012,
+      length=16,
+      nParallelTubes=30,
+      wallThickness=0.001,
       crossSectionType=ThermalSystems.Internals.CrossSectionType.Circular),
     pressureDropPosition=ThermalSystems.Internals.PressureDropPosition.center,
     enableHeatPorts=true,
     redeclare model HeatTransferModel =
         ThermalSystems.GasComponents.Tubes.TransportPhenomena.HeatTransfer.GnielinskiDittusBoelter,
+    redeclare model WallMaterial = TSMedia.SolidTypes.TSMedia_Copper,
     fixedTInitialWall=false,
 
     redeclare model PressureDropModel =
@@ -475,7 +477,7 @@ equation
   annotation (Diagram(coordinateSystem(preserveAspectRatio=false, extent={{-100,
             -100},{100,100}})),
     experiment(
-      StopTime=2530,
+      StopTime=1815,
       __Dymola_NumberOfIntervals=50,
       __Dymola_Algorithm="Dassl"),
     __Dymola_experimentSetupOutput,

@@ -61,39 +61,3 @@ Modelica.Utilities.Streams.print("translate_done: see statusFile mtime", timingF
 // getLastErrorLog() only gives the last error, savelog() saves everything
 // Dymola printed during this run (warnings, errors, solver info...)
 savelog(logFile);
- = true
-
-// --- 5. Short status file, so Claude Code knows at a glance
-//        whether there's anything to fix -----------------------------------------
-if ok then
-  Modelica.Utilities.Streams.print("OK: translation successful", statusFile);
-else
-  Modelica.Utilities.Streams.print("FAIL: translation failed", statusFile);
-  errMsg := getLastErrorLog();
-  Modelica.Utilities.Streams.print(errMsg, errFile);
-end if;
-
-// --- 6. (Optional) simulate right away, if translate passed -------------
-// tolerance loosened 1e-6 -> 1e-5 -> 1e-4: even at 1e-5 the successful
-// 8-coil PFCircuit run still logged 2237 solver-retry warnings (wasted
-// Newton iterations), so testing one more order of magnitude looser to see
-// if it meaningfully cuts wall-clock time. Baseline result from the 1e-5
-// run is backed up at PF/debugging/result_tol1e-5.mat -- compare this run's
-// result.mat against it (Channel1/Channel2 T_wall/T_gas_out/m_flow etc.)
-// before trusting 1e-4 results for real analysis; back off to 1e-5 if the
-// key outputs shift meaningfully.
-if ok then
-  simOk := simulateModel(modelName, stopTime=2530, tolerance=1e-4,
-                          resultFile=debugPath + "/result");
-  savelog(logFile);  // overwrite the log with the simulation run too (e.g. solver chattering)
-
-  // Simulate checkpoint: use result.mat's own mtime instead of a scripted
-  // timestamp -- see note above.
-  Modelica.Utilities.Streams.print("simulate_done: see result.mat mtime", timingFile);
-
-  if not simOk then
-    Modelica.Utilities.Streams.print("FAIL: simulation failed", statusFile);
-    errMsg := getLastErrorLog();
-    Modelica.Utilities.Streams.print(errMsg, errFile);
-  end if;
-end if;
