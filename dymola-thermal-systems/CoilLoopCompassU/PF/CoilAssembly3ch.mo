@@ -63,7 +63,8 @@ model CoilAssembly3ch
     enableHeatPorts=true,
     redeclare model HeatTransferModel =
         ThermalSystems.GasComponents.Tubes.TransportPhenomena.HeatTransfer.GnielinskiDittusBoelter,
-    fixedTInitialWall=false,
+    redeclare model WallMaterial = TSMedia.SolidTypes.TSMedia_Copper,
+    fixedTInitialWall=true,
 
     redeclare model PressureDropModel =
         ThermalSystems.GasComponents.Tubes.TransportPhenomena.PressureDrop.Konakov,
@@ -129,7 +130,8 @@ model CoilAssembly3ch
     enableHeatPorts=true,
     redeclare model HeatTransferModel =
         ThermalSystems.GasComponents.Tubes.TransportPhenomena.HeatTransfer.GnielinskiDittusBoelter,
-    fixedTInitialWall=false,
+    redeclare model WallMaterial = TSMedia.SolidTypes.TSMedia_Copper,
+    fixedTInitialWall=true,
 
     redeclare model PressureDropModel =
         ThermalSystems.GasComponents.Tubes.TransportPhenomena.PressureDrop.Konakov,
@@ -155,7 +157,8 @@ model CoilAssembly3ch
     enableHeatPorts=true,
     redeclare model HeatTransferModel =
         ThermalSystems.GasComponents.Tubes.TransportPhenomena.HeatTransfer.GnielinskiDittusBoelter,
-    fixedTInitialWall=false,
+    redeclare model WallMaterial = TSMedia.SolidTypes.TSMedia_Copper,
+    fixedTInitialWall=true,
 
     redeclare model PressureDropModel =
         ThermalSystems.GasComponents.Tubes.TransportPhenomena.PressureDrop.Konakov,

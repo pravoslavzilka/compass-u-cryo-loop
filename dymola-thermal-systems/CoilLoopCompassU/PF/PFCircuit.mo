@@ -27,12 +27,12 @@ model  PFCircuit
     V_flow_Start=0.003)
     annotation (Placement(transformation(extent={{-8,-8},{8,8}},
         rotation=90,
-        origin={-66,122})));
+        origin={-60,120})));
   ThermalSystems.OtherComponents.Sources.SmoothStep smoothStep(
-    initialValue=8000,
-    endValue=8000,
+    initialValue=6000,
+    endValue=6000,
     startTime=1,
-    stepPeriod=720)
+    stepPeriod=10)
     annotation (Placement(transformation(extent={{-6,-6},{6,6}},
         rotation=0,
         origin={-118,108})));
@@ -42,7 +42,7 @@ model  PFCircuit
     use_nInput=true)
     annotation (Placement(transformation(extent={{-4,9},{4,-9}},
         rotation=90,
-        origin={-66,111})));
+        origin={-60,111})));
   Modelica.Thermal.HeatTransfer.Sources.FixedTemperature coldSurface(T(
         displayUnit="K") = 77)
     annotation (Placement(transformation(extent={{-10,-10},{10,10}},
@@ -51,8 +51,8 @@ model  PFCircuit
   ThermalSystems.GasComponents.Tubes.Tube tube1(
     tubeGeometry(
       innerDiameter=0.012,
-      length=16,
-      nParallelTubes=30,
+      length=5,
+      nParallelTubes=50,
       wallThickness=0.001,
       crossSectionType=ThermalSystems.Internals.CrossSectionType.Circular),
     pressureDropPosition=ThermalSystems.Internals.PressureDropPosition.center,
@@ -70,7 +70,7 @@ model  PFCircuit
     TInitialWall(displayUnit="K") = 80)
     annotation (Placement(transformation(extent={{-8,-2},{8,2}},
         rotation=0,
-        origin={-50,-12})));
+        origin={-50,-20})));
   ThermalSystems.GasComponents.Volumes.Volume volume(
     volume=0.02,
     m_flowStart=0,
@@ -79,7 +79,7 @@ model  PFCircuit
     nPorts=1)
     annotation (Placement(transformation(extent={{-3,-7},{3,7}},
         rotation=0,
-        origin={-51,-43})));
+        origin={-41,-39})));
   ThermalSystems.GasComponents.Valves.Valve valve(
     valveFlowVariableType=ThermalSystems.Internals.ValveFlowVariableType.KvValue,
     use_effectiveFlowAreaInput=false,
@@ -87,7 +87,7 @@ model  PFCircuit
     KvValueFixed=100)
     annotation (Placement(transformation(extent={{-6,-3},{6,3}},
         rotation=90,
-        origin={-86,-43})));
+        origin={-80,-41})));
   ThermalSystems.GasComponents.JunctionElements.VolumeJunction junction1(
     volume=1e-2,
     m_flowStart=1e-5,
@@ -113,7 +113,7 @@ model  PFCircuit
     KvValueFixed=0.001)
     annotation (Placement(transformation(extent={{-6,-3},{6,3}},
         rotation=0,
-        origin={-42,101})));
+        origin={-42,99})));
   ThermalSystems.GasComponents.JunctionElements.VolumeJunction junction4(
     volume=1e-2,
     m_flowStart=1e-5,
@@ -122,7 +122,7 @@ model  PFCircuit
     TInitial(displayUnit="K") = 80)
     annotation (Placement(transformation(extent={{-4,-4},{4,4}},
         rotation=180,
-        origin={-20,122})));
+        origin={-20,120})));
   ThermalSystems.GasComponents.JunctionElements.VolumeJunction junction5(
     volume=1e-2,
     m_flowStart=1e-5,
@@ -131,7 +131,7 @@ model  PFCircuit
     TInitial(displayUnit="K") = 80)
     annotation (Placement(transformation(extent={{-4,-4},{4,4}},
         rotation=270,
-        origin={-86,100})));
+        origin={-80,100})));
   ThermalSystems.GasComponents.JunctionElements.VolumeJunction junction2(
     volume=1e-2,
     m_flowStart=1e-5,
@@ -140,7 +140,7 @@ model  PFCircuit
     TInitial(displayUnit="K") = 80)
     annotation (Placement(transformation(extent={{-4,-4},{4,4}},
         rotation=270,
-        origin={-86,-12})));
+        origin={-80,-20})));
   ThermalSystems.GasComponents.JunctionElements.VolumeJunction junction6(
     volume=1e-2,
     m_flowStart=1e-5,
@@ -149,7 +149,7 @@ model  PFCircuit
     TInitial(displayUnit="K") = 80)
     annotation (Placement(transformation(extent={{-4,-4},{4,4}},
         rotation=270,
-        origin={-86,44})));
+        origin={-80,40})));
   ThermalSystems.GasComponents.Valves.Valve valve2(
     valveFlowVariableType=ThermalSystems.Internals.ValveFlowVariableType.KvValue,
     use_effectiveFlowAreaInput=false,
@@ -157,7 +157,7 @@ model  PFCircuit
     KvValueFixed=0.001)
     annotation (Placement(transformation(extent={{-6,-3},{6,3}},
         rotation=0,
-        origin={-58,45})));
+        origin={-52,39})));
   ThermalSystems.GasComponents.JunctionElements.VolumeJunction junction7(
     volume=1e-2,
     m_flowStart=1e-5,
@@ -203,24 +203,39 @@ model  PFCircuit
     annotation (Placement(transformation(extent={{-4,-4},{4,4}},
         rotation=-90,
         origin={120,60})));
-  CoilAssembly2ch PF2U(lengths={80,83}, dischargeLoads={56300,56300})
+  CoilAssembly2ch PF2U(lengths={80,83},
+    dischargeLoads={0,0},
+    TInitial(displayUnit="K") = 160)
     annotation (Placement(transformation(extent={{60,20},{80,40}})));
-  CoilAssembly2ch PF2L(lengths={80,83}, dischargeLoads={56300,56300})
+  CoilAssembly2ch PF2L(lengths={80,83},
+    dischargeLoads={0,0},
+    TInitial(displayUnit="K") = 160)
     annotation (Placement(transformation(extent={{60,40},{80,60}})));
-  CoilAssembly4ch PF1L(lengths={70,74,70,74},
-    dischargeLoads={53000,53000,53000,53000}, TInitial(displayUnit="K"))
+  CoilAssembly4ch PF1L(
+    lengths={61,64,70,74},
+    dischargeLoads={0,0,0,0},
+    TInitial(displayUnit="K") = 160)
     annotation (Placement(transformation(extent={{60,80},{80,100}})));
-  CoilAssembly4ch PF1U(lengths={61,64,61,64})
+  CoilAssembly4ch PF1U(
+    lengths={61,64,70,74},
+    dischargeLoads={0,0,0,0},
+    TInitial(displayUnit="K") = 160)
     annotation (Placement(transformation(extent={{60,60},{80,80}})));
-  CoilAssembly3ch PF3L(lengths={83,84,87}, dischargeLoads={56300,56300,57500})
+  CoilAssembly3ch PF3L(lengths={83,84,87},
+    dischargeLoads={0,0,0},
+    TInitial(displayUnit="K") = 160)
     annotation (Placement(transformation(extent={{60,0},{80,20}})));
-  CoilAssembly3ch PF3U(lengths={83,84,87}, dischargeLoads={56300,56300,57500})
+  CoilAssembly3ch PF3U(lengths={83,84,87},
+    dischargeLoads={0,0,0},
+    TInitial(displayUnit="K") = 160)
     annotation (Placement(transformation(extent={{60,-20},{80,0}})));
   CoilAssembly4ch PF4L(lengths={90,90,90,75}, diameters_mm={9,9,9,9},
-    dischargeLoads={64500,64500,64500,60600})
+    dischargeLoads={0,0,0,0},
+    TInitial(displayUnit="K") = 160)
     annotation (Placement(transformation(extent={{60,-40},{80,-20}})));
   CoilAssembly4ch PF4U(lengths={90,90,90,75}, diameters_mm={9,9,9,9},
-    dischargeLoads={64500,64500,64500,60600})
+    dischargeLoads={0,0,0,0},
+    TInitial(displayUnit="K") = 160)
     annotation (Placement(transformation(extent={{60,-60},{80,-40}})));
   ThermalSystems.GasComponents.JunctionElements.VolumeJunction junction12(
     volume=1e-2,
@@ -297,53 +312,53 @@ model  PFCircuit
 equation
 
   connect(smoothStep.y,rotatoryBoundary. n_in)
-    annotation (Line(points={{-111.4,108},{-80,108},{-80,107},{-66,107}},
+    annotation (Line(points={{-111.4,108},{-80,108},{-80,107},{-60,107}},
                                                      color={0,0,127}));
   connect(rotatoryBoundary.rotatoryFlange, fan2ndOrder.rotatoryFlange)
     annotation (Line(
-      points={{-66,111},{-66,114}},
+      points={{-60,111},{-60,112}},
       color={135,135,135},
       thickness=0.5));
   connect(coldSurface.port, tube1.heatPort[1]) annotation (Line(points={{-50,0},
-          {-50,-10}},                           color={191,0,0}));
+          {-50,-18}},                           color={191,0,0}));
   connect(volume.portArray[1], valve.portA) annotation (Line(
-      points={{-51,-49.825},{-52,-49.825},{-52,-54},{-86,-54},{-86,-49}},
+      points={{-41,-45.825},{-40,-45.825},{-40,-60},{-80,-60},{-80,-47}},
       color={255,153,0},
       thickness=0.5));
   connect(fan2ndOrder.portA, junction4.portC) annotation (Line(
-      points={{-58,122},{-24,122}},
+      points={{-52,120},{-24,120}},
       color={255,153,0},
       thickness=0.5));
   connect(junction4.portB, valve1.portB) annotation (Line(
-      points={{-20,118},{-20,101},{-36,101}},
+      points={{-20,116},{-20,99},{-36,99}},
       color={255,153,0},
       thickness=0.5));
   connect(valve1.portA, junction5.portB) annotation (Line(
-      points={{-48,101},{-64,101},{-64,100},{-82,100}},
+      points={{-48,99},{-64,99},{-64,100},{-76,100}},
       color={255,153,0},
       thickness=0.5));
   connect(junction5.portA, fan2ndOrder.portB) annotation (Line(
-      points={{-86,104},{-86,122},{-74,122}},
+      points={{-80,104},{-80,120},{-68,120}},
       color={255,153,0},
       thickness=0.5));
   connect(junction2.portC, valve.portB) annotation (Line(
-      points={{-86,-16},{-86,-37}},
+      points={{-80,-24},{-80,-35}},
       color={255,153,0},
       thickness=0.5));
   connect(junction2.portB, tube1.portA) annotation (Line(
-      points={{-82,-12},{-58,-12}},
+      points={{-76,-20},{-58,-20}},
       color={255,153,0},
       thickness=0.5));
   connect(junction6.portA, junction5.portC) annotation (Line(
-      points={{-86,48},{-86,96}},
+      points={{-80,44},{-80,96}},
       color={255,153,0},
       thickness=0.5));
   connect(junction6.portC, junction2.portA) annotation (Line(
-      points={{-86,40},{-86,-8}},
+      points={{-80,36},{-80,-16}},
       color={255,153,0},
       thickness=0.5));
   connect(valve2.portA, junction6.portB) annotation (Line(
-      points={{-64,45},{-68,45},{-68,44},{-82,44}},
+      points={{-58,39},{-68,39},{-68,40},{-76,40}},
       color={255,153,0},
       thickness=0.5));
   connect(junction1.portC, junction8.portB) annotation (Line(
@@ -419,7 +434,7 @@ equation
       color={255,153,0},
       thickness=0.5));
   connect(junction18.portB, junction4.portA) annotation (Line(
-      points={{144,20},{160,20},{160,120},{-8,120},{-8,122},{-16,122}},
+      points={{144,20},{160,20},{160,120},{-16,120}},
       color={255,153,0},
       thickness=0.5));
   connect(junction13.portC, PF3L.portA1) annotation (Line(
@@ -455,11 +470,11 @@ equation
       color={255,153,0},
       thickness=0.5));
   connect(valve2.portB, junction7.portA) annotation (Line(
-      points={{-52,45},{-20,45},{-20,24}},
+      points={{-46,39},{-20,39},{-20,24}},
       color={255,153,0},
       thickness=0.5));
   connect(tube1.portB, junction7.portC) annotation (Line(
-      points={{-42,-12},{-20,-12},{-20,16}},
+      points={{-42,-20},{-20,-20},{-20,16}},
       color={255,153,0},
       thickness=0.5));
   connect(junction7.portB, junction19.portB) annotation (Line(
