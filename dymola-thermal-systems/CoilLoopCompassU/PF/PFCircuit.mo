@@ -3,6 +3,7 @@ model  PFCircuit
   extends ThermalSystems.Internals.ClassTypes.ExampleModel;
   parameter Real m_wanted = 0.04 "flow I want in the circuit, kg/s";
   parameter Real m_total = 0.1 "total flow from the pump, kg/s";
+  parameter Real wanted_temp = 90 "sda";
 
   inner ThermalSystems.SystemInformationManager sim(
       generateEventsAtFlowReversalGas=false,
@@ -155,11 +156,11 @@ model  PFCircuit
   ThermalSystems.GasComponents.Valves.Valve valve2(
     valveFlowVariableType=ThermalSystems.Internals.ValveFlowVariableType.KvValue,
     use_effectiveFlowAreaInput=false,
-    use_KvValueInput=false,
+    use_KvValueInput=true,
     KvValueFixed=0.001)
     annotation (Placement(transformation(extent={{-6,-3},{6,3}},
         rotation=0,
-        origin={-52,39})));
+        origin={-50,39})));
   ThermalSystems.GasComponents.JunctionElements.VolumeJunction junction7(
     volume=1e-2,
     m_flowStart=1e-5,
@@ -311,11 +312,23 @@ model  PFCircuit
     annotation (Placement(transformation(extent={{-4,-4},{4,4}},
         rotation=90,
         origin={0,20})));
-  Modelica.Blocks.Sources.RealExpression realExpression(y=4.39*(sensor_m_flow.sensorValue
+  Modelica.Blocks.Sources.RealExpression valveRegulator(y=4.39*(sensor_m_flow.sensorValue
          - m_wanted)/m_wanted)
-    annotation (Placement(transformation(extent={{-100,144},{-80,164}})));
+    annotation (Placement(transformation(extent={{-100,138},{-80,158}})));
   ThermalSystems.GasComponents.Sensors.Sensor_m_flow sensor_m_flow
     annotation (Placement(transformation(extent={{-72,116},{-80,124}})));
+  Modelica.Blocks.Continuous.LimPID PID(
+    controllerType=Modelica.Blocks.Types.SimpleController.PI,
+    k=0.01,
+    Ti=60,
+    yMax=0.15,
+    yMin=0) annotation (Placement(transformation(extent={{-10,10},{10,-10}},
+        rotation=-90,
+        origin={-50,70})));
+  Modelica.Blocks.Sources.RealExpression valveRegulator2(y=wanted_temp)
+    annotation (Placement(transformation(extent={{-184,70},{-164,90}})));
+  ThermalSystems.GasComponents.Sensors.Sensor_T sensor_T
+    annotation (Placement(transformation(extent={{-16,40},{-8,48}})));
 equation
 
   connect(smoothStep.y,rotatoryBoundary. n_in)
@@ -361,7 +374,7 @@ equation
       color={255,153,0},
       thickness=0.5));
   connect(valve2.portA, junction6.portB) annotation (Line(
-      points={{-58,39},{-68,39},{-68,40},{-76,40}},
+      points={{-56,39},{-68,39},{-68,40},{-76,40}},
       color={255,153,0},
       thickness=0.5));
   connect(junction1.portC, junction8.portB) annotation (Line(
@@ -473,7 +486,7 @@ equation
       color={255,153,0},
       thickness=0.5));
   connect(valve2.portB, junction7.portA) annotation (Line(
-      points={{-46,39},{-20,39},{-20,24}},
+      points={{-44,39},{-20,39},{-20,24}},
       color={255,153,0},
       thickness=0.5));
   connect(tube1.portB, junction7.portC) annotation (Line(
@@ -492,8 +505,8 @@ equation
       points={{0,16},{0,-20},{16,-20}},
       color={255,153,0},
       thickness=0.5));
-  connect(realExpression.y, valve1.KvValue_in) annotation (Line(points={{-79,154},
-          {-42,154},{-42,102.75}}, color={0,0,127}));
+  connect(valveRegulator.y, valve1.KvValue_in) annotation (Line(points={{-79,148},
+          {-42,148},{-42,102.75}}, color={0,0,127}));
   connect(fan2ndOrder.portB, sensor_m_flow.portA) annotation (Line(
       points={{-68,120},{-73,120}},
       color={255,153,0},
@@ -502,6 +515,17 @@ equation
       points={{-79,120},{-80,120},{-80,104}},
       color={255,153,0},
       thickness=0.5));
+  connect(valveRegulator2.y, PID.u_s) annotation (Line(points={{-163,80},{-66,
+          80},{-66,90},{-50,90},{-50,82}},
+                                color={0,0,127}));
+  connect(sensor_T.port, junction7.portB) annotation (Line(
+      points={{-12,40},{-12,20},{-16,20}},
+      color={255,153,0},
+      thickness=0.5));
+  connect(sensor_T.sensorValue, PID.u_m)
+    annotation (Line(points={{-12,46},{-12,70},{-38,70}}, color={0,0,127}));
+  connect(PID.y, valve2.KvValue_in)
+    annotation (Line(points={{-50,59},{-50,42.75}}, color={0,0,127}));
   annotation (Diagram(coordinateSystem(preserveAspectRatio=false, extent={{-100,
             -100},{100,100}})),
     experiment(
