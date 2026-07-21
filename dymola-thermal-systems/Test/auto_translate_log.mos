@@ -1,0 +1,79 @@
+// ============================================================
+// Dymola automatizovaný translate/simulate skript
+// Účel: pri chybe (alebo úspechu) zapíše KOMPLETNÝ log
+// do zdieľaného priečinka, aby ho vedel čítať Claude Code
+// na hostiteľskom PC.
+//
+// Spustenie vo vnútri Dymoly:
+//   Commands -> Run Script...  -> vyber tento súbor
+// alebo z Command Log:
+//   RunScript("D:/SharedFolder/auto_translate_log.mos");
+// ============================================================
+
+// --- 1. NASTAVENIA (uprav podľa seba) ---------------------------------
+modelName   := "CoilLoopThermalSystems.SimpleLoop";              // plná cesta k modelu
+sharedPath  := "Z:/compass-u-cryo-loop/dymola-thermal-systems/Test";
+logFile     := sharedPath + "/translation_log.txt";
+errFile     := sharedPath + "/last_error.txt";
+statusFile  := sharedPath + "/status.txt";
+
+// --- 2. Príprava --------------------------------------------------------
+Modelica.Utilities.Files.createDirectory(sharedPath);
+clearlog();
+
+// Streams.print(string, fileName) only takes 2 arguments (no append flag) —
+// it always APPENDS, so stale status/error files from a previous run must
+// be removed explicitly, otherwise old and new statuses stack up forever.
+if Modelica.Utilities.Files.exist(statusFile) then
+  Modelica.Utilities.Files.remove(statusFile);
+end if;
+if Modelica.Utilities.Files.exist(errFile) then
+  Modelica.Utilities.Files.remove(errFile);
+end if;
+
+// Marker written BEFORE translate/simulate start, so that if Dymola hangs or
+// crashes mid-run (e.g. runaway event chattering), status.txt still shows
+// "RUNNING" with its own file timestamp instead of silently keeping stale
+// content from the previous run — lets us tell "stuck" apart from "finished".
+Modelica.Utilities.Streams.print("RUNNING: translate started", statusFile);
+
+// --- 3. Translate (samotná chyba pri zostavovaní systému rovníc/solvera
+//        sa objaví práve tu, ešte pred simuláciou) ----------------------
+// translateModel(modelName) alone reuses whatever class definition is
+// ALREADY loaded in Dymola's workspace — it does not notice that the .mo
+// file on disk changed. Force a fresh read from the shared folder so edits
+// made outside Dymola (e.g. by Claude Code) are actually picked up.
+modelFile := sharedPath + "/CoilLoopThermalSystems.mo";
+loaded := openModel(modelFile, mustRead=true);
+
+ok := translateModel(modelName);
+
+// --- 4. Export CELÉHO Command/Translation logu --------------------------
+// getLastErrorLog() dáva len poslednú chybu, savelog() uloží všetko,
+// čo Dymola za tento beh vypísala (warnings, errors, info o solveri...)
+savelog(logFile);
+
+// --- 5. Krátky status súbor, nech Claude Code vie na prvý pohľad,
+//        či má vôbec čo opravovať -----------------------------------------
+if ok then
+  Modelica.Utilities.Streams.print("OK: translation successful", statusFile);
+else
+  Modelica.Utilities.Streams.print("FAIL: translation failed", statusFile);
+  errMsg := getLastErrorLog();
+  Modelica.Utilities.Streams.print(errMsg, errFile);
+end if;
+
+// --- 6. (Voliteľné) rovno aj simulácia, ak translate prešiel -------------
+if ok then
+  simOk := simulateModel(modelName, stopTime=10, tolerance=1e-6,
+                          resultFile=sharedPath + "/result");
+  savelog(logFile);  // prepíše log aj o priebehu simulácie (napr. solver chattering)
+  if not simOk then
+    Modelica.Utilities.Streams.print("FAIL: simulation failed", statusFile);
+    errMsg := getLastErrorLog();
+    Modelica.Utilities.Streams.print(errMsg, errFile);
+  end if;
+end if;
+
+// --- 7. Info do konzoly Dymoly -------------------------------------------
+Modelica.Utilities.Streams.print("Log zapisany do: " + logFile);

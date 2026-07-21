@@ -1,6 +1,8 @@
 within CoilLoopCompassU.PF;
 model  PFCircuit
   extends ThermalSystems.Internals.ClassTypes.ExampleModel;
+  parameter Real m_wanted = 0.04 "flow I want in the circuit, kg/s";
+  parameter Real m_total = 0.1 "total flow from the pump, kg/s";
 
   inner ThermalSystems.SystemInformationManager sim(
       generateEventsAtFlowReversalGas=false,
@@ -10,8 +12,8 @@ model  PFCircuit
       nc_propertyCalculation=1,
       gasNames={"VDIWA2006.Helium"},
       mixingRatio_propertyCalculation={1},
-      condensingIndex=0)) annotation (Placement(transformation(extent={{180,100},
-            {200,120}},
+      condensingIndex=0)) annotation (Placement(transformation(extent={{180,102},
+            {200,122}},
                       rotation=0)));
 
   ThermalSystems.GasComponents.Fans.Fan2ndOrder fan2ndOrder(
@@ -72,7 +74,7 @@ model  PFCircuit
         rotation=0,
         origin={-50,-20})));
   ThermalSystems.GasComponents.Volumes.Volume volume(
-    volume=0.02,
+    volume=0.5,
     m_flowStart=0,
     pInitial=4000000,
     TInitial(displayUnit="K") = 80,
@@ -109,8 +111,8 @@ model  PFCircuit
   ThermalSystems.GasComponents.Valves.Valve valve1(
     valveFlowVariableType=ThermalSystems.Internals.ValveFlowVariableType.KvValue,
     use_effectiveFlowAreaInput=false,
-    use_KvValueInput=false,
-    KvValueFixed=0.001)
+    use_KvValueInput=true,
+    KvValueFixed=0.0001)
     annotation (Placement(transformation(extent={{-6,-3},{6,3}},
         rotation=0,
         origin={-42,99})));
@@ -309,6 +311,11 @@ model  PFCircuit
     annotation (Placement(transformation(extent={{-4,-4},{4,4}},
         rotation=90,
         origin={0,20})));
+  Modelica.Blocks.Sources.RealExpression realExpression(y=4.39*(sensor_m_flow.sensorValue
+         - m_wanted)/m_wanted)
+    annotation (Placement(transformation(extent={{-100,144},{-80,164}})));
+  ThermalSystems.GasComponents.Sensors.Sensor_m_flow sensor_m_flow
+    annotation (Placement(transformation(extent={{-72,116},{-80,124}})));
 equation
 
   connect(smoothStep.y,rotatoryBoundary. n_in)
@@ -335,10 +342,6 @@ equation
       thickness=0.5));
   connect(valve1.portA, junction5.portB) annotation (Line(
       points={{-48,99},{-64,99},{-64,100},{-76,100}},
-      color={255,153,0},
-      thickness=0.5));
-  connect(junction5.portA, fan2ndOrder.portB) annotation (Line(
-      points={{-80,104},{-80,120},{-68,120}},
       color={255,153,0},
       thickness=0.5));
   connect(junction2.portC, valve.portB) annotation (Line(
@@ -487,6 +490,16 @@ equation
       thickness=0.5));
   connect(junction19.portA, junction12.portB) annotation (Line(
       points={{0,16},{0,-20},{16,-20}},
+      color={255,153,0},
+      thickness=0.5));
+  connect(realExpression.y, valve1.KvValue_in) annotation (Line(points={{-79,154},
+          {-42,154},{-42,102.75}}, color={0,0,127}));
+  connect(fan2ndOrder.portB, sensor_m_flow.portA) annotation (Line(
+      points={{-68,120},{-73,120}},
+      color={255,153,0},
+      thickness=0.5));
+  connect(sensor_m_flow.portB, junction5.portA) annotation (Line(
+      points={{-79,120},{-80,120},{-80,104}},
       color={255,153,0},
       thickness=0.5));
   annotation (Diagram(coordinateSystem(preserveAspectRatio=false, extent={{-100,
