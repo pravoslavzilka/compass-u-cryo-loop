@@ -1,9 +1,9 @@
 within CoilLoopCompassU.PF;
 model  PFCircuit
   extends ThermalSystems.Internals.ClassTypes.ExampleModel;
-  parameter Real m_wanted = 0.04 "flow I want in the circuit, kg/s";
+  parameter Real m_wanted = 0.095 "flow I want in the circuit, kg/s";
   parameter Real m_total = 0.1 "total flow from the pump, kg/s";
-  parameter Real wanted_temp = 90 "sda";
+  parameter Real wanted_temp = 100 "sda";
 
   inner ThermalSystems.SystemInformationManager sim(
       generateEventsAtFlowReversalGas=false,
@@ -157,7 +157,7 @@ model  PFCircuit
     valveFlowVariableType=ThermalSystems.Internals.ValveFlowVariableType.KvValue,
     use_effectiveFlowAreaInput=false,
     use_KvValueInput=true,
-    KvValueFixed=0.001)
+    KvValueFixed=50)
     annotation (Placement(transformation(extent={{-6,-3},{6,3}},
         rotation=0,
         origin={-50,39})));
@@ -314,21 +314,23 @@ model  PFCircuit
         origin={0,20})));
   Modelica.Blocks.Sources.RealExpression valveRegulator(y=4.39*(sensor_m_flow.sensorValue
          - m_wanted)/m_wanted)
-    annotation (Placement(transformation(extent={{-100,138},{-80,158}})));
+    annotation (Placement(transformation(extent={{-162,138},{-142,158}})));
   ThermalSystems.GasComponents.Sensors.Sensor_m_flow sensor_m_flow
     annotation (Placement(transformation(extent={{-72,116},{-80,124}})));
   Modelica.Blocks.Continuous.LimPID PID(
     controllerType=Modelica.Blocks.Types.SimpleController.PI,
-    k=0.01,
-    Ti=60,
+    k=0.05,
+    Ti=30,
     yMax=0.15,
     yMin=0) annotation (Placement(transformation(extent={{-10,10},{10,-10}},
         rotation=-90,
         origin={-50,70})));
-  Modelica.Blocks.Sources.RealExpression valveRegulator2(y=wanted_temp)
+  Modelica.Blocks.Sources.RealExpression wantedTemp(y=wanted_temp)
     annotation (Placement(transformation(extent={{-184,70},{-164,90}})));
   ThermalSystems.GasComponents.Sensors.Sensor_T sensor_T
     annotation (Placement(transformation(extent={{-16,40},{-8,48}})));
+  Modelica.Blocks.Nonlinear.Limiter limiter(uMax=100, uMin=0.001)
+    annotation (Placement(transformation(extent={{-100,140},{-80,160}})));
 equation
 
   connect(smoothStep.y,rotatoryBoundary. n_in)
@@ -505,8 +507,6 @@ equation
       points={{0,16},{0,-20},{16,-20}},
       color={255,153,0},
       thickness=0.5));
-  connect(valveRegulator.y, valve1.KvValue_in) annotation (Line(points={{-79,148},
-          {-42,148},{-42,102.75}}, color={0,0,127}));
   connect(fan2ndOrder.portB, sensor_m_flow.portA) annotation (Line(
       points={{-68,120},{-73,120}},
       color={255,153,0},
@@ -515,9 +515,8 @@ equation
       points={{-79,120},{-80,120},{-80,104}},
       color={255,153,0},
       thickness=0.5));
-  connect(valveRegulator2.y, PID.u_s) annotation (Line(points={{-163,80},{-66,
-          80},{-66,90},{-50,90},{-50,82}},
-                                color={0,0,127}));
+  connect(wantedTemp.y, PID.u_s) annotation (Line(points={{-163,80},{-66,80},{-66,
+          90},{-50,90},{-50,82}}, color={0,0,127}));
   connect(sensor_T.port, junction7.portB) annotation (Line(
       points={{-12,40},{-12,20},{-16,20}},
       color={255,153,0},
@@ -526,6 +525,10 @@ equation
     annotation (Line(points={{-12,46},{-12,70},{-38,70}}, color={0,0,127}));
   connect(PID.y, valve2.KvValue_in)
     annotation (Line(points={{-50,59},{-50,42.75}}, color={0,0,127}));
+  connect(valveRegulator.y, limiter.u) annotation (Line(points={{-141,148},{
+          -110,148},{-110,150},{-102,150}}, color={0,0,127}));
+  connect(limiter.y, valve1.KvValue_in) annotation (Line(points={{-79,150},{-60,
+          150},{-60,146},{-42,146},{-42,102.75}}, color={0,0,127}));
   annotation (Diagram(coordinateSystem(preserveAspectRatio=false, extent={{-100,
             -100},{100,100}})),
     experiment(
