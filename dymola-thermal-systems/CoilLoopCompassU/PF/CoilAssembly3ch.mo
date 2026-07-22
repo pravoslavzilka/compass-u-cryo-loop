@@ -14,8 +14,8 @@ model CoilAssembly3ch
   parameter Modelica.Units.SI.Length lengths[3] = {90,75,60} "Per-channel tube length [m] (Channel1, Channel2, Channel3)";
   parameter Real diameters_mm[3](each unit="mm") = {7,7,7} "Per-channel tube inner diameter [mm] (Channel1, Channel2, Channel3)";
   parameter Modelica.Units.SI.Power dischargeLoads[3] = {50000,50000,50000} "Per-channel peak discharge heat [W] (Channel1, Channel2, Channel3)";
-  parameter Modelica.Units.SI.Time pulseStart = 725 "Discharge start time (after fan finishes accelerating)";
-  parameter Modelica.Units.SI.Time pulseEnd = 730 "Discharge end time (5s heat shock)";
+  parameter Modelica.Units.SI.Time pulseStart = 10 "Discharge start time (after fan finishes accelerating)";
+  parameter Modelica.Units.SI.Time pulseEnd = 15 "Discharge end time (5s heat shock)";
   parameter Real valveOpening = 1.0 "Isolation valve opening (0-1)";
   parameter Real valveKvNominal = 100 "Kv value at fully-open (valveOpening=1)";
   parameter Modelica.Units.SI.Temperature TInitial = 80 "Initial coil/gas temperature";
@@ -63,7 +63,8 @@ model CoilAssembly3ch
     enableHeatPorts=true,
     redeclare model HeatTransferModel =
         ThermalSystems.GasComponents.Tubes.TransportPhenomena.HeatTransfer.GnielinskiDittusBoelter,
-    fixedTInitialWall=false,
+    redeclare model WallMaterial = TSMedia.SolidTypes.TSMedia_Copper,
+    fixedTInitialWall=true,
 
     redeclare model PressureDropModel =
         ThermalSystems.GasComponents.Tubes.TransportPhenomena.PressureDrop.Konakov,
@@ -129,7 +130,8 @@ model CoilAssembly3ch
     enableHeatPorts=true,
     redeclare model HeatTransferModel =
         ThermalSystems.GasComponents.Tubes.TransportPhenomena.HeatTransfer.GnielinskiDittusBoelter,
-    fixedTInitialWall=false,
+    redeclare model WallMaterial = TSMedia.SolidTypes.TSMedia_Copper,
+    fixedTInitialWall=true,
 
     redeclare model PressureDropModel =
         ThermalSystems.GasComponents.Tubes.TransportPhenomena.PressureDrop.Konakov,
@@ -155,7 +157,8 @@ model CoilAssembly3ch
     enableHeatPorts=true,
     redeclare model HeatTransferModel =
         ThermalSystems.GasComponents.Tubes.TransportPhenomena.HeatTransfer.GnielinskiDittusBoelter,
-    fixedTInitialWall=false,
+    redeclare model WallMaterial = TSMedia.SolidTypes.TSMedia_Copper,
+    fixedTInitialWall=true,
 
     redeclare model PressureDropModel =
         ThermalSystems.GasComponents.Tubes.TransportPhenomena.PressureDrop.Konakov,

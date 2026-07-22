@@ -83,7 +83,7 @@ end if;
 // before trusting 1e-4 results for real analysis; back off to 1e-5 if the
 // key outputs shift meaningfully.
 if ok then
-  simOk := simulateModel(modelName, stopTime=2530, tolerance=1e-4,
+  simOk := simulateModel(modelName, stopTime=1815, tolerance=1e-4,
                           resultFile=debugPath + "/result");
   savelog(logFile);  // overwrite the log with the simulation run too (e.g. solver chattering)
 
