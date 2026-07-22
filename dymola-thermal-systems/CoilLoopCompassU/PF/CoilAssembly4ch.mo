@@ -19,10 +19,12 @@ model CoilAssembly4ch
   parameter Real valveOpening = 1.0 "Isolation valve opening (0-1)";
   parameter Real valveKvNominal = 100 "Kv value at fully-open (valveOpening=1)";
   parameter Modelica.Units.SI.Temperature TInitial = 80 "Initial coil/gas temperature";
+  parameter Integer assemblyIndex = 0
+    "Unique index of this coil-assembly instance among all assemblies in the circuit (no physical meaning, only makes the anti-degeneracy offset below unique circuit-wide instead of just within this instance)";
 
   final parameter Modelica.Units.SI.Diameter diameters[4] = diameters_mm*1e-3 "Per-channel tube inner diameter, converted to m";
-  final parameter Modelica.Units.SI.Length lengthsAdjusted[4] = {lengths[i]*(1 + 0.0001*(i - 1)) for i in 1:4}
-    "Per-channel length with a tiny (<=0.03%) per-index offset so identical-length channels don't create a numerically degenerate flow split";
+  final parameter Modelica.Units.SI.Length lengthsAdjusted[4] = {lengths[i]*(1 + 1e-5*(10*assemblyIndex + i)) for i in 1:4}
+    "Per-channel length with a tiny (<=0.09%) offset, unique per (assemblyIndex, channel) pair, so no two branches anywhere in the circuit are numerically identical and create a degenerate flow split";
 
   output Modelica.Units.SI.Temperature T_gas_out = sensor_T.sensorValue
     "Coil assembly gas outlet temperature";
