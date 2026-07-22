@@ -3,7 +3,15 @@ model  PFCircuit
   extends ThermalSystems.Internals.ClassTypes.ExampleModel;
   parameter Real m_wanted = 0.095 "flow I want in the circuit, kg/s";
   parameter Real m_total = 0.1 "total flow from the pump, kg/s";
-  parameter Real wanted_temp = 120 "sda";
+  parameter Modelica.Units.SI.TemperatureDifference tempMargin = 40
+    "Margin below the hottest coil-assembly gas outlet temperature";
+
+  output Modelica.Units.SI.Temperature T_gas_out_max = max({PF1U.T_gas_out,
+      PF1L.T_gas_out, PF2U.T_gas_out, PF2L.T_gas_out, PF3U.T_gas_out,
+      PF3L.T_gas_out, PF4U.T_gas_out, PF4L.T_gas_out})
+    "Hottest coil-assembly gas outlet temperature (all 8 coils)";
+  output Modelica.Units.SI.Temperature wanted_temp = T_gas_out_max - tempMargin
+    "PID setpoint: hottest coil outlet minus margin, revalued continuously";
 
   inner ThermalSystems.SystemInformationManager sim(
       generateEventsAtFlowReversalGas=false,
