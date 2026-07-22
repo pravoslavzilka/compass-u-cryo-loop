@@ -97,3 +97,4 @@ if ok then
     Modelica.Utilities.Streams.print(errMsg, errFile);
   end if;
 end if;
+plot({"sensor_T.sensorValue","PF2U.Channel2.T_wall","PF2U.sensor_T.sensorValue"}, colors={{28,108,200},{238,46,47},{0,140,72}});

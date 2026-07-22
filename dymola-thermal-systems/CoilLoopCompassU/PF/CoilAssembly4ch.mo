@@ -24,6 +24,9 @@ model CoilAssembly4ch
   final parameter Modelica.Units.SI.Length lengthsAdjusted[4] = {lengths[i]*(1 + 0.0001*(i - 1)) for i in 1:4}
     "Per-channel length with a tiny (<=0.03%) per-index offset so identical-length channels don't create a numerically degenerate flow split";
 
+  output Modelica.Units.SI.Temperature T_gas_out = sensor_T.sensorValue
+    "Coil assembly gas outlet temperature";
+
   output ChannelSummary Channel1(
     T_wall=tube2.heatPort[1].T,
     T_gas_out=tube2.summary.T_gas_B,
@@ -238,6 +241,8 @@ model CoilAssembly4ch
     annotation (Placement(transformation(extent={{-4,-4},{4,4}},
         rotation=-90,
         origin={80,-2})));
+  ThermalSystems.GasComponents.Sensors.Sensor_T sensor_T
+    annotation (Placement(transformation(extent={{86,28},{94,36}})));
 equation
   connect(stepSource.y, prescribedHeatFlow.Q_flow)
     annotation (Line(points={{-73,86},{-50,86}},
@@ -314,6 +319,10 @@ equation
       thickness=0.5));
   connect(junction6.portB, portB1) annotation (Line(
       points={{84,-2},{104,-2}},
+      color={255,153,0},
+      thickness=0.5));
+  connect(junction6.portB, sensor_T.port) annotation (Line(
+      points={{84,-2},{90,-2},{90,28}},
       color={255,153,0},
       thickness=0.5));
   annotation (Icon(coordinateSystem(preserveAspectRatio=false)), Diagram(
