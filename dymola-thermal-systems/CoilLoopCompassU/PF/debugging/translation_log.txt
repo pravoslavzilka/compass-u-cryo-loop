@@ -97,3 +97,4 @@ if ok then
     Modelica.Utilities.Streams.print(errMsg, errFile);
   end if;
 end if;
+plot({"prescribedHeatFlow1.Q_flow","valve6.KvValue_in","valve5.KvValue_in"}, colors={{28,108,200},{238,46,47},{0,140,72}});
