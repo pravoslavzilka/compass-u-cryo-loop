@@ -19,10 +19,15 @@ model CoilAssembly2ch
   parameter Real valveOpening = 1.0 "Isolation valve opening (0-1)";
   parameter Real valveKvNominal = 100 "Kv value at fully-open (valveOpening=1)";
   parameter Modelica.Units.SI.Temperature TInitial = 80 "Initial coil/gas temperature";
+  parameter Integer assemblyIndex = 0
+    "Unique index of this coil-assembly instance among all assemblies in the circuit (no physical meaning, only makes the anti-degeneracy offset below unique circuit-wide instead of just within this instance)";
 
   final parameter Modelica.Units.SI.Diameter diameters[2] = diameters_mm*1e-3 "Per-channel tube inner diameter, converted to m";
-  final parameter Modelica.Units.SI.Length lengthsAdjusted[2] = {lengths[i]*(1 + 0.0001*(i - 1)) for i in 1:2}
-    "Per-channel length with a tiny (<=0.01%) per-index offset so identical-length channels don't create a numerically degenerate flow split";
+  final parameter Modelica.Units.SI.Length lengthsAdjusted[2] = {lengths[i]*(1 + 1e-5*(10*assemblyIndex + i)) for i in 1:2}
+    "Per-channel length with a tiny (<=0.09%) offset, unique per (assemblyIndex, channel) pair, so no two branches anywhere in the circuit are numerically identical and create a degenerate flow split";
+
+  output Modelica.Units.SI.Temperature T_gas_out = sensor_T.sensorValue
+    "Coil assembly gas outlet temperature";
 
   output ChannelSummary Channel1(
     T_wall=tube2.heatPort[1].T,
@@ -134,6 +139,8 @@ model CoilAssembly2ch
     annotation (Placement(transformation(extent={{-4,-4},{4,4}},
         rotation=-90,
         origin={60,0})));
+  ThermalSystems.GasComponents.Sensors.Sensor_T sensor_T
+    annotation (Placement(transformation(extent={{76,16},{84,24}})));
 equation
   connect(stepSource.y, prescribedHeatFlow.Q_flow)
     annotation (Line(points={{-7,84},{16,84}}, color={0,0,127}));
@@ -169,6 +176,10 @@ equation
       thickness=0.5));
   connect(junction1.portB, portB1) annotation (Line(
       points={{64,0},{90,0},{90,-2},{104,-2}},
+      color={255,153,0},
+      thickness=0.5));
+  connect(junction1.portB, sensor_T.port) annotation (Line(
+      points={{64,0},{80,0},{80,16}},
       color={255,153,0},
       thickness=0.5));
   annotation (Icon(coordinateSystem(preserveAspectRatio=false)), Diagram(
