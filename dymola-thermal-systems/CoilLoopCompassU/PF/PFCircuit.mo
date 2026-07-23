@@ -75,7 +75,8 @@ model  PFCircuit
     enableHeatPorts=true,
     redeclare model HeatTransferModel =
         ThermalSystems.GasComponents.Tubes.TransportPhenomena.HeatTransfer.GnielinskiDittusBoelter,
-    redeclare model WallMaterial = TSMedia.SolidTypes.TSMedia_StainlessSteel,
+    redeclare model WallMaterial =
+        CoilLoopCompassU.Common.StainlessSteel304_Tdep,
     fixedTInitialWall=false,
 
     redeclare model PressureDropModel =
@@ -418,7 +419,8 @@ model  PFCircuit
     enableHeatPorts=true,
     redeclare model HeatTransferModel =
         ThermalSystems.GasComponents.Tubes.TransportPhenomena.HeatTransfer.GnielinskiDittusBoelter,
-    redeclare model WallMaterial = TSMedia.SolidTypes.TSMedia_StainlessSteel,
+    redeclare model WallMaterial =
+        CoilLoopCompassU.Common.StainlessSteel304_Tdep,
     fixedTInitialWall=false,
 
     redeclare model PressureDropModel =
