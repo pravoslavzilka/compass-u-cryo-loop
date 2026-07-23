@@ -5,8 +5,9 @@ model  PFCircuit
   parameter Real m_total = 0.1 "total flow from the pump, kg/s";
   parameter Real u_dead = 2;
   parameter Real Kv_shut = 1e-4;
-  parameter Real Kv_cool_max = 500;
+  parameter Real Kv_cool_max = 5000;
   parameter Real heater_gain = 100;
+  parameter Real Kv_gain = 100;
   parameter Modelica.Units.SI.TemperatureDifference tempMargin = 40
     "Margin below the hottest coil-assembly gas outlet temperature";
 
@@ -318,7 +319,7 @@ model  PFCircuit
     yMax=6000,
     yMin=-6000,
     initType=Modelica.Blocks.Types.Init.InitialOutput,
-    y_start=-5)
+    y_start=5)
             annotation (Placement(transformation(extent={{-10,10},{10,-10}},
         rotation=-90,
         origin={-50,70})));
@@ -366,7 +367,7 @@ model  PFCircuit
          then PID.y*heater_gain else 0)
     annotation (Placement(transformation(extent={{-324,10},{-304,30}})));
   Modelica.Blocks.Sources.RealExpression CoolingLimiter1(y=if PID.y < -u_dead
-         then min(-PID.y, Kv_cool_max) else Kv_shut)
+         then min(-PID.y*Kv_gain, Kv_cool_max) else Kv_shut)
     annotation (Placement(transformation(extent={{-254,-40},{-234,-20}})));
   ThermalSystems.GasComponents.JunctionElements.VolumeJunction junction7(
     volume=1e-2,
