@@ -5,8 +5,9 @@ model  PFCircuit
   parameter Real m_total = 0.1 "total flow from the pump, kg/s";
   parameter Real u_dead = 2;
   parameter Real Kv_shut = 1e-4;
-  parameter Real Kv_cool_max = 500;
+  parameter Real Kv_cool_max = 5000;
   parameter Real heater_gain = 100;
+  parameter Real Kv_gain = 100;
   parameter Modelica.Units.SI.TemperatureDifference tempMargin = 40
     "Margin below the hottest coil-assembly gas outlet temperature";
 
@@ -44,8 +45,8 @@ model  PFCircuit
         rotation=90,
         origin={-60,120})));
   ThermalSystems.OtherComponents.Sources.SmoothStep smoothStep(
-    initialValue=6000,
-    endValue=6000,
+    initialValue=10000,
+    endValue=10000,
     startTime=1,
     stepPeriod=10)
     annotation (Placement(transformation(extent={{-6,-6},{6,6}},
@@ -66,7 +67,7 @@ model  PFCircuit
   ThermalSystems.GasComponents.Tubes.Tube tube1(
     tubeGeometry(
       innerDiameter=0.012,
-      length=3,
+      length=10,
       nParallelTubes=60,
       wallThickness=0.001,
       crossSectionType=ThermalSystems.Internals.CrossSectionType.Circular),
@@ -74,7 +75,8 @@ model  PFCircuit
     enableHeatPorts=true,
     redeclare model HeatTransferModel =
         ThermalSystems.GasComponents.Tubes.TransportPhenomena.HeatTransfer.GnielinskiDittusBoelter,
-    redeclare model WallMaterial = TSMedia.SolidTypes.TSMedia_StainlessSteel,
+    redeclare model WallMaterial =
+        CoilLoopCompassU.Common.StainlessSteel304_Tdep,
     fixedTInitialWall=false,
 
     redeclare model PressureDropModel =
@@ -124,7 +126,7 @@ model  PFCircuit
   ThermalSystems.GasComponents.Valves.Valve valve1(
     valveFlowVariableType=ThermalSystems.Internals.ValveFlowVariableType.KvValue,
     use_effectiveFlowAreaInput=false,
-    use_KvValueInput=true,
+    use_KvValueInput=false,
     KvValueFixed=0.0001)
     annotation (Placement(transformation(extent={{-6,-3},{6,3}},
         rotation=0,
@@ -155,7 +157,7 @@ model  PFCircuit
     TInitial(displayUnit="K") = 80)
     annotation (Placement(transformation(extent={{-4,4},{4,-4}},
         rotation=270,
-        origin={-140,60})));
+        origin={-140,68})));
   ThermalSystems.GasComponents.JunctionElements.VolumeJunction junction8(
     volume=1e-4,
     m_flowStart=1e-5,
@@ -225,11 +227,13 @@ model  PFCircuit
     assemblyIndex=6)
     annotation (Placement(transformation(extent={{100,-20},{120,0}})));
   CoilAssembly4ch PF4L(lengths={90,90,90,75}, diameters_mm={9,9,9,9},
+    wallThickness=0.0059,
     dischargeLoads={0,0,0,0},
     TInitial(displayUnit="K") = 160,
     assemblyIndex=7)
     annotation (Placement(transformation(extent={{100,-40},{120,-20}})));
   CoilAssembly4ch PF4U(lengths={90,90,90,75}, diameters_mm={9,9,9,9},
+    wallThickness=0.0059,
     dischargeLoads={0,0,0,0},
     TInitial(displayUnit="K") = 160,
     assemblyIndex=8)
@@ -306,7 +310,7 @@ model  PFCircuit
     annotation (Placement(transformation(extent={{-4,-4},{4,4}},
         rotation=90,
         origin={40,20})));
-  Modelica.Blocks.Sources.RealExpression valveRegulator(y=4.39*(sensor_m_flow.sensorValue
+  Modelica.Blocks.Sources.RealExpression valveRegulator(y=(4.39)*(sensor_m_flow.sensorValue
          - m_wanted)/m_wanted)
     annotation (Placement(transformation(extent={{-140,160},{-120,180}})));
   ThermalSystems.GasComponents.Sensors.Sensor_m_flow sensor_m_flow
@@ -316,9 +320,9 @@ model  PFCircuit
     k=0.05,
     Ti=20,
     yMax=6000,
-    yMin=-20,
+    yMin=-6000,
     initType=Modelica.Blocks.Types.Init.InitialOutput,
-    y_start=-5)
+    y_start=5)
             annotation (Placement(transformation(extent={{-10,10},{10,-10}},
         rotation=-90,
         origin={-50,70})));
@@ -332,10 +336,10 @@ model  PFCircuit
     valveFlowVariableType=ThermalSystems.Internals.ValveFlowVariableType.KvValue,
     use_effectiveFlowAreaInput=false,
     use_KvValueInput=false,
-    KvValueFixed=500)
+    KvValueFixed=5000)
     annotation (Placement(transformation(extent={{-6,-3},{6,3}},
         rotation=0,
-        origin={-26,-61})));
+        origin={-26,-59})));
   ThermalSystems.GasComponents.JunctionElements.VolumeJunction junction20(
     volume=1e-1,
     m_flowStart=1e-5,
@@ -362,21 +366,12 @@ model  PFCircuit
     annotation (Placement(transformation(extent={{-6,-3},{6,3}},
         rotation=90,
         origin={12,65})));
-  Modelica.Blocks.Sources.RealExpression HeaterLimiter(y=if PID.y < -u_dead
-         then -PID.y*heater_gain else 0)
-    annotation (Placement(transformation(extent={{-256,30},{-236,50}})));
-  Modelica.Blocks.Sources.RealExpression CoolingLimiter1(y=if PID.y > u_dead
-         then min(PID.y, Kv_cool_max) else Kv_shut)
-    annotation (Placement(transformation(extent={{-260,-40},{-240,-20}})));
-  ThermalSystems.GasComponents.JunctionElements.VolumeJunction junction6(
-    volume=1e-2,
-    m_flowStart=1e-5,
-    pInitial=4000000,
-    fixedInitialPressure=false,
-    TInitial(displayUnit="K") = 80)
-    annotation (Placement(transformation(extent={{-4,-4},{4,4}},
-        rotation=270,
-        origin={-140,20})));
+  Modelica.Blocks.Sources.RealExpression HeaterLimiter(y=if PID.y > u_dead
+         then PID.y*heater_gain*0 else 0)
+    annotation (Placement(transformation(extent={{-326,30},{-306,50}})));
+  Modelica.Blocks.Sources.RealExpression CoolingLimiter1(y=if PID.y < -u_dead
+         then min(-PID.y*Kv_gain, Kv_cool_max) else Kv_shut)
+    annotation (Placement(transformation(extent={{-254,-40},{-234,-20}})));
   ThermalSystems.GasComponents.JunctionElements.VolumeJunction junction7(
     volume=1e-2,
     m_flowStart=1e-5,
@@ -385,40 +380,23 @@ model  PFCircuit
     TInitial(displayUnit="K") = 80)
     annotation (Placement(transformation(extent={{-4,-4},{4,4}},
         rotation=270,
-        origin={-140,2})));
-  ThermalSystems.GasComponents.Valves.Valve valve2(
-    valveFlowVariableType=ThermalSystems.Internals.ValveFlowVariableType.KvValue,
-    use_effectiveFlowAreaInput=false,
-    use_KvValueInput=false,
-    KvValueFixed=500)
-    annotation (Placement(transformation(extent={{-6,-3},{6,3}},
-        rotation=0,
-        origin={-102,21})));
+        origin={-140,0})));
   ThermalSystems.GasComponents.Valves.Valve valve5(
     valveFlowVariableType=ThermalSystems.Internals.ValveFlowVariableType.KvValue,
     use_effectiveFlowAreaInput=false,
     use_KvValueInput=false,
-    KvValueFixed=500)
+    KvValueFixed=0.0001)
     annotation (Placement(transformation(extent={{-6,-3},{6,3}},
         rotation=0,
         origin={-102,1})));
   ThermalSystems.GasComponents.Valves.Valve valve6(
     valveFlowVariableType=ThermalSystems.Internals.ValveFlowVariableType.KvValue,
     use_effectiveFlowAreaInput=false,
-    use_KvValueInput=true,
-    KvValueFixed=500)
+    use_KvValueInput=false,
+    KvValueFixed=5000)
     annotation (Placement(transformation(extent={{-6,3},{6,-3}},
         rotation=-90,
         origin={-140,-25})));
-  ThermalSystems.GasComponents.JunctionElements.VolumeJunction junction22(
-    volume=1e-2,
-    m_flowStart=1e-5,
-    pInitial=4000000,
-    fixedInitialPressure=false,
-    TInitial(displayUnit="K") = 80)
-    annotation (Placement(transformation(extent={{-4,4},{4,-4}},
-        rotation=0,
-        origin={-12,20})));
   ThermalSystems.GasComponents.JunctionElements.VolumeJunction junction23(
     volume=1e-2,
     m_flowStart=1e-5,
@@ -432,7 +410,7 @@ model  PFCircuit
     annotation (Placement(transformation(extent={{-220,-40},{-200,-20}})));
   ThermalSystems.GasComponents.Tubes.Tube Heater(
     tubeGeometry(
-      innerDiameter=40,
+      innerDiameter=0.04,
       length=4,
       nParallelTubes=1,
       wallThickness=0.001,
@@ -441,7 +419,8 @@ model  PFCircuit
     enableHeatPorts=true,
     redeclare model HeatTransferModel =
         ThermalSystems.GasComponents.Tubes.TransportPhenomena.HeatTransfer.GnielinskiDittusBoelter,
-    redeclare model WallMaterial = TSMedia.SolidTypes.TSMedia_StainlessSteel,
+    redeclare model WallMaterial =
+        CoilLoopCompassU.Common.StainlessSteel304_Tdep,
     fixedTInitialWall=false,
 
     redeclare model PressureDropModel =
@@ -450,13 +429,13 @@ model  PFCircuit
     pInitial=4000000,
     TInitial(displayUnit="K") = 80,
     TInitialWall(displayUnit="K") = 80) annotation (Placement(transformation(
-        extent={{-8,-2},{8,2}},
-        rotation=0,
-        origin={-52,20})));
+        extent={{8,-2},{-8,2}},
+        rotation=90,
+        origin={-142,40})));
   Modelica.Thermal.HeatTransfer.Sources.PrescribedHeatFlow prescribedHeatFlow1
-    annotation (Placement(transformation(extent={{-82,30},{-62,50}})));
+    annotation (Placement(transformation(extent={{-228,30},{-208,50}})));
   Modelica.Blocks.Continuous.FirstOrder firstOrder1(T=1)
-    annotation (Placement(transformation(extent={{-220,30},{-200,50}})));
+    annotation (Placement(transformation(extent={{-276,30},{-256,50}})));
 equation
 
   connect(smoothStep.y,rotatoryBoundary. n_in)
@@ -615,7 +594,7 @@ equation
   connect(limiter.y, valve1.KvValue_in) annotation (Line(points={{-59,170},{-42,
           170},{-42,102.75}},                     color={0,0,127}));
   connect(tube1.portB, valve3.portA) annotation (Line(
-      points={{-42,-60},{-42,-61},{-32,-61}},
+      points={{-42,-60},{-42,-59},{-32,-59}},
       color={255,153,0},
       thickness=0.5));
   connect(junction21.portC, junction19.portB) annotation (Line(
@@ -639,75 +618,59 @@ equation
       color={255,153,0},
       thickness=0.5));
   connect(valve.portB, junction2.portB) annotation (Line(
-      points={{-174,-71},{-174,60},{-144,60}},
-      color={255,153,0},
-      thickness=0.5));
-  connect(junction2.portC, junction6.portA) annotation (Line(
-      points={{-140,56},{-140,24}},
-      color={255,153,0},
-      thickness=0.5));
-  connect(junction6.portC, junction7.portA) annotation (Line(
-      points={{-140,16},{-140,6}},
+      points={{-174,-71},{-174,68},{-144,68}},
       color={255,153,0},
       thickness=0.5));
   connect(junction7.portC, valve6.portA) annotation (Line(
-      points={{-140,-2},{-140,-19}},
+      points={{-140,-4},{-140,-19}},
       color={255,153,0},
       thickness=0.5));
   connect(valve6.portB, tube1.portA) annotation (Line(
       points={{-140,-31},{-140,-60},{-58,-60}},
       color={255,153,0},
       thickness=0.5));
-  connect(junction6.portB, valve2.portA) annotation (Line(
-      points={{-136,20},{-112,20},{-112,21},{-108,21}},
-      color={255,153,0},
-      thickness=0.5));
   connect(junction7.portB, valve5.portA) annotation (Line(
-      points={{-136,2},{-134,1},{-108,1}},
+      points={{-136,0},{-134,1},{-108,1}},
       color={255,153,0},
       thickness=0.5));
   connect(valve3.portB, junction23.portC) annotation (Line(
-      points={{-20,-61},{-12,-61},{-12,-4}},
+      points={{-20,-59},{-12,-59},{-12,-4}},
       color={255,153,0},
       thickness=0.5));
   connect(valve5.portB, junction23.portB) annotation (Line(
       points={{-96,1},{-68,1},{-68,0},{-16,0}},
       color={255,153,0},
       thickness=0.5));
-  connect(junction23.portA, junction22.portB) annotation (Line(
-      points={{-12,4},{-12,16}},
-      color={255,153,0},
-      thickness=0.5));
-  connect(junction22.portC, junction21.portA) annotation (Line(
-      points={{-8,20},{8,20}},
-      color={255,153,0},
-      thickness=0.5));
-  connect(junction22.portC, sensor_T.port) annotation (Line(
-      points={{-8,20},{0,20},{0,42}},
-      color={255,153,0},
-      thickness=0.5));
   connect(junction5.portC, junction2.portA) annotation (Line(
-      points={{-140,96},{-140,64}},
+      points={{-140,96},{-140,72}},
       color={255,153,0},
       thickness=0.5));
   connect(CoolingLimiter1.y, firstOrder.u)
-    annotation (Line(points={{-239,-30},{-222,-30}}, color={0,0,127}));
+    annotation (Line(points={{-233,-30},{-222,-30}}, color={0,0,127}));
   connect(firstOrder.y, valve6.KvValue_in) annotation (Line(points={{-199,-30},{
           -150,-30},{-150,-25},{-143.75,-25}}, color={0,0,127}));
-  connect(valve2.portB, Heater.portA) annotation (Line(
-      points={{-96,21},{-80,21},{-80,20},{-60,20}},
+  connect(HeaterLimiter.y, firstOrder1.u)
+    annotation (Line(points={{-305,40},{-278,40}}, color={0,0,127}));
+  connect(firstOrder1.y, prescribedHeatFlow1.Q_flow)
+    annotation (Line(points={{-255,40},{-228,40}},color={0,0,127}));
+  connect(junction2.portC, Heater.portA) annotation (Line(
+      points={{-140,64},{-140,52},{-142,52},{-142,48}},
       color={255,153,0},
       thickness=0.5));
-  connect(Heater.portB, junction22.portA) annotation (Line(
-      points={{-44,20},{-16,20}},
+  connect(Heater.portB, junction7.portA) annotation (Line(
+      points={{-142,32},{-142,8},{-140,8},{-140,4}},
+      color={255,153,0},
+      thickness=0.5));
+  connect(junction23.portA, junction21.portA) annotation (Line(
+      points={{-12,4},{-12,20},{8,20}},
+      color={255,153,0},
+      thickness=0.5));
+  connect(junction23.portA, sensor_T.port) annotation (Line(
+      points={{-12,4},{-12,20},{0,20},{0,42}},
       color={255,153,0},
       thickness=0.5));
   connect(prescribedHeatFlow1.port, Heater.heatPort[1])
-    annotation (Line(points={{-62,40},{-52,40},{-52,22}}, color={191,0,0}));
-  connect(HeaterLimiter.y, firstOrder1.u)
-    annotation (Line(points={{-235,40},{-222,40}}, color={0,0,127}));
-  connect(firstOrder1.y, prescribedHeatFlow1.Q_flow)
-    annotation (Line(points={{-199,40},{-82,40}}, color={0,0,127}));
+    annotation (Line(points={{-208,40},{-144,40}}, color={191,0,0}));
   annotation (Diagram(coordinateSystem(preserveAspectRatio=false, extent={{-100,
             -100},{100,100}})),
     experiment(

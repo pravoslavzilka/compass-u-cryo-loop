@@ -13,6 +13,7 @@ model CoilAssembly4ch
 
   parameter Modelica.Units.SI.Length lengths[4] = {90,75,60,50} "Per-channel tube length [m] (Channel1..Channel4)";
   parameter Real diameters_mm[4](each unit="mm") = {7,7,7,7} "Per-channel tube inner diameter [mm] (Channel1..Channel4)";
+  parameter Modelica.Units.SI.Length wallThickness = 0.00488 "Tube wall thickness, same for all 4 channels";
   parameter Modelica.Units.SI.Power dischargeLoads[4] = {50000,50000,50000,50000} "Per-channel peak discharge heat [W] (Channel1..Channel4)";
   parameter Modelica.Units.SI.Time pulseStart = 10 "Discharge start time (after fan finishes accelerating)";
   parameter Modelica.Units.SI.Time pulseEnd = 15 "Discharge end time (5s heat shock)";
@@ -70,6 +71,7 @@ model CoilAssembly4ch
       innerDiameter=diameters[1],
       length=lengthsAdjusted[1],
       nParallelTubes=1,
+      wallThickness=wallThickness,
       crossSectionType=ThermalSystems.Internals.CrossSectionType.Circular),
     pressureDropPosition=ThermalSystems.Internals.PressureDropPosition.center,
     enableHeatPorts=true,
@@ -129,6 +131,7 @@ model CoilAssembly4ch
       innerDiameter=diameters[2],
       length=lengthsAdjusted[2],
       nParallelTubes=1,
+      wallThickness=wallThickness,
       crossSectionType=ThermalSystems.Internals.CrossSectionType.Circular),
     pressureDropPosition=ThermalSystems.Internals.PressureDropPosition.center,
     enableHeatPorts=true,
@@ -156,6 +159,7 @@ model CoilAssembly4ch
       innerDiameter=diameters[3],
       length=lengthsAdjusted[3],
       nParallelTubes=1,
+      wallThickness=wallThickness,
       crossSectionType=ThermalSystems.Internals.CrossSectionType.Circular),
     pressureDropPosition=ThermalSystems.Internals.PressureDropPosition.center,
     enableHeatPorts=true,
@@ -183,6 +187,7 @@ model CoilAssembly4ch
       innerDiameter=diameters[4],
       length=lengthsAdjusted[4],
       nParallelTubes=1,
+      wallThickness=wallThickness,
       crossSectionType=ThermalSystems.Internals.CrossSectionType.Circular),
     pressureDropPosition=ThermalSystems.Internals.PressureDropPosition.center,
     enableHeatPorts=true,
