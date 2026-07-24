@@ -9,6 +9,8 @@ model  PFCircuit
   parameter Real heater_gain = 100;
   parameter Real Kv_gain = 100;
   parameter Real bypass_limit = 10;
+  parameter Real hysteresisHalfWidth = 0.3
+    "Half-width of the ON/OFF gap around each PID.y switching threshold (heater/cooling/bypass), prevents state-event chattering when PID.y settles right on a threshold";
   parameter Modelica.Units.SI.TemperatureDifference tempMargin = 40
     "Margin below the hottest coil-assembly gas outlet temperature";
 
@@ -367,11 +369,18 @@ model  PFCircuit
     annotation (Placement(transformation(extent={{-6,-3},{6,3}},
         rotation=90,
         origin={12,65})));
-  Modelica.Blocks.Sources.RealExpression HeaterLimiter(y=if PID.y > u_dead
+  Modelica.Blocks.Logical.Hysteresis heaterHysteresis(uLow=u_dead -
+        hysteresisHalfWidth, uHigh=u_dead + hysteresisHalfWidth)
+    annotation (Placement(transformation(extent={{-330,54},{-310,74}})));
+  Modelica.Blocks.Sources.RealExpression HeaterLimiter(y=if heaterHysteresis.y
          then PID.y*heater_gain else 0)
     annotation (Placement(transformation(extent={{-298,30},{-278,50}})));
-  Modelica.Blocks.Sources.RealExpression CoolingLimiter1(y=if PID.y < -u_dead
-         then min(-PID.y*Kv_gain, Kv_cool_max) else Kv_shut)
+  Modelica.Blocks.Logical.Hysteresis coolingHysteresis(uLow=-u_dead -
+        hysteresisHalfWidth, uHigh=-u_dead + hysteresisHalfWidth)
+    annotation (Placement(transformation(extent={{-258,-78},{-238,-58}})));
+  Modelica.Blocks.Sources.RealExpression CoolingLimiter1(y=if
+        coolingHysteresis.y then min(-PID.y*Kv_gain, Kv_cool_max) else
+        Kv_shut)
     annotation (Placement(transformation(extent={{-226,-54},{-206,-34}})));
   ThermalSystems.GasComponents.JunctionElements.VolumeJunction junction7(
     volume=1e-2,
@@ -437,12 +446,18 @@ model  PFCircuit
     annotation (Placement(transformation(extent={{-200,30},{-180,50}})));
   Modelica.Blocks.Continuous.FirstOrder firstOrder1(T=1)
     annotation (Placement(transformation(extent={{-248,30},{-228,50}})));
-  Modelica.Blocks.Sources.RealExpression BypassLimiter(y=if PID.y < -
-        bypass_limit then max(500 + (PID.y*10), Kv_shut) else 500)
+  Modelica.Blocks.Logical.Hysteresis bypassHysteresis(uLow=bypass_limit -
+        hysteresisHalfWidth, uHigh=bypass_limit + hysteresisHalfWidth)
+    annotation (Placement(transformation(extent={{-274,-26},{-254,-6}})));
+  Modelica.Blocks.Sources.RealExpression BypassLimiter(y=if bypassHysteresis.y
+         then max(500 + (PID.y*10), Kv_shut) else 500)
     annotation (Placement(transformation(extent={{-242,-2},{-222,18}})));
   Modelica.Blocks.Continuous.FirstOrder firstOrder2(T=1)
     annotation (Placement(transformation(extent={{-192,-2},{-172,18}})));
 equation
+  heaterHysteresis.u = PID.y;
+  coolingHysteresis.u = -PID.y;
+  bypassHysteresis.u = -PID.y;
 
   connect(smoothStep.y,rotatoryBoundary. n_in)
     annotation (Line(points={{-123.4,142},{-60,142},{-60,135}},
