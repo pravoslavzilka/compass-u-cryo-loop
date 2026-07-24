@@ -24,7 +24,7 @@ protected
 equation
   cp = Modelica.Math.Vectors.interpolate(Tdata, cpData, T);
 
-  // Thermal conductivity lambda(T), W/(m.K)
+  // Thermal conductivity lambda(T), W/(m.K)ss
   // NIST OFHC copper fit, RRR=50, valid 4-300 K, form:
   //   lambda = 10 ^ ( (a + c*T^0.5 + e*T + g*T^1.5 + i*T^2)
   //                  /(1 + b*T^0.5 + d*T + f*T^1.5 + h*T^2) )

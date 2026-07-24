@@ -62,7 +62,7 @@ model CoilAssembly2ch
     enableHeatPorts=true,
     redeclare model HeatTransferModel =
         ThermalSystems.GasComponents.Tubes.TransportPhenomena.HeatTransfer.GnielinskiDittusBoelter,
-    redeclare model WallMaterial = TSMedia.SolidTypes.TSMedia_Copper,
+    redeclare model WallMaterial = CoilLoopCompassU.Common.CopperOFHC_Tdep,
     fixedTInitialWall=true,
 
     redeclare model PressureDropModel =
@@ -122,7 +122,7 @@ model CoilAssembly2ch
     enableHeatPorts=true,
     redeclare model HeatTransferModel =
         ThermalSystems.GasComponents.Tubes.TransportPhenomena.HeatTransfer.GnielinskiDittusBoelter,
-    redeclare model WallMaterial = TSMedia.SolidTypes.TSMedia_Copper,
+    redeclare model WallMaterial = CoilLoopCompassU.Common.CopperOFHC_Tdep,
     fixedTInitialWall=true,
 
     redeclare model PressureDropModel =
