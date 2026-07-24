@@ -438,7 +438,7 @@ model  PFCircuit
   Modelica.Blocks.Continuous.FirstOrder firstOrder1(T=1)
     annotation (Placement(transformation(extent={{-248,30},{-228,50}})));
   Modelica.Blocks.Sources.RealExpression BypassLimiter(y=if PID.y < -
-        bypass_limit then max(500 - PID.y*10, Kv_shut) else 500)
+        bypass_limit then max(500 + (PID.y*10), Kv_shut) else 500)
     annotation (Placement(transformation(extent={{-242,-2},{-222,18}})));
   Modelica.Blocks.Continuous.FirstOrder firstOrder2(T=1)
     annotation (Placement(transformation(extent={{-192,-2},{-172,18}})));
