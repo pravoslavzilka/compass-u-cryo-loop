@@ -9,8 +9,19 @@ model  PFCircuit
   parameter Real heater_gain = 100;
   parameter Real Kv_gain = 100;
   parameter Real bypass_limit = 10;
+  parameter Real hysteresisHalfWidth = 0.3
+    "Half-width of the ON/OFF gap around each PID.y switching threshold (heater/cooling/bypass), prevents state-event chattering when PID.y settles right on a threshold";
   parameter Modelica.Units.SI.TemperatureDifference tempMargin = 40
     "Margin below the hottest coil-assembly gas outlet temperature";
+  parameter Modelica.Units.SI.TemperatureDifference overCoolShutMargin = 40
+    "valve4 shuts once sensor_T.sensorValue rises to T_ref - overCoolShutMargin (T_ref = T_gas_out_max snapshot recorded at the moment valve4 last reopened)";
+  parameter Modelica.Units.SI.TemperatureDifference overCoolReopenMargin = 45
+    "valve4 reopens (and re-records T_ref = current T_gas_out_max) once T_gas_out_max - sensor_T.sensorValue exceeds this, while shut";
+
+  Real T_ref(start=0, fixed=true)
+    "T_gas_out_max snapshot for valve4's own control logic only (PID/wanted_temp are unaffected) -- re-recorded every time valve4 reopens, held constant otherwise";
+  Boolean valve4Open(start=false, fixed=true)
+    "true -> valve4 Kv=5000 (open), false -> valve4 Kv=0.001 (shut)";
 
   output Modelica.Units.SI.Temperature T_gas_out_max = max({PF1U.T_gas_out,
       PF1L.T_gas_out, PF2U.T_gas_out, PF2L.T_gas_out, PF3U.T_gas_out,
@@ -198,12 +209,12 @@ model  PFCircuit
   CoilAssembly2ch PF2U(lengths={80,83},
     dischargeLoads={0,0},
     TInitial(displayUnit="K") = 160,
-    assemblyIndex=1)
+    assemblyIndex=2)
     annotation (Placement(transformation(extent={{100,20},{120,40}})));
   CoilAssembly2ch PF2L(lengths={80,83},
     dischargeLoads={0,0},
     TInitial(displayUnit="K") = 160,
-    assemblyIndex=2)
+    assemblyIndex=1)
     annotation (Placement(transformation(extent={{100,40},{120,60}})));
   CoilAssembly4ch PF1L(
     lengths={61,64,70,74},
@@ -215,7 +226,8 @@ model  PFCircuit
     lengths={61,64,70,74},
     dischargeLoads={0,0,0,0},
     TInitial(displayUnit="K") = 160,
-    assemblyIndex=4)
+    assemblyIndex=4,
+    nCellsPerTube=1)
     annotation (Placement(transformation(extent={{100,60},{120,80}})));
   CoilAssembly3ch PF3L(lengths={83,84,87},
     dischargeLoads={0,0,0},
@@ -326,7 +338,7 @@ model  PFCircuit
     y_start=5)
             annotation (Placement(transformation(extent={{-10,10},{10,-10}},
         rotation=-90,
-        origin={-50,50})));
+        origin={-70,50})));
   Modelica.Blocks.Sources.RealExpression wantedTemp(y=wanted_temp)
     annotation (Placement(transformation(extent={{-156,70},{-136,90}})));
   ThermalSystems.GasComponents.Sensors.Sensor_T sensor_T
@@ -362,16 +374,23 @@ model  PFCircuit
   ThermalSystems.GasComponents.Valves.Valve valve4(
     valveFlowVariableType=ThermalSystems.Internals.ValveFlowVariableType.KvValue,
     use_effectiveFlowAreaInput=false,
-    use_KvValueInput=false,
+    use_KvValueInput=true,
     KvValueFixed=0.0001)
     annotation (Placement(transformation(extent={{-6,-3},{6,3}},
         rotation=90,
         origin={12,65})));
-  Modelica.Blocks.Sources.RealExpression HeaterLimiter(y=if PID.y > u_dead
+  Modelica.Blocks.Logical.Hysteresis heaterHysteresis(uLow=u_dead -
+        hysteresisHalfWidth, uHigh=u_dead + hysteresisHalfWidth)
+    annotation (Placement(transformation(extent={{-330,54},{-310,74}})));
+  Modelica.Blocks.Sources.RealExpression HeaterLimiter(y=if heaterHysteresis.y
          then PID.y*heater_gain else 0)
     annotation (Placement(transformation(extent={{-298,30},{-278,50}})));
-  Modelica.Blocks.Sources.RealExpression CoolingLimiter1(y=if PID.y < -u_dead
-         then min(-PID.y*Kv_gain, Kv_cool_max) else Kv_shut)
+  Modelica.Blocks.Logical.Hysteresis coolingHysteresis(uLow=-u_dead -
+        hysteresisHalfWidth, uHigh=-u_dead + hysteresisHalfWidth)
+    annotation (Placement(transformation(extent={{-258,-78},{-238,-58}})));
+  Modelica.Blocks.Sources.RealExpression CoolingLimiter1(y=if
+        coolingHysteresis.y then min(-PID.y*Kv_gain, Kv_cool_max) else
+        Kv_shut)
     annotation (Placement(transformation(extent={{-226,-54},{-206,-34}})));
   ThermalSystems.GasComponents.JunctionElements.VolumeJunction junction7(
     volume=1e-2,
@@ -437,13 +456,34 @@ model  PFCircuit
     annotation (Placement(transformation(extent={{-200,30},{-180,50}})));
   Modelica.Blocks.Continuous.FirstOrder firstOrder1(T=1)
     annotation (Placement(transformation(extent={{-248,30},{-228,50}})));
-  Modelica.Blocks.Sources.RealExpression BypassLimiter(y=if PID.y < -
-        bypass_limit then max(500 + (PID.y*10), Kv_shut) else 500)
+  Modelica.Blocks.Logical.Hysteresis bypassHysteresis(uLow=bypass_limit -
+        hysteresisHalfWidth, uHigh=bypass_limit + hysteresisHalfWidth)
+    annotation (Placement(transformation(extent={{-274,-26},{-254,-6}})));
+  Modelica.Blocks.Sources.RealExpression BypassLimiter(y=if bypassHysteresis.y
+         then max(500 + (PID.y*10), Kv_shut) else 500)
     annotation (Placement(transformation(extent={{-242,-2},{-222,18}})));
   Modelica.Blocks.Continuous.FirstOrder firstOrder2(T=1)
     annotation (Placement(transformation(extent={{-192,-2},{-172,18}})));
+  Modelica.Blocks.Sources.RealExpression bypassRegulatorOverCool(y=if
+        valve4Open then 5000 else 0.001)
+    annotation (Placement(transformation(extent={{-54,60},{-34,80}})));
+  Modelica.Blocks.Continuous.FirstOrder firstOrder3(T=1)
+    annotation (Placement(transformation(extent={{-20,60},{0,80}})));
 equation
+  heaterHysteresis.u = PID.y;
+  coolingHysteresis.u = -PID.y;
+  bypassHysteresis.u = -PID.y;
 
+algorithm
+  when time >= 1 and T_gas_out_max - sensor_T.sensorValue > overCoolReopenMargin
+      and not pre(valve4Open) then
+    T_ref := T_gas_out_max;
+    valve4Open := true;
+  elsewhen sensor_T.sensorValue >= T_ref - overCoolShutMargin and pre(valve4Open) then
+    valve4Open := false;
+  end when;
+
+equation
   connect(smoothStep.y,rotatoryBoundary. n_in)
     annotation (Line(points={{-123.4,142},{-60,142},{-60,135}},
                                                      color={0,0,127}));
@@ -590,10 +630,10 @@ equation
       points={{-79,120},{-112,120},{-112,104}},
       color={255,153,0},
       thickness=0.5));
-  connect(wantedTemp.y, PID.u_s) annotation (Line(points={{-135,80},{-50,80},{-50,
-          62}},                   color={0,0,127}));
+  connect(wantedTemp.y, PID.u_s) annotation (Line(points={{-135,80},{-70,80},{
+          -70,62}},               color={0,0,127}));
   connect(sensor_T.sensorValue, PID.u_m)
-    annotation (Line(points={{-12,46},{-30,46},{-30,50},{-38,50}},
+    annotation (Line(points={{-12,46},{-12,52},{-50,52},{-50,50},{-58,50}},
                                                           color={0,0,127}));
   connect(valveRegulator.y, limiter.u) annotation (Line(points={{-119,170},{-82,
           170}},                            color={0,0,127}));
@@ -681,6 +721,10 @@ equation
     annotation (Line(points={{-221,8},{-194,8}}, color={0,0,127}));
   connect(firstOrder2.y, valve5.KvValue_in)
     annotation (Line(points={{-171,8},{-74,8},{-74,-1.25}}, color={0,0,127}));
+  connect(firstOrder3.y, valve4.KvValue_in) annotation (Line(points={{1,70},{4,
+          70},{4,65},{8.25,65}}, color={0,0,127}));
+  connect(bypassRegulatorOverCool.y, firstOrder3.u)
+    annotation (Line(points={{-33,70},{-22,70}}, color={0,0,127}));
   annotation (Diagram(coordinateSystem(preserveAspectRatio=false, extent={{-100,
             -100},{100,100}})),
     experiment(

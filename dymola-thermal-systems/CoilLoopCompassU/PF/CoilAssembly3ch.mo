@@ -66,6 +66,7 @@ model CoilAssembly3ch
       wallThickness=0.00488,
       crossSectionType=ThermalSystems.Internals.CrossSectionType.Circular),
     pressureDropPosition=ThermalSystems.Internals.PressureDropPosition.center,
+    nCells=1,
     enableHeatPorts=true,
     redeclare model HeatTransferModel =
         ThermalSystems.GasComponents.Tubes.TransportPhenomena.HeatTransfer.GnielinskiDittusBoelter,
@@ -134,6 +135,7 @@ model CoilAssembly3ch
       wallThickness=0.00488,
       crossSectionType=ThermalSystems.Internals.CrossSectionType.Circular),
     pressureDropPosition=ThermalSystems.Internals.PressureDropPosition.center,
+    nCells=1,
     enableHeatPorts=true,
     redeclare model HeatTransferModel =
         ThermalSystems.GasComponents.Tubes.TransportPhenomena.HeatTransfer.GnielinskiDittusBoelter,
@@ -162,6 +164,7 @@ model CoilAssembly3ch
       wallThickness=0.00488,
       crossSectionType=ThermalSystems.Internals.CrossSectionType.Circular),
     pressureDropPosition=ThermalSystems.Internals.PressureDropPosition.center,
+    nCells=1,
     enableHeatPorts=true,
     redeclare model HeatTransferModel =
         ThermalSystems.GasComponents.Tubes.TransportPhenomena.HeatTransfer.GnielinskiDittusBoelter,
@@ -200,7 +203,8 @@ equation
     annotation (Line(points={{-71,84},{-48,84}},
                                                color={0,0,127}));
   connect(prescribedHeatFlow.port, tube2.heatPort[1])
-    annotation (Line(points={{-28,84},{40,84},{40,42}},color={191,0,0}));
+    annotation (Line(points={{-28,84},{40,84},{40,41.55}},
+                                                       color={191,0,0}));
   connect(valve1.portA, portA1) annotation (Line(
       points={{-80,1},{-114,1},{-114,0},{-128,0}},
       color={255,153,0},
@@ -208,11 +212,11 @@ equation
   connect(stepSource1.y, prescribedHeatFlow1.Q_flow)
     annotation (Line(points={{-71,64},{-48,64}}, color={0,0,127}));
   connect(prescribedHeatFlow1.port, tube1.heatPort[1]) annotation (Line(points={{-28,64},
-          {18,64},{18,38},{40,38},{40,0}},            color={191,0,0}));
+          {18,64},{18,38},{40,38},{40,-0.45}},        color={191,0,0}));
   connect(stepSource2.y, prescribedHeatFlow2.Q_flow)
     annotation (Line(points={{-71,46},{-46,46}}, color={0,0,127}));
   connect(prescribedHeatFlow2.port, tube3.heatPort[1]) annotation (Line(points={{-26,46},
-          {-22,46},{-22,34},{12,34},{12,-32},{40,-32},{40,-38}},
+          {-22,46},{-22,34},{12,34},{12,-32},{40,-32},{40,-38.45}},
                                                       color={191,0,0}));
   connect(junction1.portC, tube2.portA) annotation (Line(
       points={{20,24},{20,40},{32,40}},

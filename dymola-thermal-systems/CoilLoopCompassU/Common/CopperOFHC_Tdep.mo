@@ -21,8 +21,19 @@ protected
   constant Real Tdata[:]  = {20, 40, 80, 100, 150, 200, 250, 300};
   constant Real cpData[:] = {7.5, 58, 180, 250, 322, 356, 377, 385};
 
+  // Newton iterations on the wall-cell energy balance routinely probe T
+  // values outside the physical range while searching for a consistent
+  // solution (more so the more wall cells are coupled together, e.g. at
+  // higher nCells). T^0.5 below is NaN for T<0, and the cp table
+  // linearly extrapolates below 20K toward/through zero -- both blow up
+  // the solver instead of just giving a bad-but-finite trial value.
+  // Clamp the value fed to both correlations (not the true state T) so
+  // out-of-range Newton trials stay finite; in-range physics (>=1K,
+  // i.e. always in practice) is unaffected.
+  Real Tc = noEvent(max(T, 1));
+
 equation
-  cp = Modelica.Math.Vectors.interpolate(Tdata, cpData, T);
+  cp = Modelica.Math.Vectors.interpolate(Tdata, cpData, Tc);
 
   // Thermal conductivity lambda(T), W/(m.K)ss
   // NIST OFHC copper fit, RRR=50, valid 4-300 K, form:
@@ -40,8 +51,8 @@ protected
   constant Real h =  0.0014871;
   constant Real ii =  0.003723;
 equation
-  lambda = 10 ^ ( (a + c*T^0.5 + e*T + g*T^1.5 + ii*T^2)
-                / (1 + b*T^0.5 + dd*T + f*T^1.5 + h*T^2));
+  lambda = 10 ^ ( (a + c*Tc^0.5 + e*Tc + g*Tc^1.5 + ii*Tc^2)
+                / (1 + b*Tc^0.5 + dd*Tc + f*Tc^1.5 + h*Tc^2));
 
   annotation (Documentation(info="<html>
 <p>Temperature-dependent OFHC copper solid material, extending

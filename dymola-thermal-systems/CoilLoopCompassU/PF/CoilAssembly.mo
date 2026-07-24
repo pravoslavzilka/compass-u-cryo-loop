@@ -30,6 +30,7 @@ model CoilAssembly
       nParallelTubes=nChannels,
       crossSectionType=ThermalSystems.Internals.CrossSectionType.Circular),
     pressureDropPosition=ThermalSystems.Internals.PressureDropPosition.center,
+    nCells=10,
     enableHeatPorts=true,
     redeclare model HeatTransferModel =
         ThermalSystems.GasComponents.Tubes.TransportPhenomena.HeatTransfer.GnielinskiDittusBoelter,
@@ -69,7 +70,8 @@ equation
   connect(stepSource.y, prescribedHeatFlow.Q_flow)
     annotation (Line(points={{-7,72},{16,72}}, color={0,0,127}));
   connect(prescribedHeatFlow.port, tube2.heatPort[1])
-    annotation (Line(points={{36,72},{40,72},{40,56}}, color={191,0,0}));
+    annotation (Line(points={{36,72},{40,72},{40,55.55}},
+                                                       color={191,0,0}));
   connect(valve1.portB, tube2.portA) annotation (Line(
       points={{18,55},{18,54},{32,54}},
       color={255,153,0},
