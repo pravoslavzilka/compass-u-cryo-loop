@@ -22,6 +22,8 @@ model CoilAssembly4ch
   parameter Modelica.Units.SI.Temperature TInitial = 80 "Initial coil/gas temperature";
   parameter Integer assemblyIndex = 0
     "Unique index of this coil-assembly instance among all assemblies in the circuit (no physical meaning, only makes the anti-degeneracy offset below unique circuit-wide instead of just within this instance)";
+  parameter Integer nCellsPerTube = 1
+    "Per-tube wall/gas discretization cell count for this coil assembly instance only, so nCells can be tested on a single coil without subdividing every coil in the circuit at once (see project memory on nCells>1 circuit-wide Newton failures)";
 
   final parameter Modelica.Units.SI.Diameter diameters[4] = diameters_mm*1e-3 "Per-channel tube inner diameter, converted to m";
   final parameter Modelica.Units.SI.Length lengthsAdjusted[4] = {lengths[i]*(1 + 1e-5*(10*assemblyIndex + i)) for i in 1:4}
@@ -74,6 +76,7 @@ model CoilAssembly4ch
       wallThickness=wallThickness,
       crossSectionType=ThermalSystems.Internals.CrossSectionType.Circular),
     pressureDropPosition=ThermalSystems.Internals.PressureDropPosition.center,
+    nCells=nCellsPerTube,
     enableHeatPorts=true,
     redeclare model HeatTransferModel =
         ThermalSystems.GasComponents.Tubes.TransportPhenomena.HeatTransfer.GnielinskiDittusBoelter,
@@ -134,6 +137,7 @@ model CoilAssembly4ch
       wallThickness=wallThickness,
       crossSectionType=ThermalSystems.Internals.CrossSectionType.Circular),
     pressureDropPosition=ThermalSystems.Internals.PressureDropPosition.center,
+    nCells=nCellsPerTube,
     enableHeatPorts=true,
     redeclare model HeatTransferModel =
         ThermalSystems.GasComponents.Tubes.TransportPhenomena.HeatTransfer.GnielinskiDittusBoelter,
@@ -162,6 +166,7 @@ model CoilAssembly4ch
       wallThickness=wallThickness,
       crossSectionType=ThermalSystems.Internals.CrossSectionType.Circular),
     pressureDropPosition=ThermalSystems.Internals.PressureDropPosition.center,
+    nCells=nCellsPerTube,
     enableHeatPorts=true,
     redeclare model HeatTransferModel =
         ThermalSystems.GasComponents.Tubes.TransportPhenomena.HeatTransfer.GnielinskiDittusBoelter,
@@ -190,6 +195,7 @@ model CoilAssembly4ch
       wallThickness=wallThickness,
       crossSectionType=ThermalSystems.Internals.CrossSectionType.Circular),
     pressureDropPosition=ThermalSystems.Internals.PressureDropPosition.center,
+    nCells=nCellsPerTube,
     enableHeatPorts=true,
     redeclare model HeatTransferModel =
         ThermalSystems.GasComponents.Tubes.TransportPhenomena.HeatTransfer.GnielinskiDittusBoelter,
@@ -255,19 +261,21 @@ equation
     annotation (Line(points={{-73,86},{-50,86}},
                                                color={0,0,127}));
   connect(prescribedHeatFlow.port, tube2.heatPort[1])
-    annotation (Line(points={{-30,86},{22,86},{22,42}},color={191,0,0}));
+    annotation (Line(points={{-30,86},{22,86},{22,41.55}},
+                                                       color={191,0,0}));
   connect(stepSource1.y, prescribedHeatFlow1.Q_flow)
     annotation (Line(points={{-73,72},{-50,72}}, color={0,0,127}));
   connect(prescribedHeatFlow1.port, tube1.heatPort[1]) annotation (Line(points={{-30,72},
-          {-24,72},{-24,8},{20,8},{20,2}},           color={191,0,0}));
+          {-24,72},{-24,8},{20,8},{20,1.55}},        color={191,0,0}));
   connect(stepSource2.y, prescribedHeatFlow2.Q_flow)
     annotation (Line(points={{-73,60},{-50,60}}, color={0,0,127}));
   connect(prescribedHeatFlow2.port, tube3.heatPort[1]) annotation (Line(points={{-30,60},
-          {-20,60},{-20,-12},{20,-12},{20,-18}},  color={191,0,0}));
+          {-20,60},{-20,-12},{20,-12},{20,-18.45}},
+                                                  color={191,0,0}));
   connect(stepSource3.y, prescribedHeatFlow3.Q_flow)
     annotation (Line(points={{-73,46},{-50,46}}, color={0,0,127}));
   connect(prescribedHeatFlow3.port, tube4.heatPort[1]) annotation (Line(points={{-30,46},
-          {-16,46},{-16,-32},{20,-32},{20,-58}},    color={191,0,0}));
+          {-16,46},{-16,-32},{20,-32},{20,-58.45}}, color={191,0,0}));
   connect(junction2.portC, junction3.portB) annotation (Line(
       points={{-40,4},{-40,20},{-4,20}},
       color={255,153,0},

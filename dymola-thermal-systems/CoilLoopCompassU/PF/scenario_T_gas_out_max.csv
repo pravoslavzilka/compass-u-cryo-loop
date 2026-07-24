@@ -1,0 +1,2 @@
+scenario,date,result_file,T_gas_out_max_final_K,T_gas_out_max_peak_K,t_start_s,t_end_s
+1-nCell-July-24-1254,2026-07-24,debugging/result.mat,81.7257,159.3036,0.0,1815.0

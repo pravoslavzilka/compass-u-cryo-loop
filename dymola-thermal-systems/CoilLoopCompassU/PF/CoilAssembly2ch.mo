@@ -59,6 +59,7 @@ model CoilAssembly2ch
       wallThickness=0.00488,
       crossSectionType=ThermalSystems.Internals.CrossSectionType.Circular),
     pressureDropPosition=ThermalSystems.Internals.PressureDropPosition.center,
+    nCells=1,
     enableHeatPorts=true,
     redeclare model HeatTransferModel =
         ThermalSystems.GasComponents.Tubes.TransportPhenomena.HeatTransfer.GnielinskiDittusBoelter,
@@ -119,6 +120,7 @@ model CoilAssembly2ch
       wallThickness=0.00488,
       crossSectionType=ThermalSystems.Internals.CrossSectionType.Circular),
     pressureDropPosition=ThermalSystems.Internals.PressureDropPosition.center,
+    nCells=1,
     enableHeatPorts=true,
     redeclare model HeatTransferModel =
         ThermalSystems.GasComponents.Tubes.TransportPhenomena.HeatTransfer.GnielinskiDittusBoelter,
@@ -147,7 +149,8 @@ equation
   connect(stepSource.y, prescribedHeatFlow.Q_flow)
     annotation (Line(points={{-7,84},{16,84}}, color={0,0,127}));
   connect(prescribedHeatFlow.port, tube2.heatPort[1])
-    annotation (Line(points={{36,84},{40,84},{40,22}}, color={191,0,0}));
+    annotation (Line(points={{36,84},{40,84},{40,21.55}},
+                                                       color={191,0,0}));
   connect(valve1.portA, portA1) annotation (Line(
       points={{-38,1},{-114,1},{-114,0},{-128,0}},
       color={255,153,0},
@@ -155,7 +158,7 @@ equation
   connect(stepSource1.y, prescribedHeatFlow1.Q_flow)
     annotation (Line(points={{-19,62},{4,62}},   color={0,0,127}));
   connect(prescribedHeatFlow1.port, tube1.heatPort[1]) annotation (Line(points={{24,62},
-          {28,62},{28,-14},{40,-14},{40,-18}},       color={191,0,0}));
+          {28,62},{28,-14},{40,-14},{40,-18.45}},    color={191,0,0}));
   connect(junction2.portC, tube2.portA) annotation (Line(
       points={{20,4},{20,20},{32,20}},
       color={255,153,0},
