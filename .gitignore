@@ -3,7 +3,11 @@
 *.log
 dsin.txt
 dsu.txt
+dsfinal.txt
+dslog.txt
 dsmodel.c
+dsmodelext*.c
+buildlog.txt
 dymosim*
 *.exe
 *.o

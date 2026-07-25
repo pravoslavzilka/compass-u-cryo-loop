@@ -330,8 +330,8 @@ model  PFCircuit
     annotation (Placement(transformation(extent={{-72,116},{-80,124}})));
   Modelica.Blocks.Continuous.LimPID PID(
     controllerType=Modelica.Blocks.Types.SimpleController.PI,
-    k=0.05,
-    Ti=30,
+    k=0.085,
+    Ti=18,
     yMax=60,
     yMin=-60,
     initType=Modelica.Blocks.Types.Init.InitialOutput,
