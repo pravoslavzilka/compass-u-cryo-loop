@@ -83,7 +83,7 @@ model CoilAssembly3ch
   ThermalSystems.GasComponents.Valves.Valve valve1(
     valveFlowVariableType=ThermalSystems.Internals.ValveFlowVariableType.KvValue,
     use_effectiveFlowAreaInput=false,
-    use_KvValueInput=false,
+    use_KvValueInput=true,
     KvValueFixed=valveOpening*valveKvNominal)
     annotation (Placement(transformation(extent={{-80,-2},{-70,4}})));
   ThermalSystems.Connectors.GasPort portA1(gasType(
@@ -198,13 +198,17 @@ model CoilAssembly3ch
         origin={60,-20})));
   ThermalSystems.GasComponents.Sensors.Sensor_T sensor_T
     annotation (Placement(transformation(extent={{88,44},{96,52}})));
+  Modelica.Blocks.Interfaces.RealInput KvValue_in1
+    "Prescribed Kv-value [m^3/h]" annotation (Placement(transformation(
+        extent={{-20,-20},{20,20}},
+        rotation=180,
+        origin={108,-80})));
 equation
   connect(stepSource.y, prescribedHeatFlow.Q_flow)
     annotation (Line(points={{-71,84},{-48,84}},
                                                color={0,0,127}));
   connect(prescribedHeatFlow.port, tube2.heatPort[1])
-    annotation (Line(points={{-28,84},{40,84},{40,41.55}},
-                                                       color={191,0,0}));
+    annotation (Line(points={{-28,84},{40,84},{40,42}},color={191,0,0}));
   connect(valve1.portA, portA1) annotation (Line(
       points={{-80,1},{-114,1},{-114,0},{-128,0}},
       color={255,153,0},
@@ -212,11 +216,11 @@ equation
   connect(stepSource1.y, prescribedHeatFlow1.Q_flow)
     annotation (Line(points={{-71,64},{-48,64}}, color={0,0,127}));
   connect(prescribedHeatFlow1.port, tube1.heatPort[1]) annotation (Line(points={{-28,64},
-          {18,64},{18,38},{40,38},{40,-0.45}},        color={191,0,0}));
+          {18,64},{18,38},{40,38},{40,0}},            color={191,0,0}));
   connect(stepSource2.y, prescribedHeatFlow2.Q_flow)
     annotation (Line(points={{-71,46},{-46,46}}, color={0,0,127}));
   connect(prescribedHeatFlow2.port, tube3.heatPort[1]) annotation (Line(points={{-26,46},
-          {-22,46},{-22,34},{12,34},{12,-32},{40,-32},{40,-38.45}},
+          {-22,46},{-22,34},{12,34},{12,-32},{40,-32},{40,-38}},
                                                       color={191,0,0}));
   connect(junction1.portC, tube2.portA) annotation (Line(
       points={{20,24},{20,40},{32,40}},
@@ -262,6 +266,8 @@ equation
       points={{92,44},{92,20},{84,20}},
       color={255,153,0},
       thickness=0.5));
+  connect(valve1.KvValue_in, KvValue_in1) annotation (Line(points={{-75,4.75},{
+          -60,4.75},{-60,-80},{108,-80}}, color={0,0,127}));
   annotation (Icon(coordinateSystem(preserveAspectRatio=false)), Diagram(
         coordinateSystem(preserveAspectRatio=false)));
 end CoilAssembly3ch;
