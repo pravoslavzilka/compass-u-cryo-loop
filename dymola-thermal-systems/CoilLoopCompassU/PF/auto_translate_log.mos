@@ -108,6 +108,17 @@ end if;
 if ok then
   simOk := simulateModel(modelName, stopTime=1815, tolerance=1e-4,
                           resultFile=debugPath + "/result");
+
+  // Preserve THIS run's own dslog.txt (integrator/media warnings, e.g.
+  // TSMedia h_min excursions) before a later, separate FMU-export step --
+  // run manually afterward in this same debugPath -- silently overwrites
+  // it. Confirmed 2026-07-28: dslog.txt ended up byte-identical to
+  // buildlog.txt (the FMU's C-compiler build log) after such an export.
+  if Modelica.Utilities.Files.exist(debugPath + "/dslog.txt") then
+    Modelica.Utilities.Files.copy(debugPath + "/dslog.txt",
+                                   debugPath + "/dslog_simulate.txt", true);
+  end if;
+
   savelog(logFile);  // overwrite the log with the simulation run too (e.g. solver chattering)
 
   // Simulate checkpoint: use result.mat's own mtime instead of a scripted
