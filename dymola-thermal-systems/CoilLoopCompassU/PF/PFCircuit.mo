@@ -22,6 +22,8 @@ model  PFCircuit
     "Per-coil isolation valve closes once T_gas_out is this much colder than T_gas_out_max";
   parameter Modelica.Units.SI.TemperatureDifference coilIsolationReopenMargin = 35
     "Per-coil isolation valve reopens once within this much of T_gas_out_max";
+  parameter Modelica.Units.SI.Time controlActivationDelay = 5
+    "Reopen logic (valve4 and per-coil isolation) stays disabled until this much simulated time has passed, so it isn't triggered by unsettled startup temperatures";
 
   Real T_ref(start=0, fixed=true)
     "T_gas_out_max snapshot for valve4's own control logic only (PID/wanted_temp are unaffected) -- re-recorded every time valve4 reopens, held constant otherwise";
@@ -512,7 +514,7 @@ equation
   PF4L.KvValue_in1 = firstOrderCoilKv[8].y;
 
 algorithm
-  when time >= 1 and T_gas_out_max - sensor_T.sensorValue > overCoolReopenMargin
+  when time >= controlActivationDelay and T_gas_out_max - sensor_T.sensorValue > overCoolReopenMargin
       and not pre(valve4Open) then
     T_ref := T_gas_out_max;
     valve4Open := true;
@@ -521,7 +523,7 @@ algorithm
   end when;
 
   for i in 1:nPF loop
-    when time >= 1 and (T_gas_out_max - T_gas_out_compare_PF[i]) < coilIsolationReopenMargin
+    when time >= controlActivationDelay and (T_gas_out_max - T_gas_out_compare_PF[i]) < coilIsolationReopenMargin
         and not pre(coilOpen[i]) then
       coilOpen[i] := true;
     elsewhen (T_gas_out_max - T_gas_out_PF[i]) > coilIsolationCloseMargin
