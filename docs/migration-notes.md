@@ -12,6 +12,84 @@ way to recognize the same bug again.
 
 ---
 
+## 2026-07-28 — Coolant-temperature bump at t≈513s after forcing the main bypass (`valve1`) shut: overcool safety valve slamming open/closed
+
+**Status: fix confirmed working**, via a real post-change VM run
+(`result.mat`, run finished 18:39). Before the fix, `valve4` opened and
+closed twice — once at the expected t≈5s startup transient, and again in
+a fast, spurious ~3.3s cycle at t≈512–515s that produced the bump. After
+the fix, `valve4` opens **only once** for the entire 1815s run (t=5.0s →
+t=68.6s, the expected startup episode) and never re-triggers — the
+`T_gas_out_max`-minus-coolant-temperature gap now peaks around 28K near
+t≈500-560s, comfortably under the 45K trip margin that used to be crossed
+there. The coolant-temperature trace is smooth (largest single-step change
+0.58K) for the entire run after the pre-existing t=72–166s startup
+transient settles — no trace of the t≈513s bump anywhere. Side benefits:
+Newton-solver failures dropped 81→42, state events 20→11, CPU time
+966s→477s (roughly half), still zero `h_min` warnings.
+
+**Symptom:** after changing `valve1` (the main circuit bypass) to stay
+fully shut past the first `controlActivationDelay=5s` startup window
+instead of continuously trimming toward `m_wanted`, the coolant
+temperature reading (`sensor_T` — used only as the variable name below)
+started showing a sharp ~18K dip-and-recover bump around t≈513–520s,
+where a previous run (with `valve1` still trimming) had already settled
+into a smooth decline by that point.
+
+**Root cause:** with `valve1`'s continuous bypass flow removed, the gap
+between the hottest coil reading (`T_gas_out_max`) and the downstream
+coolant temperature grew large enough to cross the overcool safety
+valve's trip threshold (`overCoolReopenMargin=45K`) at t=512.448s —
+confirmed directly from `result.mat`: the gap climbs smoothly and
+monotonically (33.9K at t=497 → 44.5K at t=511.8) before crossing exactly
+`45.000` (Dymola's own event-iteration pins several consecutive stored
+rows at that exact value while it homes in on the crossing instant).
+`valve4` (the overcool bypass, Kv≈5000 when open) then snapped from
+essentially closed (`KvValue_in=0.001`) to nearly fully open
+(`KvValue_in≈4800`, flow briefly overshooting to 7.4 kg/s) within about
+half a second, then closed again only ~3.3s later once the coolant
+temperature recovered past `overCoolShutMargin=40K` below the `T_ref`
+snapshot taken at open. That fast open/close cycle produced a real,
+physically-simulated main-circuit flow spike (~0.44 → ~0.99 → ~0.5 kg/s)
+which is what dragged the coolant temperature through the visible bump,
+and also triggered a cluster of 39 Newton-solver retries in that window
+(new — not present in the run before `valve1` was forced shut).
+
+**Fix applied:** added a "stabilize" hold to `valve4`'s closing logic in
+`PFCircuit.mo` — new parameter `overCoolStabilizeDelay=5s`, new state
+`overCoolRecovering`/`overCoolRecoveredAt`, extending the existing
+`when`/`elsewhen` block that opens/closes `valve4`. Previously `valve4`
+closed the instant the coolant temperature first crossed back within
+`overCoolShutMargin`. Now, once that recovery condition is first met,
+`valve4` keeps flowing through the bypass branch for
+`overCoolStabilizeDelay` (5s) more, and only actually closes (pushing
+flow back through the coils) once the coolant temperature has stayed
+within the safe band for the whole hold — if it dips back out of range
+during the hold, the recovery timer restarts on the next rising edge.
+Intent: let the coolant temperature actually settle near its new
+equilibrium before yanking the bypass away, instead of slamming `valve4`
+shut the instant it first touches the threshold.
+
+**How it was found:** same technique as other entries in this doc — real
+`result.mat` trajectory data (via `scipy.io.loadmat` on the host), not
+log warnings alone. `T_gas_out_max - sensor_T.sensorValue` was tracked
+point-by-point to confirm the 45K crossing was smooth and genuine, and
+`valve4.KvValue_in`/`valve4.portA.m_flow` were pulled directly to confirm
+`valve4` physically opened (rather than trusting the `valve4Open` boolean
+flag alone).
+
+**General lesson:** a threshold-triggered discrete valve — even one with
+a real hysteresis-style margin (45K open / 40K close here, so not
+literally chattering) — can still produce a large, physically-real
+flow/temperature transient right at the instant it fires, if nothing
+damps how fast it reopens or closes. Adding a settle/dwell time on the
+closing edge (mirroring the `controlActivationDelay` startup-window
+pattern already used elsewhere in this model) is a reusable pattern for
+any other bang-bang latch in this file found to be causing a similar
+transient.
+
+---
+
 ## 2026-07-14 — `Modelica.Utilities.System.getTime()` corrupts `dslog.txt`/`dsfinal.txt` — don't use it for timing
 
 **Symptom:** added wall-clock instrumentation to `PF/auto_translate_log.mos` to

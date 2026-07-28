@@ -1,7 +1,8 @@
 within CoilLoopCompassU.PF;
 model  PFCircuit
   extends ThermalSystems.Internals.ClassTypes.ExampleModel;
-  parameter Real m_wanted = 0.095 "flow I want in the circuit, kg/s";
+  parameter Real m_wanted = 0.9
+    "flow I want in the circuit, kg/s -- recalibrated 2026-07-28 from debugging/result.mat (sensor_m_flow.sensorValue averaged ~0.895 kg/s over t=1600-1815s, still rising ~0.03 kg/s/100s at end of run -- old value of 0.095 predated the coil-geometry/isolation changes and no longer matched the achieved flow by ~10x)";
   parameter Real m_total = 0.1 "total flow from the pump, kg/s";
   parameter Real u_dead = 1;
   parameter Real Kv_shut = 1e-4;
@@ -9,14 +10,20 @@ model  PFCircuit
   parameter Real heater_gain = 100;
   parameter Real Kv_gain = 100;
   parameter Real bypass_limit = 10;
+  parameter Real Kv_circuit = 5.0
+    "Equivalent Kv (m3/h) of the circuit branch (junction5.portC -> ... -> junction4.portA), as seen in parallel with valve1's bypass branch across the shared junction5/junction4 dp -- measured 2026-07-28 from debugging/result.mat via two independent methods (flow-ratio: 5.49 m3/h; direct dp/mdot/rho: 4.99 m3/h), re-identify with debugging/identify_circuit_kv.py if the coil/header geometry changes again";
   parameter Real hysteresisHalfWidth = 0.3
     "Half-width of the ON/OFF gap around each PID.y switching threshold (heater/cooling/bypass), prevents state-event chattering when PID.y settles right on a threshold";
   parameter Modelica.Units.SI.TemperatureDifference tempMargin = 40
     "Margin below the hottest coil-assembly gas outlet temperature";
   parameter Modelica.Units.SI.TemperatureDifference overCoolShutMargin = 40
-    "valve4 shuts once sensor_T.sensorValue rises to T_ref - overCoolShutMargin (T_ref = T_gas_out_max snapshot recorded at the moment valve4 last reopened)";
+    "Lower bound of valve4's settle band: T_ref - overCoolShutMargin (T_ref = T_gas_out_max snapshot recorded at the moment valve4 last reopened). sensor_T.sensorValue must sit at or above this (and at or below T_ref - overCoolShutMargin + overCoolStabilityBand, i.e. within the band) for overCoolStabilizeDelay seconds continuously before valve4 actually shuts.";
   parameter Modelica.Units.SI.TemperatureDifference overCoolReopenMargin = 45
     "valve4 reopens (and re-records T_ref = current T_gas_out_max) once T_gas_out_max - sensor_T.sensorValue exceeds this, while shut";
+  parameter Modelica.Units.SI.TemperatureDifference overCoolStabilityBand = 20
+    "Width of valve4's settle band above the lower bound (T_ref - overCoolShutMargin): sensor_T.sensorValue must stay within [T_ref - overCoolShutMargin, T_ref - overCoolShutMargin + overCoolStabilityBand] continuously -- e.g. cooling toward 120K with overCoolShutMargin=40/overCoolStabilityBand=20 means it needs to settle within [120,140]K, not just touch 120K once.";
+  parameter Modelica.Units.SI.Time overCoolStabilizeDelay = 5
+    "sensor_T.sensorValue must stay continuously within valve4's settle band (see overCoolShutMargin/overCoolStabilityBand) for this long before valve4 actually closes -- lets the temperature genuinely settle before flow is pushed back through the coils. Any excursion out of the band (either side) before the delay elapses restarts the wait.";
   parameter Integer nPF = 8 "Number of PF coil assemblies";
   parameter Modelica.Units.SI.TemperatureDifference coilIsolationCloseMargin = 40
     "Per-coil isolation valve closes once T_gas_out is this much colder than T_gas_out_max";
@@ -24,11 +31,17 @@ model  PFCircuit
     "Per-coil isolation valve reopens once within this much of T_gas_out_max";
   parameter Modelica.Units.SI.Time controlActivationDelay = 5
     "Reopen logic (valve4 and per-coil isolation) stays disabled until this much simulated time has passed, so it isn't triggered by unsettled startup temperatures";
+  parameter Real m_flow_startup = 0.2
+    "Circuit flow target valve1 bypasses down to for the first controlActivationDelay seconds (same startup window as the reopen-logic delay above), so coil temperatures can be read before valve1 releases to the normal m_wanted trim control, kg/s";
 
   Real T_ref(start=0, fixed=true)
     "T_gas_out_max snapshot for valve4's own control logic only (PID/wanted_temp are unaffected) -- re-recorded every time valve4 reopens, held constant otherwise";
   Boolean valve4Open(start=false, fixed=true)
     "true -> valve4 Kv=5000 (open), false -> valve4 Kv=0.001 (shut)";
+  Boolean overCoolRecovering(start=false, fixed=true)
+    "True while sensor_T is inside valve4's settle band ([T_ref - overCoolShutMargin, T_ref - overCoolShutMargin + overCoolStabilityBand]) but hasn't stayed there continuously for overCoolStabilizeDelay yet -- valve4 stays open (bypass still flowing) during this hold. Reset to false the instant sensor_T leaves the band on either side, so the wait restarts on the next continuous stay.";
+  Real overCoolRecoveredAt(start=0, fixed=true)
+    "Time sensor_T most recently entered valve4's settle band during the current valve4-open episode -- gates the overCoolStabilizeDelay hold before valve4 actually closes.";
   Boolean coilOpen[nPF](start=fill(true, nPF), fixed=fill(true, nPF))
     "Per-assembly isolation valve latch, order: PF1U,PF1L,PF2U,PF2L,PF3U,PF3L,PF4U,PF4L";
   Real T_gas_out_frozen[nPF](each start=0, each fixed=true)
@@ -38,6 +51,11 @@ model  PFCircuit
     "Hottest coil-assembly gas outlet temperature -- uses each coil's live reading while open, frozen closing-time snapshot while isolated, so a closed coil's post-isolation reheating can't distort this (or wanted_temp/other coils' close decisions)";
   output Modelica.Units.SI.Temperature wanted_temp = T_gas_out_max - tempMargin
     "PID setpoint: hottest coil outlet minus margin, revalued continuously";
+  output Modelica.Units.SI.Temperature sensor_T_filtered = sensorTFiltered.y
+    "Low-pass-filtered copy of sensor_T.sensorValue, reporting only";
+  Real m_flowTarget = if time < controlActivationDelay then m_flow_startup else
+      m_wanted
+    "valve1's circuit-flow target: m_flow_startup for the first controlActivationDelay seconds (coil-temperature read window), m_wanted afterwards";
 
   Real T_gas_out_PF[nPF] = {PF1U.T_gas_out, PF1L.T_gas_out, PF2U.T_gas_out,
       PF2L.T_gas_out, PF3U.T_gas_out, PF3L.T_gas_out, PF4U.T_gas_out,
@@ -159,7 +177,7 @@ model  PFCircuit
   ThermalSystems.GasComponents.Valves.Valve valve1(
     valveFlowVariableType=ThermalSystems.Internals.ValveFlowVariableType.KvValue,
     use_effectiveFlowAreaInput=false,
-    use_KvValueInput=false,
+    use_KvValueInput=true,
     KvValueFixed=0.0001)
     annotation (Placement(transformation(extent={{-6,-3},{6,3}},
         rotation=0,
@@ -344,8 +362,8 @@ model  PFCircuit
     annotation (Placement(transformation(extent={{-4,-4},{4,4}},
         rotation=90,
         origin={40,20})));
-  Modelica.Blocks.Sources.RealExpression valveRegulator(y=(4.39)*(sensor_m_flow.sensorValue
-         - m_wanted)/m_wanted)
+  Modelica.Blocks.Sources.RealExpression valveRegulator(y=Kv_circuit*(
+        sensor_m_flow.sensorValue - m_flowTarget)/m_flowTarget)
     annotation (Placement(transformation(extent={{-140,160},{-120,180}})));
   ThermalSystems.GasComponents.Sensors.Sensor_m_flow sensor_m_flow
     annotation (Placement(transformation(extent={{-72,116},{-80,124}})));
@@ -364,8 +382,24 @@ model  PFCircuit
     annotation (Placement(transformation(extent={{-156,70},{-136,90}})));
   ThermalSystems.GasComponents.Sensors.Sensor_T sensor_T
     annotation (Placement(transformation(extent={{-16,40},{-8,48}})));
+  Modelica.Blocks.Continuous.FirstOrder sensorTFiltered(T=3,
+      initType=Modelica.Blocks.Types.Init.SteadyState)
+    "Reporting-only low-pass filter on sensor_T's raw reading -- does NOT
+    feed PID.u_m (line 693) or the valve4Open algorithm block (lines
+    525/529), both of which keep reading sensor_T.sensorValue directly.
+    T=3s mirrors the 2026-07-27 firstOrderCoilKv precedent; raise toward
+    5-10s if scatter persists, but not so high it visibly lags real
+    transients (heater on/off, coil isolation events)."
+    annotation (Placement(transformation(extent={{-16,18},{4,26}})));
   Modelica.Blocks.Nonlinear.Limiter limiter(uMax=500, uMin=0.001)
     annotation (Placement(transformation(extent={{-80,160},{-60,180}})));
+  Modelica.Blocks.Sources.RealExpression valve1Command(y=if time <
+        controlActivationDelay then limiter.y else Kv_shut)
+    "valve1's final Kv command: the flow-trim proportional control (valveRegulator
+    -> limiter), still targeting m_flow_startup, for the first controlActivationDelay
+    seconds only; after that valve1 no longer trims flow toward m_wanted -- it's
+    forced fully shut (Kv_shut) instead."
+    annotation (Placement(transformation(extent={{-56,160},{-36,180}})));
   ThermalSystems.GasComponents.Valves.Valve valve3(
     valveFlowVariableType=ThermalSystems.Internals.ValveFlowVariableType.KvValue,
     use_effectiveFlowAreaInput=false,
@@ -518,8 +552,28 @@ algorithm
       and not pre(valve4Open) then
     T_ref := T_gas_out_max;
     valve4Open := true;
-  elsewhen sensor_T.sensorValue >= T_ref - overCoolShutMargin and pre(valve4Open) then
+    overCoolRecovering := false;
+  elsewhen pre(valve4Open) and not pre(overCoolRecovering)
+      and sensor_T.sensorValue >= T_ref - overCoolShutMargin
+      and sensor_T.sensorValue <= T_ref - overCoolShutMargin + overCoolStabilityBand then
+    // sensor_T just entered the settle band -- don't close yet, start the
+    // overCoolStabilizeDelay hold (valve4 keeps flowing through the bypass
+    // branch).
+    overCoolRecoveredAt := time;
+    overCoolRecovering := true;
+  elsewhen pre(valve4Open) and pre(overCoolRecovering)
+      and (sensor_T.sensorValue < T_ref - overCoolShutMargin
+        or sensor_T.sensorValue > T_ref - overCoolShutMargin + overCoolStabilityBand) then
+    // sensor_T left the settle band (either side) before stabilizing --
+    // cancel the hold; the branch above restarts it on the next continuous
+    // entry into the band.
+    overCoolRecovering := false;
+  elsewhen pre(overCoolRecovering)
+      and sensor_T.sensorValue >= T_ref - overCoolShutMargin
+      and sensor_T.sensorValue <= T_ref - overCoolShutMargin + overCoolStabilityBand
+      and time >= overCoolRecoveredAt + overCoolStabilizeDelay then
     valve4Open := false;
+    overCoolRecovering := false;
   end when;
 
   for i in 1:nPF loop
@@ -685,10 +739,12 @@ equation
   connect(sensor_T.sensorValue, PID.u_m)
     annotation (Line(points={{-12,46},{-12,52},{-50,52},{-50,50},{-58,50}},
                                                           color={0,0,127}));
+  connect(sensor_T.sensorValue, sensorTFiltered.u)
+    annotation (Line(points={{-12,46},{-12,22},{-18,22}}, color={0,0,127}));
   connect(valveRegulator.y, limiter.u) annotation (Line(points={{-119,170},{-82,
           170}},                            color={0,0,127}));
-  connect(limiter.y, valve1.KvValue_in) annotation (Line(points={{-59,170},{-42,
-          170},{-42,102.75}},                     color={0,0,127}));
+  connect(valve1Command.y, valve1.KvValue_in) annotation (Line(points={{-35,170},
+          {-42,170},{-42,102.75}},                     color={0,0,127}));
   connect(tube1.portB, valve3.portA) annotation (Line(
       points={{-42,-60},{-42,-59},{-32,-59}},
       color={255,153,0},

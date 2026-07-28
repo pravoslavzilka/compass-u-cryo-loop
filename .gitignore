@@ -14,3 +14,6 @@ dymosim*
 *.obj
 /work/
 *.bak
+
+# Python virtual environment (Test/ fmpy smoke-test harness)
+dymola-thermal-systems/Test/env/
