@@ -17,11 +17,13 @@ model  PFCircuit
   parameter Modelica.Units.SI.TemperatureDifference tempMargin = 40
     "Margin below the hottest coil-assembly gas outlet temperature";
   parameter Modelica.Units.SI.TemperatureDifference overCoolShutMargin = 40
-    "valve4 shuts once sensor_T.sensorValue rises to T_ref - overCoolShutMargin (T_ref = T_gas_out_max snapshot recorded at the moment valve4 last reopened)";
+    "Lower bound of valve4's settle band: T_ref - overCoolShutMargin (T_ref = T_gas_out_max snapshot recorded at the moment valve4 last reopened). sensor_T.sensorValue must sit at or above this (and at or below T_ref - overCoolShutMargin + overCoolStabilityBand, i.e. within the band) for overCoolStabilizeDelay seconds continuously before valve4 actually shuts.";
   parameter Modelica.Units.SI.TemperatureDifference overCoolReopenMargin = 45
     "valve4 reopens (and re-records T_ref = current T_gas_out_max) once T_gas_out_max - sensor_T.sensorValue exceeds this, while shut";
+  parameter Modelica.Units.SI.TemperatureDifference overCoolStabilityBand = 20
+    "Width of valve4's settle band above the lower bound (T_ref - overCoolShutMargin): sensor_T.sensorValue must stay within [T_ref - overCoolShutMargin, T_ref - overCoolShutMargin + overCoolStabilityBand] continuously -- e.g. cooling toward 120K with overCoolShutMargin=40/overCoolStabilityBand=20 means it needs to settle within [120,140]K, not just touch 120K once.";
   parameter Modelica.Units.SI.Time overCoolStabilizeDelay = 5
-    "Once sensor_T recovers within overCoolShutMargin of T_ref, valve4 keeps flowing through the bypass branch this much longer before actually closing -- lets the temperature settle before flow is pushed back through the coils, instead of closing the instant the threshold is first crossed.";
+    "sensor_T.sensorValue must stay continuously within valve4's settle band (see overCoolShutMargin/overCoolStabilityBand) for this long before valve4 actually closes -- lets the temperature genuinely settle before flow is pushed back through the coils. Any excursion out of the band (either side) before the delay elapses restarts the wait.";
   parameter Integer nPF = 8 "Number of PF coil assemblies";
   parameter Modelica.Units.SI.TemperatureDifference coilIsolationCloseMargin = 40
     "Per-coil isolation valve closes once T_gas_out is this much colder than T_gas_out_max";
@@ -37,9 +39,9 @@ model  PFCircuit
   Boolean valve4Open(start=false, fixed=true)
     "true -> valve4 Kv=5000 (open), false -> valve4 Kv=0.001 (shut)";
   Boolean overCoolRecovering(start=false, fixed=true)
-    "True once sensor_T has recovered within overCoolShutMargin of T_ref but overCoolStabilizeDelay hasn't elapsed yet -- valve4 stays open (bypass still flowing) during this hold.";
+    "True while sensor_T is inside valve4's settle band ([T_ref - overCoolShutMargin, T_ref - overCoolShutMargin + overCoolStabilityBand]) but hasn't stayed there continuously for overCoolStabilizeDelay yet -- valve4 stays open (bypass still flowing) during this hold. Reset to false the instant sensor_T leaves the band on either side, so the wait restarts on the next continuous stay.";
   Real overCoolRecoveredAt(start=0, fixed=true)
-    "Time sensor_T first recovered within overCoolShutMargin of T_ref during the current valve4-open episode -- gates the overCoolStabilizeDelay hold before valve4 actually closes.";
+    "Time sensor_T most recently entered valve4's settle band during the current valve4-open episode -- gates the overCoolStabilizeDelay hold before valve4 actually closes.";
   Boolean coilOpen[nPF](start=fill(true, nPF), fixed=fill(true, nPF))
     "Per-assembly isolation valve latch, order: PF1U,PF1L,PF2U,PF2L,PF3U,PF3L,PF4U,PF4L";
   Real T_gas_out_frozen[nPF](each start=0, each fixed=true)
@@ -551,14 +553,24 @@ algorithm
     T_ref := T_gas_out_max;
     valve4Open := true;
     overCoolRecovering := false;
-  elsewhen sensor_T.sensorValue >= T_ref - overCoolShutMargin and pre(valve4Open) then
-    // sensor_T is back in range -- don't close yet, start/restart the
+  elsewhen pre(valve4Open) and not pre(overCoolRecovering)
+      and sensor_T.sensorValue >= T_ref - overCoolShutMargin
+      and sensor_T.sensorValue <= T_ref - overCoolShutMargin + overCoolStabilityBand then
+    // sensor_T just entered the settle band -- don't close yet, start the
     // overCoolStabilizeDelay hold (valve4 keeps flowing through the bypass
-    // branch); if sensor_T dips back out and recovers again before the
-    // delay elapses, this branch re-fires and restarts the hold.
+    // branch).
     overCoolRecoveredAt := time;
     overCoolRecovering := true;
-  elsewhen pre(overCoolRecovering) and sensor_T.sensorValue >= T_ref - overCoolShutMargin
+  elsewhen pre(valve4Open) and pre(overCoolRecovering)
+      and (sensor_T.sensorValue < T_ref - overCoolShutMargin
+        or sensor_T.sensorValue > T_ref - overCoolShutMargin + overCoolStabilityBand) then
+    // sensor_T left the settle band (either side) before stabilizing --
+    // cancel the hold; the branch above restarts it on the next continuous
+    // entry into the band.
+    overCoolRecovering := false;
+  elsewhen pre(overCoolRecovering)
+      and sensor_T.sensorValue >= T_ref - overCoolShutMargin
+      and sensor_T.sensorValue <= T_ref - overCoolShutMargin + overCoolStabilityBand
       and time >= overCoolRecoveredAt + overCoolStabilizeDelay then
     valve4Open := false;
     overCoolRecovering := false;

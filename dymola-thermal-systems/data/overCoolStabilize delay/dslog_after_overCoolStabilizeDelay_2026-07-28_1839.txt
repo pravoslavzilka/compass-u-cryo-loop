@@ -1,5 +1,5 @@
 Log-file of program ./dymosim
-(generated: Tue Jul 28 21:14:07 2026)
+(generated: Tue Jul 28 18:31:19 2026)
 
 dymosim started
 ... "CoilLoopCompassU.PF.PFCircuit" simulating
@@ -314,21 +314,21 @@ interval is too large or the system is stiff.
 
 
 Integration terminated successfully at T = 1815
-   CPU-time for integration                : 1.46e+03 seconds
-   CPU-time for one grid interval          : 2.92e+03 milliseconds
-   CPU-time for initialization             : 0.036 seconds
-   Number of result points                 : 522
+   CPU-time for integration                : 477 seconds
+   CPU-time for one grid interval          : 955 milliseconds
+   CPU-time for initialization             : 0.037 seconds
+   Number of result points                 : 525
    Number of grid points                   : 501
-   Number of accepted steps                : 11889
-   Number of f-evaluations (dynamics)      : 45277
-   Number of crossing function evaluations : 12473
-   Number of Jacobian-evaluations          : 16747
+   Number of accepted steps                : 4581
+   Number of f-evaluations (dynamics)      : 15464
+   Number of crossing function evaluations : 5182
+   Number of Jacobian-evaluations          : 5535
    Number of model time events             : 2
    Number of input time events             : 0
-   Number of state events                  : 9
+   Number of state events                  : 11
    Number of step events                   : 0
    Minimum integration stepsize            : 1.2e-07
-   Maximum integration stepsize            : 57.8
+   Maximum integration stepsize            : 61.1
    Maximum integration order               : 5
 Calling terminal section
 ... "dsfinal.txt" creating (final states)
