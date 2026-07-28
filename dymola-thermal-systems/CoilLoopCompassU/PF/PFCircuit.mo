@@ -17,18 +17,39 @@ model  PFCircuit
     "valve4 shuts once sensor_T.sensorValue rises to T_ref - overCoolShutMargin (T_ref = T_gas_out_max snapshot recorded at the moment valve4 last reopened)";
   parameter Modelica.Units.SI.TemperatureDifference overCoolReopenMargin = 45
     "valve4 reopens (and re-records T_ref = current T_gas_out_max) once T_gas_out_max - sensor_T.sensorValue exceeds this, while shut";
+  parameter Integer nPF = 8 "Number of PF coil assemblies";
+  parameter Modelica.Units.SI.TemperatureDifference coilIsolationCloseMargin = 40
+    "Per-coil isolation valve closes once T_gas_out is this much colder than T_gas_out_max";
+  parameter Modelica.Units.SI.TemperatureDifference coilIsolationReopenMargin = 35
+    "Per-coil isolation valve reopens once within this much of T_gas_out_max";
+  parameter Modelica.Units.SI.Time controlActivationDelay = 5
+    "Reopen logic (valve4 and per-coil isolation) stays disabled until this much simulated time has passed, so it isn't triggered by unsettled startup temperatures";
 
   Real T_ref(start=0, fixed=true)
     "T_gas_out_max snapshot for valve4's own control logic only (PID/wanted_temp are unaffected) -- re-recorded every time valve4 reopens, held constant otherwise";
   Boolean valve4Open(start=false, fixed=true)
     "true -> valve4 Kv=5000 (open), false -> valve4 Kv=0.001 (shut)";
+  Boolean coilOpen[nPF](start=fill(true, nPF), fixed=fill(true, nPF))
+    "Per-assembly isolation valve latch, order: PF1U,PF1L,PF2U,PF2L,PF3U,PF3L,PF4U,PF4L";
+  Real T_gas_out_frozen[nPF](each start=0, each fixed=true)
+    "Snapshot of T_gas_out_PF[i] taken the instant coilOpen[i] closes -- held constant while closed, re-recorded every closing edge";
 
-  output Modelica.Units.SI.Temperature T_gas_out_max = max({PF1U.T_gas_out,
-      PF1L.T_gas_out, PF2U.T_gas_out, PF2L.T_gas_out, PF3U.T_gas_out,
-      PF3L.T_gas_out, PF4U.T_gas_out, PF4L.T_gas_out})
-    "Hottest coil-assembly gas outlet temperature (all 8 coils)";
+  output Modelica.Units.SI.Temperature T_gas_out_max = max(T_gas_out_compare_PF)
+    "Hottest coil-assembly gas outlet temperature -- uses each coil's live reading while open, frozen closing-time snapshot while isolated, so a closed coil's post-isolation reheating can't distort this (or wanted_temp/other coils' close decisions)";
   output Modelica.Units.SI.Temperature wanted_temp = T_gas_out_max - tempMargin
     "PID setpoint: hottest coil outlet minus margin, revalued continuously";
+
+  Real T_gas_out_PF[nPF] = {PF1U.T_gas_out, PF1L.T_gas_out, PF2U.T_gas_out,
+      PF2L.T_gas_out, PF3U.T_gas_out, PF3L.T_gas_out, PF4U.T_gas_out,
+      PF4L.T_gas_out} "Same order as coilOpen";
+  Real valveKvNominal_PF[nPF] = {PF1U.valveKvNominal, PF1L.valveKvNominal,
+      PF2U.valveKvNominal, PF2L.valveKvNominal, PF3U.valveKvNominal,
+      PF3L.valveKvNominal, PF4U.valveKvNominal, PF4L.valveKvNominal}
+    "Each assembly's own fully-open Kv, same order as coilOpen";
+  Real kvTarget_PF[nPF]
+    "Commanded Kv per assembly before smoothing: valveKvNominal_PF when open, Kv_shut when closed";
+  Real T_gas_out_compare_PF[nPF]
+    "T_gas_out_PF[i] while open (live), T_gas_out_frozen[i] while closed -- what the close/reopen decision is evaluated against";
 
   inner ThermalSystems.SystemInformationManager sim(
       generateEventsAtFlowReversalGas=false,
@@ -469,19 +490,48 @@ model  PFCircuit
     annotation (Placement(transformation(extent={{-54,60},{-34,80}})));
   Modelica.Blocks.Continuous.FirstOrder firstOrder3(T=1)
     annotation (Placement(transformation(extent={{-20,60},{0,80}})));
+  Modelica.Blocks.Continuous.FirstOrder firstOrderCoilKv[nPF](each T=3)
+    "Smooths each per-coil Kv step to avoid solver state events -- T=3 (was 1) to soften the 6-decade Kv collapse that stalled the solver for ~73s of simulated time (t~95-168s) in the 2026-07-27 run"
+    annotation (Placement(transformation(extent={{-20,-100},{0,-80}})));
 equation
   heaterHysteresis.u = PID.y;
   coolingHysteresis.u = -PID.y;
   bypassHysteresis.u = -PID.y;
 
+  for i in 1:nPF loop
+    kvTarget_PF[i] = if coilOpen[i] then valveKvNominal_PF[i] else Kv_shut;
+    firstOrderCoilKv[i].u = kvTarget_PF[i];
+    T_gas_out_compare_PF[i] = if coilOpen[i] then T_gas_out_PF[i] else
+      T_gas_out_frozen[i];
+  end for;
+  PF1U.KvValue_in1 = firstOrderCoilKv[1].y;
+  PF1L.KvValue_in1 = firstOrderCoilKv[2].y;
+  PF2U.KvValue_in1 = firstOrderCoilKv[3].y;
+  PF2L.KvValue_in1 = firstOrderCoilKv[4].y;
+  PF3U.KvValue_in1 = firstOrderCoilKv[5].y;
+  PF3L.KvValue_in1 = firstOrderCoilKv[6].y;
+  PF4U.KvValue_in1 = firstOrderCoilKv[7].y;
+  PF4L.KvValue_in1 = firstOrderCoilKv[8].y;
+
 algorithm
-  when time >= 1 and T_gas_out_max - sensor_T.sensorValue > overCoolReopenMargin
+  when time >= controlActivationDelay and T_gas_out_max - sensor_T.sensorValue > overCoolReopenMargin
       and not pre(valve4Open) then
     T_ref := T_gas_out_max;
     valve4Open := true;
   elsewhen sensor_T.sensorValue >= T_ref - overCoolShutMargin and pre(valve4Open) then
     valve4Open := false;
   end when;
+
+  for i in 1:nPF loop
+    when time >= controlActivationDelay and (T_gas_out_max - T_gas_out_compare_PF[i]) < coilIsolationReopenMargin
+        and not pre(coilOpen[i]) then
+      coilOpen[i] := true;
+    elsewhen (T_gas_out_max - T_gas_out_PF[i]) > coilIsolationCloseMargin
+        and pre(coilOpen[i]) then
+      coilOpen[i] := false;
+      T_gas_out_frozen[i] := T_gas_out_PF[i];
+    end when;
+  end for;
 
 equation
   connect(smoothStep.y,rotatoryBoundary. n_in)

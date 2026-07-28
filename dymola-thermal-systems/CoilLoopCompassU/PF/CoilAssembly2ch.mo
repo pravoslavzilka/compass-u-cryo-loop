@@ -76,7 +76,7 @@ model CoilAssembly2ch
   ThermalSystems.GasComponents.Valves.Valve valve1(
     valveFlowVariableType=ThermalSystems.Internals.ValveFlowVariableType.KvValue,
     use_effectiveFlowAreaInput=false,
-    use_KvValueInput=false,
+    use_KvValueInput=true,
     KvValueFixed=valveOpening*valveKvNominal)
     annotation (Placement(transformation(extent={{-38,-2},{-28,4}})));
   ThermalSystems.Connectors.GasPort portA1(gasType(
@@ -145,12 +145,16 @@ model CoilAssembly2ch
         origin={60,0})));
   ThermalSystems.GasComponents.Sensors.Sensor_T sensor_T
     annotation (Placement(transformation(extent={{76,16},{84,24}})));
+  Modelica.Blocks.Interfaces.RealInput KvValue_in1
+    "Prescribed Kv-value [m^3/h]" annotation (Placement(transformation(
+        extent={{-20,-20},{20,20}},
+        rotation=180,
+        origin={104,-66})));
 equation
   connect(stepSource.y, prescribedHeatFlow.Q_flow)
     annotation (Line(points={{-7,84},{16,84}}, color={0,0,127}));
   connect(prescribedHeatFlow.port, tube2.heatPort[1])
-    annotation (Line(points={{36,84},{40,84},{40,21.55}},
-                                                       color={191,0,0}));
+    annotation (Line(points={{36,84},{40,84},{40,22}}, color={191,0,0}));
   connect(valve1.portA, portA1) annotation (Line(
       points={{-38,1},{-114,1},{-114,0},{-128,0}},
       color={255,153,0},
@@ -158,7 +162,7 @@ equation
   connect(stepSource1.y, prescribedHeatFlow1.Q_flow)
     annotation (Line(points={{-19,62},{4,62}},   color={0,0,127}));
   connect(prescribedHeatFlow1.port, tube1.heatPort[1]) annotation (Line(points={{24,62},
-          {28,62},{28,-14},{40,-14},{40,-18.45}},    color={191,0,0}));
+          {28,62},{28,-14},{40,-14},{40,-18}},       color={191,0,0}));
   connect(junction2.portC, tube2.portA) annotation (Line(
       points={{20,4},{20,20},{32,20}},
       color={255,153,0},
@@ -187,6 +191,8 @@ equation
       points={{64,0},{80,0},{80,16}},
       color={255,153,0},
       thickness=0.5));
+  connect(valve1.KvValue_in, KvValue_in1) annotation (Line(points={{-33,4.75},{
+          -34,4.75},{-34,-66},{104,-66}}, color={0,0,127}));
   annotation (Icon(coordinateSystem(preserveAspectRatio=false)), Diagram(
         coordinateSystem(preserveAspectRatio=false)));
 end CoilAssembly2ch;

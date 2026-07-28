@@ -93,7 +93,7 @@ model CoilAssembly4ch
   ThermalSystems.GasComponents.Valves.Valve valve1(
     valveFlowVariableType=ThermalSystems.Internals.ValveFlowVariableType.KvValue,
     use_effectiveFlowAreaInput=false,
-    use_KvValueInput=false,
+    use_KvValueInput=true,
     KvValueFixed=valveOpening*valveKvNominal)
     annotation (Placement(transformation(extent={{-86,-2},{-76,4}})));
   ThermalSystems.Connectors.GasPort portA1(gasType(
@@ -256,26 +256,29 @@ model CoilAssembly4ch
         origin={80,-2})));
   ThermalSystems.GasComponents.Sensors.Sensor_T sensor_T
     annotation (Placement(transformation(extent={{86,28},{94,36}})));
+  Modelica.Blocks.Interfaces.RealInput KvValue_in1
+    "Prescribed Kv-value [m^3/h]" annotation (Placement(transformation(
+        extent={{-20,-20},{20,20}},
+        rotation=180,
+        origin={106,-80})));
 equation
   connect(stepSource.y, prescribedHeatFlow.Q_flow)
     annotation (Line(points={{-73,86},{-50,86}},
                                                color={0,0,127}));
   connect(prescribedHeatFlow.port, tube2.heatPort[1])
-    annotation (Line(points={{-30,86},{22,86},{22,41.55}},
-                                                       color={191,0,0}));
+    annotation (Line(points={{-30,86},{22,86},{22,42}},color={191,0,0}));
   connect(stepSource1.y, prescribedHeatFlow1.Q_flow)
     annotation (Line(points={{-73,72},{-50,72}}, color={0,0,127}));
   connect(prescribedHeatFlow1.port, tube1.heatPort[1]) annotation (Line(points={{-30,72},
-          {-24,72},{-24,8},{20,8},{20,1.55}},        color={191,0,0}));
+          {-24,72},{-24,8},{20,8},{20,2}},           color={191,0,0}));
   connect(stepSource2.y, prescribedHeatFlow2.Q_flow)
     annotation (Line(points={{-73,60},{-50,60}}, color={0,0,127}));
   connect(prescribedHeatFlow2.port, tube3.heatPort[1]) annotation (Line(points={{-30,60},
-          {-20,60},{-20,-12},{20,-12},{20,-18.45}},
-                                                  color={191,0,0}));
+          {-20,60},{-20,-12},{20,-12},{20,-18}},  color={191,0,0}));
   connect(stepSource3.y, prescribedHeatFlow3.Q_flow)
     annotation (Line(points={{-73,46},{-50,46}}, color={0,0,127}));
   connect(prescribedHeatFlow3.port, tube4.heatPort[1]) annotation (Line(points={{-30,46},
-          {-16,46},{-16,-32},{20,-32},{20,-58.45}}, color={191,0,0}));
+          {-16,46},{-16,-32},{20,-32},{20,-58}},    color={191,0,0}));
   connect(junction2.portC, junction3.portB) annotation (Line(
       points={{-40,4},{-40,20},{-4,20}},
       color={255,153,0},
@@ -340,6 +343,8 @@ equation
       points={{84,-2},{90,-2},{90,28}},
       color={255,153,0},
       thickness=0.5));
+  connect(valve1.KvValue_in, KvValue_in1) annotation (Line(points={{-81,4.75},{
+          -81,14},{-60,14},{-60,-80},{106,-80}}, color={0,0,127}));
   annotation (Icon(coordinateSystem(preserveAspectRatio=false)), Diagram(
         coordinateSystem(preserveAspectRatio=false)));
 end CoilAssembly4ch;
