@@ -1,0 +1,385 @@
+Log-file of program ./dymosim
+(generated: Wed Jul 29 14:25:15 2026)
+
+dymosim started
+... "CoilLoopCompassU.PF.PFCircuit" simulating
+... "dsin.txt" loading (dymosim input file)
+... "Z:/compass-u-cryo-loop/dymola-thermal-systems/CoilLoopCompassU/PF/debugging/result.mat" creating (simulation result file)
+
+Integration started at T = 0 using integration method DASSL
+(DAE multi-step solver (dassl/dasslrt of Petzold modified by Dassault Systemes))
+
+Warning: Failed to solve nonlinear system using Newton solver.
+  Time: 5.143617974002244
+  Tag: simulation.nonlinear[29]
+  For debugging information enable
+  Simulation/Setup/Debug/Nonlinear solver diagnostics/Detailed logging of failed nonlinear solutions.
+Solver will attempt to handle this problem.
+
+Failed to evaluate model for ODE-Jacobian
+
+Warning: Failed to solve nonlinear system using Newton solver.
+  Time: 5.139092790904791
+  Tag: simulation.nonlinear[29]
+Solver will attempt to handle this problem.
+
+Failed to evaluate model for ODE-Jacobian
+
+Warning: Failed to solve nonlinear system using Newton solver.
+  Time: 5.142109579636426
+  Tag: simulation.nonlinear[29]
+Solver will attempt to handle this problem.
+
+Failed to evaluate model for ODE-Jacobian
+
+Warning: Failed to solve nonlinear system using Newton solver.
+  Time: 5.148143157099697
+  Tag: simulation.nonlinear[29]
+Solver will attempt to handle this problem.
+
+Failed to evaluate model for ODE-Jacobian
+
+Warning: Failed to solve nonlinear system using Newton solver.
+  Time: 5.146634762733879
+  Tag: simulation.nonlinear[29]
+Solver will attempt to handle this problem.
+
+Failed to evaluate model for ODE-Jacobian
+
+Warning: Failed to solve nonlinear system using Newton solver.
+  Time: 5.157193523294603
+  Tag: simulation.nonlinear[29]
+Solver will attempt to handle this problem.
+
+Failed to evaluate model for ODE-Jacobian
+
+Warning: Failed to solve nonlinear system using Newton solver.
+  Time: 5.166243889489508
+  Tag: simulation.nonlinear[29]
+Solver will attempt to handle this problem.
+
+Failed to evaluate model for ODE-Jacobian
+
+Warning: Failed to solve nonlinear system using Newton solver.
+  Time: 5.169260678221144
+  Tag: simulation.nonlinear[29]
+Solver will attempt to handle this problem.
+
+Failed to evaluate model for ODE-Jacobian
+
+Warning: Failed to solve nonlinear system using Newton solver.
+  Time: 5.170769072586961
+  Tag: simulation.nonlinear[29]
+Solver will attempt to handle this problem.
+
+Failed to evaluate model for ODE-Jacobian
+
+Warning: Failed to solve nonlinear system using Newton solver.
+  Time: 5.173785861318597
+  Tag: simulation.nonlinear[29]
+Solver will attempt to handle this problem.
+
+Failed to evaluate model for ODE-Jacobian
+
+Warning: Failed to solve nonlinear system using Newton solver.
+  Time: 5.187361410610955
+  Tag: simulation.nonlinear[29]
+Solver will attempt to handle this problem.
+
+Failed to evaluate model for ODE-Jacobian
+
+Warning: Failed to solve nonlinear system using Newton solver.
+  Time: 5.223562875390578
+  Tag: simulation.nonlinear[29]
+Solver will attempt to handle this problem.
+
+Failed to evaluate model for ODE-Jacobian
+
+Warning: Failed to solve nonlinear system using Newton solver.
+  Time: 5.232613241585484
+  Tag: simulation.nonlinear[29]
+Solver will attempt to handle this problem.
+
+Failed to evaluate model for ODE-Jacobian
+
+Warning: Failed to solve nonlinear system using Newton solver.
+  Time: 5.229596452853849
+  Tag: simulation.nonlinear[29]
+Solver will attempt to handle this problem.
+
+Failed to evaluate model for ODE-Jacobian
+
+Warning: Failed to solve nonlinear system using Newton solver.
+  Time: 5.24166360778039
+  Tag: simulation.nonlinear[29]
+Solver will attempt to handle this problem.
+
+Failed to evaluate model for ODE-Jacobian
+
+Warning: Failed to solve nonlinear system using Newton solver.
+  Time: 5.232613241585484
+  Tag: simulation.nonlinear[29]
+Solver will attempt to handle this problem.
+
+Failed to evaluate model for ODE-Jacobian
+
+Warning: Failed to solve nonlinear system using Newton solver.
+  Time: 5.238646819048754
+  Tag: simulation.nonlinear[29]
+Solver will attempt to handle this problem.
+
+Failed to evaluate model for ODE-Jacobian
+
+Warning: Failed to solve nonlinear system using Newton solver.
+  Time: 5.250713973975295
+  Tag: simulation.nonlinear[29]
+Solver will attempt to handle this problem.
+
+Failed to evaluate model for ODE-Jacobian
+
+Warning: Failed to solve nonlinear system using Newton solver.
+  Time: 5.24166360778039
+  Tag: simulation.nonlinear[29]
+Solver will attempt to handle this problem.
+
+Failed to evaluate model for ODE-Jacobian
+
+Warning: Failed to solve nonlinear system using Newton solver.
+  Time: 5.24769718524366
+  Tag: simulation.nonlinear[29]
+Solver will attempt to handle this problem.
+
+Failed to evaluate model for ODE-Jacobian
+
+Warning: Failed to solve nonlinear system using Newton solver.
+  Time: 5.259764340170201
+  Tag: simulation.nonlinear[29]
+Solver will attempt to handle this problem.
+
+Failed to evaluate model for ODE-Jacobian
+
+Warning: Failed to solve nonlinear system using Newton solver.
+  Time: 5.250713973975295
+  Tag: simulation.nonlinear[29]
+Solver will attempt to handle this problem.
+
+Failed to evaluate model for ODE-Jacobian
+
+Warning: Failed to solve nonlinear system using Newton solver.
+  Time: 5.256747551438566
+  Tag: simulation.nonlinear[29]
+Solver will attempt to handle this problem.
+
+Failed to evaluate model for ODE-Jacobian
+
+Warning: Failed to solve nonlinear system using Newton solver.
+  Time: 6.352258386518721
+  Tag: simulation.nonlinear[29]
+Solver will attempt to handle this problem.
+
+Failed to evaluate model for ODE-Jacobian
+
+Warning: Failed to solve nonlinear system using Newton solver.
+  Time: 65.50827143799984
+  Tag: simulation.nonlinear[29]
+Solver will attempt to handle this problem.
+
+Failed to evaluate model for ODE-Jacobian
+
+Warning: Failed to solve nonlinear system using Newton solver.
+  Time: 63.79390273930616
+  Tag: simulation.nonlinear[29]
+Solver will attempt to handle this problem.
+
+Failed to evaluate model for ODE-Jacobian
+
+Warning: Failed to solve nonlinear system using Newton solver.
+  Time: 63.80318860873975
+  Tag: simulation.nonlinear[29]
+Solver will attempt to handle this problem.
+
+Failed to evaluate model for ODE-Jacobian
+
+Warning: Failed to solve nonlinear system using Newton solver.
+  Time: 63.81556976798455
+  Tag: simulation.nonlinear[29]
+Solver will attempt to handle this problem.
+
+Failed to evaluate model for ODE-Jacobian
+
+Warning: Failed to solve nonlinear system using Newton solver.
+  Time: 63.84033208647414
+  Tag: simulation.nonlinear[29]
+Solver will attempt to handle this problem.
+
+Failed to evaluate model for ODE-Jacobian
+
+Warning: Failed to solve nonlinear system using Newton solver.
+  Time: 63.88985672345333
+  Tag: simulation.nonlinear[29]
+Solver will attempt to handle this problem.
+
+Failed to evaluate model for ODE-Jacobian
+
+Warning: Failed to solve nonlinear system using Newton solver.
+  Time: 63.85271324571894
+  Tag: simulation.nonlinear[29]
+Solver will attempt to handle this problem.
+
+Failed to evaluate model for ODE-Jacobian
+
+Warning: Failed to solve nonlinear system using Newton solver.
+  Time: 63.87747556420853
+  Tag: simulation.nonlinear[29]
+Solver will attempt to handle this problem.
+
+Failed to evaluate model for ODE-Jacobian
+
+Warning: Failed to solve nonlinear system using Newton solver.
+  Time: 63.92700020118772
+  Tag: simulation.nonlinear[29]
+Solver will attempt to handle this problem.
+
+Failed to evaluate model for ODE-Jacobian
+
+Warning: Failed to solve nonlinear system using Newton solver.
+  Time: 63.88985672345333
+  Tag: simulation.nonlinear[29]
+Solver will attempt to handle this problem.
+
+Failed to evaluate model for ODE-Jacobian
+
+Warning: Failed to solve nonlinear system using Newton solver.
+  Time: 64.00128715665649
+  Tag: simulation.nonlinear[29]
+Solver will attempt to handle this problem.
+
+Failed to evaluate model for ODE-Jacobian
+
+Warning: Failed to solve nonlinear system using Newton solver.
+  Time: 64.10033643061486
+  Tag: simulation.nonlinear[29]
+Solver will attempt to handle this problem.
+
+Failed to evaluate model for ODE-Jacobian
+
+Warning: Failed to solve nonlinear system using Newton solver.
+  Time: 64.29843497853159
+  Tag: simulation.nonlinear[29]
+Solver will attempt to handle this problem.
+
+Failed to evaluate model for ODE-Jacobian
+
+Warning: Failed to solve nonlinear system using Newton solver.
+  Time: 64.69463207436505
+  Tag: simulation.nonlinear[29]
+Solver will attempt to handle this problem.
+
+Failed to evaluate model for ODE-Jacobian
+
+Warning: Failed to solve nonlinear system using Newton solver.
+  Time: 65.48702626603196
+  Tag: simulation.nonlinear[29]
+Solver will attempt to handle this problem.
+
+Failed to evaluate model for ODE-Jacobian
+
+Warning: Failed to solve nonlinear system using Newton solver.
+  Time: 67.86420884103271
+  Tag: simulation.nonlinear[29]
+Solver will attempt to handle this problem.
+
+Failed to evaluate model for ODE-Jacobian
+
+Warning: Failed to solve nonlinear system using Newton solver.
+  Time: 68.79253273930617
+  Tag: simulation.nonlinear[29]
+Solver will attempt to handle this problem.
+
+Failed to evaluate model for ODE-Jacobian
+
+Warning: Failed to solve nonlinear system using Newton solver.
+  Time: 68.79359860873976
+  Tag: simulation.nonlinear[29]
+Solver will attempt to handle this problem.
+
+Failed to evaluate model for ODE-Jacobian
+
+Warning: Failed to solve nonlinear system using Newton solver.
+  Time: 68.79501976798456
+  Tag: simulation.nonlinear[29]
+Solver will attempt to handle this problem.
+
+Failed to evaluate model for ODE-Jacobian
+
+Warning: Failed to solve nonlinear system using Newton solver.
+  Time: 68.79786208647414
+  Tag: simulation.nonlinear[29]
+Solver will attempt to handle this problem.
+
+Failed to evaluate model for ODE-Jacobian
+
+Warning: Failed to solve nonlinear system using Newton solver.
+  Time: 68.80354672345332
+  Tag: simulation.nonlinear[29]
+Solver will attempt to handle this problem.
+
+Failed to evaluate model for ODE-Jacobian
+
+Warning: Failed to solve nonlinear system using Newton solver.
+  Time: 68.81491599741169
+  Tag: simulation.nonlinear[29]
+Solver will attempt to handle this problem.
+
+Failed to evaluate model for ODE-Jacobian
+
+Warning: Failed to solve nonlinear system using Newton solver.
+  Time: 68.83765454532842
+  Tag: simulation.nonlinear[29]
+Solver will attempt to handle this problem.
+
+Failed to evaluate model for ODE-Jacobian
+
+Warning: Failed to solve nonlinear system using Newton solver.
+  Time: 68.88313164116188
+  Tag: simulation.nonlinear[29]
+Solver will attempt to handle this problem.
+
+Failed to evaluate model for ODE-Jacobian
+
+Warning: Failed to solve nonlinear system using Newton solver.
+  Time: 68.97408583282879
+  Tag: simulation.nonlinear[29]
+Solver will attempt to handle this problem.
+
+Failed to evaluate model for ODE-Jacobian
+
+... Warning message from dymosim
+At time T = 2.248452e+02 in current integration interval
+T_interval = 2.214300e+02 ... 2.250600e+02
+a large amount of work has been expended
+(about 500 steps) in the integrator. Probably the communication
+interval is too large or the system is stiff.
+
+
+Integration terminated successfully at T = 1815
+   CPU-time for integration                : 545 seconds
+   CPU-time for one grid interval          : 1.09e+03 milliseconds
+   CPU-time for initialization             : 0.031 seconds
+   Number of result points                 : 522
+   Number of grid points                   : 501
+   Number of accepted steps                : 7816
+   Number of f-evaluations (dynamics)      : 25830
+   Number of crossing function evaluations : 8403
+   Number of Jacobian-evaluations          : 6238
+   Number of model time events             : 2
+   Number of input time events             : 0
+   Number of state events                  : 9
+   Number of step events                   : 0
+   Minimum integration stepsize            : 1.2e-07
+   Maximum integration stepsize            : 72.1
+   Maximum integration order               : 5
+Calling terminal section
+... "dsfinal.txt" creating (final states)
+
+SUCCESSFUL simulation of CoilLoopCompassU.PF.PFCircuit

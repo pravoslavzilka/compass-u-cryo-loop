@@ -14,15 +14,15 @@ model  PFCircuit
     "Equivalent Kv (m3/h) of the circuit branch (junction5.portC -> ... -> junction4.portA), as seen in parallel with valve1's bypass branch across the shared junction5/junction4 dp -- measured 2026-07-28 from debugging/result.mat via two independent methods (flow-ratio: 5.49 m3/h; direct dp/mdot/rho: 4.99 m3/h), re-identify with debugging/identify_circuit_kv.py if the coil/header geometry changes again";
   parameter Real hysteresisHalfWidth = 0.3
     "Half-width of the ON/OFF gap around each PID.y switching threshold (heater/cooling/bypass), prevents state-event chattering when PID.y settles right on a threshold";
-  parameter Modelica.Units.SI.TemperatureDifference tempMargin = 40
+  parameter Modelica.Units.SI.TemperatureDifference tempMargin=40
     "Margin below the hottest coil-assembly gas outlet temperature";
-  parameter Modelica.Units.SI.TemperatureDifference overCoolShutMargin = 40
+  parameter Modelica.Units.SI.TemperatureDifference overCoolShutMargin=40
     "Lower bound of valve4's settle band: T_ref - overCoolShutMargin (T_ref = T_gas_out_max snapshot recorded at the moment valve4 last reopened). sensor_T.sensorValue must sit at or above this (and at or below T_ref - overCoolShutMargin + overCoolStabilityBand, i.e. within the band) for overCoolStabilizeDelay seconds continuously before valve4 actually shuts.";
-  parameter Modelica.Units.SI.TemperatureDifference overCoolReopenMargin = 45
+  parameter Modelica.Units.SI.TemperatureDifference overCoolReopenMargin=45
     "valve4 reopens (and re-records T_ref = current T_gas_out_max) once T_gas_out_max - sensor_T.sensorValue exceeds this, while shut";
-  parameter Modelica.Units.SI.TemperatureDifference overCoolStabilityBand = 20
+  parameter Modelica.Units.SI.TemperatureDifference overCoolStabilityBand=20
     "Width of valve4's settle band above the lower bound (T_ref - overCoolShutMargin): sensor_T.sensorValue must stay within [T_ref - overCoolShutMargin, T_ref - overCoolShutMargin + overCoolStabilityBand] continuously -- e.g. cooling toward 120K with overCoolShutMargin=40/overCoolStabilityBand=20 means it needs to settle within [120,140]K, not just touch 120K once.";
-  parameter Modelica.Units.SI.Time overCoolStabilizeDelay = 5
+  parameter Modelica.Units.SI.Time overCoolStabilizeDelay=30
     "sensor_T.sensorValue must stay continuously within valve4's settle band (see overCoolShutMargin/overCoolStabilityBand) for this long before valve4 actually closes -- lets the temperature genuinely settle before flow is pushed back through the coils. Any excursion out of the band (either side) before the delay elapses restarts the wait.";
   parameter Integer nPF = 8 "Number of PF coil assemblies";
   parameter Modelica.Units.SI.TemperatureDifference coilIsolationCloseMargin = 40
@@ -84,8 +84,8 @@ model  PFCircuit
   ThermalSystems.GasComponents.Fans.Fan2ndOrder fan2ndOrder(
     orientation="symmetric",
     use_mechanicalPort=true,
-    n_nominal=167,
-    dp_nominal(displayUnit="bar") = 1000000,
+    n_nominal=200,
+    dp_nominal(displayUnit="bar") = 1200000,
     V_flow_nominal=0.021,
     V_flow0=0.040,
     T_nominal(displayUnit="K") = 80,
@@ -96,8 +96,8 @@ model  PFCircuit
         rotation=90,
         origin={-60,120})));
   ThermalSystems.OtherComponents.Sources.SmoothStep smoothStep(
-    initialValue=167,
-    endValue=167,
+    initialValue=200,
+    endValue=200,
     startTime=1,
     stepPeriod=10)
     annotation (Placement(transformation(extent={{-6,-6},{6,6}},
@@ -369,8 +369,8 @@ model  PFCircuit
     annotation (Placement(transformation(extent={{-72,116},{-80,124}})));
   Modelica.Blocks.Continuous.LimPID PID(
     controllerType=Modelica.Blocks.Types.SimpleController.PI,
-    k=0.085,
-    Ti=18,
+    k=0.12,
+    Ti=12,
     yMax=60,
     yMin=-60,
     initType=Modelica.Blocks.Types.Init.InitialOutput,

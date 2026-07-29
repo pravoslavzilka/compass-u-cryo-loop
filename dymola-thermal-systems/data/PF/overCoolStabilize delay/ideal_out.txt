@@ -1,0 +1,50 @@
+t range 0.0-1815.0s n=512
+
+valve4Open time fraction OPEN: 5.2734375 %
+valve4 closes at: [np.float64(83.5)]
+valve4 opens  at: [np.float64(5.5)]
+
+First valve4 state: SHUT
+
+sensor_m_flow (into circuit) stats: start=0.9622 end=0.5317 mean(last 20%)=0.5320 kg/s
+m_flowTarget stats: start=0.2000 end=0.9000
+valve4.portA.m_flow: start=0.00000 end=0.00011 mean(last20%)=0.00011
+valve4.portB.m_flow: start=-0.00000 end=-0.00011 mean(last20%)=-0.00011
+junction20.portA.m_flow: start=-0.12421 end=0.53155 mean(last20%)=0.53180
+junction21.portA.m_flow: start=-0.00000 end=0.53116 mean(last20%)=0.53106
+junction21.portB.m_flow: start=-0.00000 end=-0.00011 mean(last20%)=-0.00011
+junction21.portC.m_flow: start=-0.00000 end=-0.53146 mean(last20%)=-0.53165
+
+T_gas_out_max: start=80.00 end=82.87
+wanted_temp:   start=40.00 end=42.87
+sensor_T u_m:  start=80.00 end=77.88
+T_ref:         start=0.00 end=159.49
+overCoolRecovering fraction True: 1.37%
+
+Timeline (every ~5% of run):
+      t     Tmax   wanted  sensor_T  v4open   ocr  mflow_c
+    0.0    80.00    40.00     80.00    shut     -   0.9622
+   61.7   134.46    94.46    118.96    OPEN     -   0.8100
+  119.8   158.84   118.84    142.03    shut     -   0.4185
+  192.4   156.80   116.80    129.08    shut     -   0.4137
+  272.2   153.54   113.54    129.35    shut     -   0.4700
+  348.5   150.30   110.30    119.23    shut     -   0.4543
+  424.7   146.57   106.57    111.32    shut     -   0.4435
+  504.6   142.29   102.29    104.88    shut     -   0.4379
+  580.8   138.00    98.00     99.82    shut     -   0.4379
+  657.0   133.56    93.56     95.11    shut     -   0.4435
+  733.3   128.93    88.93     90.41    shut     -   0.4558
+  813.1   123.82    83.82     85.45    shut     -   0.4774
+  889.3   118.60    78.60     81.12    shut     -   0.4956
+  965.6   113.54    73.54     80.63    shut     -   0.5013
+ 1041.8   108.94    68.94     80.13    shut     -   0.5074
+ 1118.0   104.78    64.78     79.72    shut     -   0.5147
+ 1194.3   101.05    61.05     79.36    shut     -   0.5206
+ 1270.5    97.69    57.69     79.05    shut     -   0.5252
+ 1350.4    94.54    54.54     78.77    shut     -   0.5286
+ 1426.6    91.86    51.86     78.54    shut     -   0.5307
+ 1502.8    89.51    49.51     78.36    shut     -   0.5319
+ 1582.7    87.38    47.38     78.20    shut     -   0.5323
+ 1658.9    85.64    45.64     78.07    shut     -   0.5322
+ 1735.1    84.16    44.16     77.97    shut     -   0.5319
+ 1815.0    82.87    42.87     77.88    shut     -   0.5317
