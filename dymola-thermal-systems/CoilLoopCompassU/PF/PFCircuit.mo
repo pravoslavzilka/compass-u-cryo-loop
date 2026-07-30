@@ -29,6 +29,12 @@ model  PFCircuit
     "Per-coil isolation valve closes once T_gas_out is this much colder than T_gas_out_max";
   parameter Modelica.Units.SI.TemperatureDifference coilIsolationReopenMargin = 35
     "Per-coil isolation valve reopens once within this much of T_gas_out_max";
+  parameter Modelica.Units.SI.Temperature lowTempCoolantOptimizationThreshold = 0
+    "Absolute T_gas_out threshold (K, independent of coilIsolationCloseMargin's relative-to-max logic) for the lowTempCoolantOptimization algorithm: an assembly colder than this can be shut once enough other assemblies are still hotter than it. DISABLED as of 2026-07-30: set to 0 K, a value the gas physically never reaches (medium's own floor is ~2 K), so both the close condition (T_gas_out_PF[i] < this) and the global reopen condition (T_gas_out_max < this) are permanently false and the whole algorithm is inert -- restore to 80 (or whatever) to re-enable; the rest of the mechanism (lowTempPending dwell timer, coilOpen close/reopen OR-clauses) is untouched and will resume working immediately once this is raised.";
+  parameter Integer lowTempCoolantOptimizationMinHotOthers = 2
+    "Minimum number of OTHER assemblies that must have T_gas_out above lowTempCoolantOptimizationThreshold before a cold assembly is shut by lowTempCoolantOptimization";
+  parameter Modelica.Units.SI.Time lowTempCoolantOptimizationMinDuration = 10
+    "Assembly i's own T_gas_out must stay continuously below lowTempCoolantOptimizationThreshold (with lowTempOtherHotCount_PF[i] continuously >= lowTempCoolantOptimizationMinHotOthers) for this long before lowTempCoolantOptimization actually shuts it -- filters out a brief/noisy dip that shouldn't count as a real close decision. Any excursion out of that condition before the duration elapses cancels the pending close; the wait restarts on the next continuous entry.";
   parameter Modelica.Units.SI.Time controlActivationDelay = 5
     "Reopen logic (valve4 and per-coil isolation) stays disabled until this much simulated time has passed, so it isn't triggered by unsettled startup temperatures";
   parameter Real m_flow_startup = 0.2
@@ -43,9 +49,13 @@ model  PFCircuit
   Real overCoolRecoveredAt(start=0, fixed=true)
     "Time sensor_T most recently entered valve4's settle band during the current valve4-open episode -- gates the overCoolStabilizeDelay hold before valve4 actually closes.";
   Boolean coilOpen[nPF](start=fill(true, nPF), fixed=fill(true, nPF))
-    "Per-assembly isolation valve latch, order: PF1U,PF1L,PF2U,PF2L,PF3U,PF3L,PF4U,PF4L";
+    "Per-assembly isolation valve latch, order: PF1U,PF1L,PF2U,PF2L,PF3U,PF3L,PF4U,PF4L -- closed by EITHER the relative-margin coilIsolation* rule or the absolute-threshold lowTempCoolantOptimization rule (see the combined when/elsewhen chain below); a single shared latch, not two separate ones, so it stays the same array Dymola already solves cleanly for this model.";
   Real T_gas_out_frozen[nPF](each start=0, each fixed=true)
-    "Snapshot of T_gas_out_PF[i] taken the instant coilOpen[i] closes -- held constant while closed, re-recorded every closing edge";
+    "Snapshot of T_gas_out_PF[i] taken the instant coilOpen[i] closes (by either rule) -- held constant while closed, re-recorded every closing edge";
+  Boolean lowTempPending[nPF](start=fill(false, nPF), fixed=fill(false, nPF))
+    "True while assembly i's T_gas_out is below lowTempCoolantOptimizationThreshold with enough hot others (lowTempOtherHotCount_PF[i] >= lowTempCoolantOptimizationMinHotOthers) but hasn't stayed there continuously for lowTempCoolantOptimizationMinDuration yet -- gates the dwell before lowTempCoolantOptimization actually closes coilOpen[i]. Reset to false the instant either condition breaks, so the wait restarts on the next continuous entry.";
+  Real lowTempPendingSince[nPF](each start=0, each fixed=true)
+    "Time assembly i most recently entered the lowTempCoolantOptimization pending state -- gates the lowTempCoolantOptimizationMinDuration hold.";
 
   output Modelica.Units.SI.Temperature T_gas_out_max = max(T_gas_out_compare_PF)
     "Hottest coil-assembly gas outlet temperature -- uses each coil's live reading while open, frozen closing-time snapshot while isolated, so a closed coil's post-isolation reheating can't distort this (or wanted_temp/other coils' close decisions)";
@@ -68,6 +78,9 @@ model  PFCircuit
     "Commanded Kv per assembly before smoothing: valveKvNominal_PF when open, Kv_shut when closed";
   Real T_gas_out_compare_PF[nPF]
     "T_gas_out_PF[i] while open (live), T_gas_out_frozen[i] while closed -- what the close/reopen decision is evaluated against";
+  Integer lowTempOtherHotCount_PF[nPF] = {sum(if (j <> i and T_gas_out_compare_PF[j] >
+    lowTempCoolantOptimizationThreshold) then 1 else 0 for j in 1:nPF) for i in 1:nPF}
+    "Per-assembly count of OTHER assemblies currently above lowTempCoolantOptimizationThreshold -- feeds the lowTempCoolantOptimization close condition (see lowTempCoolantOptimizationMinHotOthers)";
 
   inner ThermalSystems.SystemInformationManager sim(
       generateEventsAtFlowReversalGas=false,
@@ -85,9 +98,9 @@ model  PFCircuit
     orientation="symmetric",
     use_mechanicalPort=true,
     n_nominal=200,
-    dp_nominal(displayUnit="bar") = 1200000,
-    V_flow_nominal=0.021,
-    V_flow0=0.040,
+    dp_nominal(displayUnit="bar") = 1500000,
+    V_flow_nominal=0.031,
+    V_flow0=0.05,
     T_nominal(displayUnit="K") = 80,
     p_nominal=4000000,
     dpInitial(displayUnit="bar") = 4000000,
@@ -577,11 +590,41 @@ algorithm
   end when;
 
   for i in 1:nPF loop
-    when time >= controlActivationDelay and (T_gas_out_max - T_gas_out_compare_PF[i]) < coilIsolationReopenMargin
-        and not pre(coilOpen[i]) then
+    // lowTempCoolantOptimization dwell timer: track how long assembly i has
+    // been continuously below the threshold with enough hot others, before
+    // the close condition below is allowed to act on it. Any excursion out
+    // of that condition (temp back up, or hot-others count drops) cancels
+    // the pending close; the wait restarts on the next continuous entry --
+    // same debounce pattern as valve4's overCoolRecovering/overCoolRecoveredAt.
+    when T_gas_out_PF[i] < lowTempCoolantOptimizationThreshold
+        and lowTempOtherHotCount_PF[i] >= lowTempCoolantOptimizationMinHotOthers
+        and not pre(lowTempPending[i]) and pre(coilOpen[i]) then
+      lowTempPendingSince[i] := time;
+      lowTempPending[i] := true;
+    elsewhen (T_gas_out_PF[i] >= lowTempCoolantOptimizationThreshold
+          or lowTempOtherHotCount_PF[i] < lowTempCoolantOptimizationMinHotOthers)
+        and pre(lowTempPending[i]) then
+      lowTempPending[i] := false;
+    end when;
+
+    // Reopen if EITHER the original relative-margin rule says so, OR
+    // lowTempCoolantOptimization's global recovery has fired (T_gas_out_max
+    // dropped below its threshold) -- every assembly still shut reopens
+    // together in that case, not just the ones this event's condition names.
+    when (time >= controlActivationDelay and (T_gas_out_max - T_gas_out_compare_PF[i]) < coilIsolationReopenMargin
+          and not pre(coilOpen[i]))
+        or (T_gas_out_max < lowTempCoolantOptimizationThreshold and not pre(coilOpen[i])) then
       coilOpen[i] := true;
-    elsewhen (T_gas_out_max - T_gas_out_PF[i]) > coilIsolationCloseMargin
-        and pre(coilOpen[i]) then
+    // Close if EITHER the original relative-margin rule says so, OR
+    // lowTempCoolantOptimization's dwell has actually elapsed: assembly i
+    // stayed continuously below lowTempCoolantOptimizationThreshold, with at
+    // least lowTempCoolantOptimizationMinHotOthers other assemblies still
+    // above it, for lowTempCoolantOptimizationMinDuration straight.
+    elsewhen ((T_gas_out_max - T_gas_out_PF[i]) > coilIsolationCloseMargin
+          and pre(coilOpen[i]))
+        or (pre(lowTempPending[i])
+          and time >= lowTempPendingSince[i] + lowTempCoolantOptimizationMinDuration
+          and pre(coilOpen[i])) then
       coilOpen[i] := false;
       T_gas_out_frozen[i] := T_gas_out_PF[i];
     end when;

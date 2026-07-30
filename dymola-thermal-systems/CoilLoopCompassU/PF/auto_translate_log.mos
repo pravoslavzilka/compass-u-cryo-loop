@@ -106,6 +106,15 @@ end if;
 // before trusting 1e-4 results for real analysis; back off to 1e-5 if the
 // key outputs shift meaningfully.
 if ok then
+  // method="Radau" tried 2026-07-30 to work around DASSL's "Finding
+  // consistent restart conditions failed" at coil isolation close events --
+  // reverted same day: measured 88.7s of 1815s reached after ~84 minutes
+  // wall-clock (~56 wall-clock seconds per simulated second), which would
+  // take over a day to finish. Back to the default (Dassl, by omitting
+  // method=) since Radau's per-step cost combined with the larger junction
+  // volumes (see CoilAssembly*ch.mo/PFCircuit.mo 2026-07-30 volume changes)
+  // made it impractically slow, independent of whether it would eventually
+  // have avoided the restart failure.
   simOk := simulateModel(modelName, stopTime=1815, tolerance=1e-4,
                           resultFile=debugPath + "/result");
 
