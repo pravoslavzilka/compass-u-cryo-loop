@@ -16,6 +16,10 @@ model  PFCircuit
     "Half-width of the ON/OFF gap around each PID.y switching threshold (heater/cooling/bypass), prevents state-event chattering when PID.y settles right on a threshold";
   parameter Modelica.Units.SI.TemperatureDifference tempMargin=40
     "Margin below the hottest coil-assembly gas outlet temperature";
+  parameter Boolean enableOverCoolPrevention = true
+    "Master switch for valve4's overcool-prevention trigger (the first when-branch below, gated on overCoolReopenMargin). When false, valve4 never opens in response to overcooling risk -- it stays permanently shut, and enableOverCoolRecovery's hold logic never has anything to act on.";
+  parameter Boolean enableOverCoolRecovery = true
+    "Master switch for valve4's stabilize-and-reclose logic (the three elsewhen-branches below, gated on overCoolShutMargin/overCoolStabilityBand/overCoolStabilizeDelay). When false, valve4 -- once opened by enableOverCoolPrevention -- never automatically recloses; the bypass stays open indefinitely. No effect if enableOverCoolPrevention is false.";
   parameter Modelica.Units.SI.TemperatureDifference overCoolShutMargin=40
     "Lower bound of valve4's settle band: T_ref - overCoolShutMargin (T_ref = T_gas_out_max snapshot recorded at the moment valve4 last reopened). sensor_T.sensorValue must sit at or above this (and at or below T_ref - overCoolShutMargin + overCoolStabilityBand, i.e. within the band) for overCoolStabilizeDelay seconds continuously before valve4 actually shuts.";
   parameter Modelica.Units.SI.TemperatureDifference overCoolReopenMargin=45
@@ -25,12 +29,16 @@ model  PFCircuit
   parameter Modelica.Units.SI.Time overCoolStabilizeDelay=30
     "sensor_T.sensorValue must stay continuously within valve4's settle band (see overCoolShutMargin/overCoolStabilityBand) for this long before valve4 actually closes -- lets the temperature genuinely settle before flow is pushed back through the coils. Any excursion out of the band (either side) before the delay elapses restarts the wait.";
   parameter Integer nPF = 8 "Number of PF coil assemblies";
+  parameter Boolean enableCoilIsolation = true
+    "Master switch for the per-assembly relative-margin isolation rule (coilIsolationCloseMargin/coilIsolationReopenMargin, in the combined when/elsewhen chain below). When false, this rule never closes or reopens coilOpen[i] -- only enableLowTempCoolantOptimization (if also true) can still act on the shared latch.";
   parameter Modelica.Units.SI.TemperatureDifference coilIsolationCloseMargin = 40
     "Per-coil isolation valve closes once T_gas_out is this much colder than T_gas_out_max";
   parameter Modelica.Units.SI.TemperatureDifference coilIsolationReopenMargin = 35
     "Per-coil isolation valve reopens once within this much of T_gas_out_max";
+  parameter Boolean enableLowTempCoolantOptimization = false
+    "Master switch for the absolute-threshold lowTempCoolantOptimization algorithm below. This flag only gates the when-clauses (coilOpen close/reopen, lowTempPending dwell) -- it does NOT gate lowTempOtherHotCount_PF's continuous comparison against lowTempCoolantOptimizationThreshold, which is evaluated every step regardless. Keep lowTempCoolantOptimizationThreshold at 0 (unreachable) while this is false, so that comparison never actually crosses and never generates a state event; only raise the threshold at the same time you set this true.";
   parameter Modelica.Units.SI.Temperature lowTempCoolantOptimizationThreshold = 0
-    "Absolute T_gas_out threshold (K, independent of coilIsolationCloseMargin's relative-to-max logic) for the lowTempCoolantOptimization algorithm: an assembly colder than this can be shut once enough other assemblies are still hotter than it. DISABLED as of 2026-07-30: set to 0 K, a value the gas physically never reaches (medium's own floor is ~2 K), so both the close condition (T_gas_out_PF[i] < this) and the global reopen condition (T_gas_out_max < this) are permanently false and the whole algorithm is inert -- restore to 80 (or whatever) to re-enable; the rest of the mechanism (lowTempPending dwell timer, coilOpen close/reopen OR-clauses) is untouched and will resume working immediately once this is raised.";
+    "Absolute T_gas_out threshold (K, independent of coilIsolationCloseMargin's relative-to-max logic) for the lowTempCoolantOptimization algorithm: an assembly colder than this can be shut once enough other assemblies are still hotter than it. Must be raised (e.g. to 80) together with enableLowTempCoolantOptimization=true to actually take effect -- see enableLowTempCoolantOptimization's docstring for why leaving it at 0 matters even while disabled.";
   parameter Integer lowTempCoolantOptimizationMinHotOthers = 2
     "Minimum number of OTHER assemblies that must have T_gas_out above lowTempCoolantOptimizationThreshold before a cold assembly is shut by lowTempCoolantOptimization";
   parameter Modelica.Units.SI.Time lowTempCoolantOptimizationMinDuration = 10
@@ -561,12 +569,12 @@ equation
   PF4L.KvValue_in1 = firstOrderCoilKv[8].y;
 
 algorithm
-  when time >= controlActivationDelay and T_gas_out_max - sensor_T.sensorValue > overCoolReopenMargin
+  when enableOverCoolPrevention and time >= controlActivationDelay and T_gas_out_max - sensor_T.sensorValue > overCoolReopenMargin
       and not pre(valve4Open) then
     T_ref := T_gas_out_max;
     valve4Open := true;
     overCoolRecovering := false;
-  elsewhen pre(valve4Open) and not pre(overCoolRecovering)
+  elsewhen enableOverCoolRecovery and pre(valve4Open) and not pre(overCoolRecovering)
       and sensor_T.sensorValue >= T_ref - overCoolShutMargin
       and sensor_T.sensorValue <= T_ref - overCoolShutMargin + overCoolStabilityBand then
     // sensor_T just entered the settle band -- don't close yet, start the
@@ -574,14 +582,14 @@ algorithm
     // branch).
     overCoolRecoveredAt := time;
     overCoolRecovering := true;
-  elsewhen pre(valve4Open) and pre(overCoolRecovering)
+  elsewhen enableOverCoolRecovery and pre(valve4Open) and pre(overCoolRecovering)
       and (sensor_T.sensorValue < T_ref - overCoolShutMargin
         or sensor_T.sensorValue > T_ref - overCoolShutMargin + overCoolStabilityBand) then
     // sensor_T left the settle band (either side) before stabilizing --
     // cancel the hold; the branch above restarts it on the next continuous
     // entry into the band.
     overCoolRecovering := false;
-  elsewhen pre(overCoolRecovering)
+  elsewhen enableOverCoolRecovery and pre(overCoolRecovering)
       and sensor_T.sensorValue >= T_ref - overCoolShutMargin
       and sensor_T.sensorValue <= T_ref - overCoolShutMargin + overCoolStabilityBand
       and time >= overCoolRecoveredAt + overCoolStabilizeDelay then
@@ -596,7 +604,7 @@ algorithm
     // of that condition (temp back up, or hot-others count drops) cancels
     // the pending close; the wait restarts on the next continuous entry --
     // same debounce pattern as valve4's overCoolRecovering/overCoolRecoveredAt.
-    when T_gas_out_PF[i] < lowTempCoolantOptimizationThreshold
+    when enableLowTempCoolantOptimization and T_gas_out_PF[i] < lowTempCoolantOptimizationThreshold
         and lowTempOtherHotCount_PF[i] >= lowTempCoolantOptimizationMinHotOthers
         and not pre(lowTempPending[i]) and pre(coilOpen[i]) then
       lowTempPendingSince[i] := time;
@@ -607,22 +615,23 @@ algorithm
       lowTempPending[i] := false;
     end when;
 
-    // Reopen if EITHER the original relative-margin rule says so, OR
-    // lowTempCoolantOptimization's global recovery has fired (T_gas_out_max
-    // dropped below its threshold) -- every assembly still shut reopens
-    // together in that case, not just the ones this event's condition names.
-    when (time >= controlActivationDelay and (T_gas_out_max - T_gas_out_compare_PF[i]) < coilIsolationReopenMargin
+    // Reopen if EITHER the relative-margin rule says so (when enabled), OR
+    // lowTempCoolantOptimization's global recovery has fired (when enabled,
+    // T_gas_out_max dropped below its threshold) -- every assembly still
+    // shut reopens together in that case, not just the ones this event's
+    // condition names.
+    when (enableCoilIsolation and time >= controlActivationDelay and (T_gas_out_max - T_gas_out_compare_PF[i]) < coilIsolationReopenMargin
           and not pre(coilOpen[i]))
-        or (T_gas_out_max < lowTempCoolantOptimizationThreshold and not pre(coilOpen[i])) then
+        or (enableLowTempCoolantOptimization and T_gas_out_max < lowTempCoolantOptimizationThreshold and not pre(coilOpen[i])) then
       coilOpen[i] := true;
-    // Close if EITHER the original relative-margin rule says so, OR
-    // lowTempCoolantOptimization's dwell has actually elapsed: assembly i
-    // stayed continuously below lowTempCoolantOptimizationThreshold, with at
-    // least lowTempCoolantOptimizationMinHotOthers other assemblies still
-    // above it, for lowTempCoolantOptimizationMinDuration straight.
-    elsewhen ((T_gas_out_max - T_gas_out_PF[i]) > coilIsolationCloseMargin
+    // Close if EITHER the relative-margin rule says so (when enabled), OR
+    // lowTempCoolantOptimization's dwell has actually elapsed (when enabled):
+    // assembly i stayed continuously below lowTempCoolantOptimizationThreshold,
+    // with at least lowTempCoolantOptimizationMinHotOthers other assemblies
+    // still above it, for lowTempCoolantOptimizationMinDuration straight.
+    elsewhen (enableCoilIsolation and (T_gas_out_max - T_gas_out_PF[i]) > coilIsolationCloseMargin
           and pre(coilOpen[i]))
-        or (pre(lowTempPending[i])
+        or (enableLowTempCoolantOptimization and pre(lowTempPending[i])
           and time >= lowTempPendingSince[i] + lowTempCoolantOptimizationMinDuration
           and pre(coilOpen[i])) then
       coilOpen[i] := false;
