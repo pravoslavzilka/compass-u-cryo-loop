@@ -155,20 +155,23 @@ model  PFCircuit
         ThermalSystems.GasComponents.Tubes.TransportPhenomena.PressureDrop.Konakov,
     m_flowStart=0.003,
     pInitial=4000000,
+    fixedInitialPressure=false,
     TInitial(displayUnit="K") = 80,
     TInitialWall(displayUnit="K") = 80)
     annotation (Placement(transformation(extent={{-8,-2},{8,2}},
         rotation=0,
         origin={-50,-60})));
   ThermalSystems.GasComponents.Volumes.Volume volume(
-    volume=0.5,
+    volume=0.05,
+    enableHeatPort=false,
     m_flowStart=0,
-    pInitial=4000000,
+    pInitial=3650000,
+    fixedInitialPressure=false,
     TInitial(displayUnit="K") = 80,
     nPorts=1)
     annotation (Placement(transformation(extent={{-3,-7},{3,7}},
         rotation=0,
-        origin={-107,-75})));
+        origin={-109,-75})));
   ThermalSystems.GasComponents.Valves.Valve valve(
     valveFlowVariableType=ThermalSystems.Internals.ValveFlowVariableType.KvValue,
     use_effectiveFlowAreaInput=false,
@@ -523,6 +526,7 @@ model  PFCircuit
         ThermalSystems.GasComponents.Tubes.TransportPhenomena.PressureDrop.Konakov,
     m_flowStart=0.003,
     pInitial=4000000,
+    fixedInitialPressure=false,
     TInitial(displayUnit="K") = 80,
     TInitialWall(displayUnit="K") = 80) annotation (Placement(transformation(
         extent={{8,-2},{-8,2}},
@@ -548,6 +552,20 @@ model  PFCircuit
   Modelica.Blocks.Continuous.FirstOrder firstOrderCoilKv[nPF](each T=3)
     "Smooths each per-coil Kv step to avoid solver state events -- T=3 (was 1) to soften the 6-decade Kv collapse that stalled the solver for ~73s of simulated time (t~95-168s) in the 2026-07-27 run"
     annotation (Placement(transformation(extent={{-20,-100},{0,-80}})));
+  ThermalSystems.GasComponents.Boundaries.Boundary boundary(
+    TFixed(displayUnit="K") = 80,
+    boundaryType="p",
+    pFixed=3650000)
+    annotation (Placement(transformation(extent={{4,148},{12,168}})));
+  ThermalSystems.GasComponents.JunctionElements.VolumeJunction junction6(
+    volume=1e-2,
+    m_flowStart=1e-5,
+    pInitial=4000000,
+    fixedInitialPressure=false,
+    TInitial(displayUnit="K") = 80)
+    annotation (Placement(transformation(extent={{-4,4},{4,-4}},
+        rotation=180,
+        origin={-4,120})));
 equation
   heaterHysteresis.u = PID.y;
   coolingHysteresis.u = -PID.y;
@@ -651,7 +669,7 @@ equation
   connect(coldSurface.port, tube1.heatPort[1]) annotation (Line(points={{-50,-40},
           {-50,-58}},                           color={191,0,0}));
   connect(volume.portArray[1], valve.portA) annotation (Line(
-      points={{-107,-81.825},{-106,-81.825},{-106,-96},{-146,-96},{-146,-83}},
+      points={{-109,-81.825},{-106,-81.825},{-106,-96},{-146,-96},{-146,-83}},
       color={255,153,0},
       thickness=0.5));
   connect(fan2ndOrder.portA, junction4.portC) annotation (Line(
@@ -813,10 +831,6 @@ equation
       points={{12,71},{12,116}},
       color={255,153,0},
       thickness=0.5));
-  connect(junction20.portC, junction4.portA) annotation (Line(
-      points={{8,120},{-16,120}},
-      color={255,153,0},
-      thickness=0.5));
   connect(junction20.portA, junction18.portB) annotation (Line(
       points={{16,120},{200,120},{200,20},{184,20}},
       color={255,153,0},
@@ -883,6 +897,18 @@ equation
           70},{4,65},{8.25,65}}, color={0,0,127}));
   connect(bypassRegulatorOverCool.y, firstOrder3.u)
     annotation (Line(points={{-33,70},{-22,70}}, color={0,0,127}));
+  connect(junction20.portC, junction6.portA) annotation (Line(
+      points={{8,120},{0,120}},
+      color={255,153,0},
+      thickness=0.5));
+  connect(junction6.portC, junction4.portA) annotation (Line(
+      points={{-8,120},{-16,120}},
+      color={255,153,0},
+      thickness=0.5));
+  connect(boundary.port, junction6.portB) annotation (Line(
+      points={{8,158},{-4,158},{-4,124}},
+      color={255,153,0},
+      thickness=0.5));
   annotation (Diagram(coordinateSystem(preserveAspectRatio=false, extent={{-100,
             -100},{100,100}})),
     experiment(

@@ -87,6 +87,7 @@ model CoilAssembly4ch
         ThermalSystems.GasComponents.Tubes.TransportPhenomena.PressureDrop.Konakov,
     m_flowStart=0.003,
     pInitial=4000000,
+    fixedInitialPressure=false,
     TInitial(displayUnit="K") = TInitial,
     TInitialWall(displayUnit="K") = TInitial)
     annotation (Placement(transformation(extent={{14,38},{30,42}})));
@@ -148,6 +149,7 @@ model CoilAssembly4ch
         ThermalSystems.GasComponents.Tubes.TransportPhenomena.PressureDrop.Konakov,
     m_flowStart=0.003,
     pInitial=4000000,
+    fixedInitialPressure=false,
     TInitial(displayUnit="K") = TInitial,
     TInitialWall(displayUnit="K") = TInitial)
     annotation (Placement(transformation(extent={{12,-2},{28,2}})));
@@ -177,6 +179,7 @@ model CoilAssembly4ch
         ThermalSystems.GasComponents.Tubes.TransportPhenomena.PressureDrop.Konakov,
     m_flowStart=0.003,
     pInitial=4000000,
+    fixedInitialPressure=false,
     TInitial(displayUnit="K") = TInitial,
     TInitialWall(displayUnit="K") = TInitial)
     annotation (Placement(transformation(extent={{12,-22},{28,-18}})));
@@ -206,6 +209,7 @@ model CoilAssembly4ch
         ThermalSystems.GasComponents.Tubes.TransportPhenomena.PressureDrop.Konakov,
     m_flowStart=0.003,
     pInitial=4000000,
+    fixedInitialPressure=false,
     TInitial(displayUnit="K") = TInitial,
     TInitialWall(displayUnit="K") = TInitial)
     annotation (Placement(transformation(extent={{12,-62},{28,-58}})));
