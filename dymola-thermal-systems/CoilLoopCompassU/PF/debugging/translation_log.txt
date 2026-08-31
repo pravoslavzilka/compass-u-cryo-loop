@@ -117,5 +117,3 @@ if ok then
     Modelica.Utilities.Streams.print(errMsg, errFile);
   end if;
 end if;
-plot({"T_gas_out_max","sensor_T_filtered"}, colors={{28,108,200},{238,46,47}});
-plot({"fan2ndOrder.portA.p","fan2ndOrder.portB.p"}, colors={{28,108,200},{238,46,47}});

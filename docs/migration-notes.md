@@ -12,6 +12,105 @@ way to recognize the same bug again.
 
 ---
 
+## 2026-08-31 — Dead-end `volume`/`valve` pocket on the Heater-inlet branch stalled `PFCircuit` for days: TSMedia `h_min` chattering
+
+**Status: fix confirmed working**, via before/after `dslog_simulate.txt` (commit
+`893d480`, "Buffer tank removed completly") plus two live VM runs during the
+investigation.
+
+**Symptom:** simulation runs that should finish in minutes were taking days
+without completing, or dying outright mid-log. Two runs observed directly:
+one whose `dslog.txt` simply stopped mid-line (no `Integration terminated`,
+no stats block) after simulating only to t≈1571s; a later one that crawled
+for 4+ days of wall-clock time and only reached t≈1178s. Both showed the
+same warning storm building up through the run:
+```
+TSMedia-Error(PFCircuit.valve.gasInB.gasPointer, ...): h (=-8.93e+06 J/kg)
+< h_min (-1.54e+06 J/kg at T=2 K), T limited to 2 K, ...
+```
+on `PFCircuit.valve.gasInB`/`gasInA` and `PFCircuit.junction2.gas` (200+
+occurrences in the 4-day run, clustering ever more densely — t≈186s, 240s,
+360s, 901s, 924s, 936s, 980s, 1193s, 1556s, 1571s — with sub-millisecond
+gaps between repeats at each cluster, plus confirmed Newton-solver failures
+(`simulation.nonlinear[40]`) right at those points).
+
+**False lead (ruled out):** the same session had just changed
+`kPressurePID` 0.05→0.12 and `TiPressurePID` 30→15 (more aggressive suction
+pressure PI loop), which looked like a plausible trigger given the timing.
+Reverting both to their original baseline values (0.05/30) and rerunning
+did **not** stop the chattering — if anything it got worse, spreading to
+`valve.gasInA` and `volume.gas` in addition to `valve.gasInB`/`junction2.gas`.
+Ruled out; the pressure-loop gains were not the cause.
+
+**Root cause:** a plain `ThermalSystems.GasComponents.Volumes.Volume volume`
+(0.05 m³, `nPorts=1`) sat at the Heater-inlet end of the loop (near
+`tube1`/`coldSurface`), connected through exactly one port to a
+`ThermalSystems.GasComponents.Valves.Valve valve` (`KvValueFixed=3000`,
+`use_KvValueInput=false` — permanently wide open, no control logic) into
+`junction2`, a live compliant network node. With only one port, `volume`
+is a dead end, not a through-flow branch — gas can only slosh in and back
+out through the same port, so its net flow trends to zero over any
+meaningful timescale. Combined with the valve being essentially
+unrestricted, any pressure jitter at `junction2` pushed a burst of mass
+into or out of this near-empty pocket almost undamped. Since specific
+enthalpy `h = energy/mass`, near-zero mass turns small energy residuals
+into huge `h` swings — tripping TSMedia's `h_min` floor on every burst,
+and each clamp forces the solver to stop and relocate, which is the
+chattering that stalled the run.
+
+Git blame traces `volume`/`valve` to 2026-07-14 (commit `5b2ee814`) — three
+weeks *before* the `makeupBuffer`/`reliefBuffer` fix below (2026-08-10),
+which solves a structurally similar-looking problem (a valve bridging a
+compliant node to something rigid) but does it correctly: `makeupBuffer`/
+`reliefBuffer` are wired **inline** with 2 ports each, carrying continuous
+through-flow instead of dead-ending. `volume`/`valve` never got the same
+treatment. Also worth noting: an earlier session had already seen a faint
+version of this exact warning (only ~18 hits, at 2 timestamps) on the same
+two components and logged it as a minor, apparently self-correcting,
+unexplained side effect — it wasn't minor, it was this root cause,
+just not yet escalated to the point of stalling a run.
+
+**Fix applied:** removed `volume`, `valve`, and the `junction2` merge node
+they fed entirely, rewiring `junction5.portC` directly to `Heater.portA`
+(same pattern as every other coil-return branch in the model). No real
+compliance was lost — `junction2`'s own regularization volume
+(`volume=1e-2`) was numerics-only, same as the `1e-2` every other top-level
+junction in this file already carries; the dead-end pocket wasn't
+contributing anything the rest of the network doesn't already provide.
+
+**Confirmed via `dslog_simulate.txt` before/after** (same file path, diffed
+across commit `893d480`):
+- Before: `Integration terminated before reaching "StopTime" at T = 17.4332242`
+  after 191s CPU-time — never got close to the 1815s target.
+- After: `Integration terminated successfully at T = 1815`, CPU-time
+  **391 seconds** — full run completes in under 7 minutes.
+
+**How it was found:** live VM runs were diagnosed purely from the shared
+folder (per the working-constraints section below) — `dslog.txt` mtime vs.
+`result.mat` mtime showed the run was still crawling forward (not fully
+hung) but pathologically slow; the warning block itself named the exact
+component ports (`valve.gasInB`, `junction2.gas`); `git blame` on the
+component's declaration lines dated its introduction relative to the
+`makeupBuffer`/`reliefBuffer` fix; the before/after CPU-time and
+termination-time numbers came directly from `dslog_simulate.txt`, already
+preserved per-run by `auto_translate_log.mos` (see the file-location notes
+in the 2026-07-14 "PFCircuit Newton-solver convergence warnings" entry
+below).
+
+**General lesson:** a `Volume` component with only **one** port connection
+in use, wired through a wide-open/uncontrolled valve into a live network
+node, is a red flag in this codebase — no through-flow means its mass
+trends toward zero, and near-zero mass makes its specific-enthalpy state
+numerically singular. This is a different flavor of the same "degenerate
+near-zero-flow" family as the branch-split-degeneracy and
+rigid-boundary-vs-compliant-node entries elsewhere in this doc — add
+"single-port dead-end `Volume` behind an undamped valve" to the checklist.
+Fix by removing the dead end if it isn't load-bearing (as here), or by
+restructuring it as a proper inline 2-port buffer (`makeupBuffer`/
+`reliefBuffer` pattern) if the branch needs to stay.
+
+---
+
 ## 2026-07-28 — Coolant-temperature bump at t≈513s after forcing the main bypass (`valve1`) shut: overcool safety valve slamming open/closed
 
 **Status: fix confirmed working**, via a real post-change VM run
