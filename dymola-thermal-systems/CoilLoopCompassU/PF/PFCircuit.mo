@@ -56,9 +56,9 @@ model  PFCircuit
     "Half-width of the dead zone around pressureSetpoint, Pa (+-0.2 bar). Inside [setpoint-deadband, setpoint+deadband] both RV07 and RV08 are commanded shut; this is a physical-unit threshold on the raw sensor_p_suction reading, independent of PID_pressure's gain.";
   parameter Modelica.Units.SI.Time pressureDwellTime = 15
     "Suction pressure must stay continuously past a valve's deadband threshold for this long before that valve OPENS -- same continuous-dwell debounce pattern as overCoolStabilizeDelay (see makeupOpenPending/reliefOpenPending below), but applied only to opening. Any excursion back across the threshold before the dwell elapses cancels the pending open and the wait restarts on the next continuous crossing. Deliberately NOT applied to closing (see makeupActive/reliefActive) -- unlike overCoolStabilizeDelay's valve4 (where staying open longer is harmless bypass flow), RV07/RV08 sit against fixed ideal-boundary reservoirs, so a matching close-side dwell let RV07 stay open ~15s after pressure had already recovered and dumped the loop up to ~pMakeupReservoir before it was allowed to shut (2026-08-10 debugging run, junction7.p/tube1.p/volume.p all converged to ~4.48-4.50e6 Pa at the solver crash) -- closing must be immediate once back in band.";
-  parameter Real kPressurePID = 0.05
+  parameter Real kPressurePID=0.05
     "PLACEHOLDER P gain for PID_pressure -- conservative starting value, tune after reviewing the baseline (ideal-boundary) run's pressure excursions.";
-  parameter Modelica.Units.SI.Time TiPressurePID = 30
+  parameter Modelica.Units.SI.Time TiPressurePID=30
     "PLACEHOLDER integral time for PID_pressure, s -- tune after baseline run.";
   parameter Real KvGainMakeup = 2
     "PLACEHOLDER: maps PID_pressure.y (>0 when pressure below setpoint) to RV07's Kv command once makeupActive. Tune together with kPressurePID/KvMakeupMax. Cut from an initial 50 -> 2 after the 2026-08-10 debugging runs: even Kv~15 (well under the old KvMakeupMax=500 cap) was enough to drag this loop's small internal volume up to within ~13000 Pa of the full pMakeupReservoir within the ~15s open dwell -- this loop has very little gas compliance relative to a reservoir-scale dp, so both gain and cap needed to come down together, not just the cap.";
@@ -206,25 +206,6 @@ model  PFCircuit
     annotation (Placement(transformation(extent={{-8,-2},{8,2}},
         rotation=0,
         origin={-50,-60})));
-  ThermalSystems.GasComponents.Volumes.Volume volume(
-    volume=0.05,
-    enableHeatPort=false,
-    m_flowStart=0,
-    pInitial=3650000,
-    fixedInitialPressure=false,
-    TInitial(displayUnit="K") = 80,
-    nPorts=1)
-    annotation (Placement(transformation(extent={{-3,-7},{3,7}},
-        rotation=0,
-        origin={-109,-75})));
-  ThermalSystems.GasComponents.Valves.Valve valve(
-    valveFlowVariableType=ThermalSystems.Internals.ValveFlowVariableType.KvValue,
-    use_effectiveFlowAreaInput=false,
-    use_KvValueInput=false,
-    KvValueFixed=3000)
-    annotation (Placement(transformation(extent={{-6,-3},{6,3}},
-        rotation=90,
-        origin={-146,-77})));
   ThermalSystems.GasComponents.JunctionElements.VolumeJunction junction1(
     volume=1e-2,
     m_flowStart=1e-5,
@@ -269,15 +250,6 @@ model  PFCircuit
     annotation (Placement(transformation(extent={{-4,-4},{4,4}},
         rotation=270,
         origin={-112,100})));
-  ThermalSystems.GasComponents.JunctionElements.VolumeJunction junction2(
-    volume=1e-2,
-    m_flowStart=1e-5,
-    pInitial=3650000,
-    fixedInitialPressure=false,
-    TInitial(displayUnit="K") = 80)
-    annotation (Placement(transformation(extent={{-4,4},{4,-4}},
-        rotation=270,
-        origin={-112,68})));
   ThermalSystems.GasComponents.JunctionElements.VolumeJunction junction8(
     volume=1e-4,
     m_flowStart=1e-5,
@@ -433,7 +405,7 @@ model  PFCircuit
         origin={40,20})));
   Modelica.Blocks.Sources.RealExpression valveRegulator(y=Kv_circuit*(
         sensor_m_flow.sensorValue - m_flowTarget)/m_flowTarget)
-    annotation (Placement(transformation(extent={{-140,160},{-120,180}})));
+    annotation (Placement(transformation(extent={{-182,160},{-162,180}})));
   ThermalSystems.GasComponents.Sensors.Sensor_m_flow sensor_m_flow
     annotation (Placement(transformation(extent={{-72,116},{-80,124}})));
   Modelica.Blocks.Continuous.LimPID PID(
@@ -459,16 +431,16 @@ model  PFCircuit
     T=3s mirrors the 2026-07-27 firstOrderCoilKv precedent; raise toward
     5-10s if scatter persists, but not so high it visibly lags real
     transients (heater on/off, coil isolation events)."
-    annotation (Placement(transformation(extent={{-16,18},{4,26}})));
+    annotation (Placement(transformation(extent={{-46,10},{-30,26}})));
   Modelica.Blocks.Nonlinear.Limiter limiter(uMax=500, uMin=0.001)
-    annotation (Placement(transformation(extent={{-80,160},{-60,180}})));
+    annotation (Placement(transformation(extent={{-122,160},{-102,180}})));
   Modelica.Blocks.Sources.RealExpression valve1Command(y=if time <
         controlActivationDelay then limiter.y else Kv_shut)
     "valve1's final Kv command: the flow-trim proportional control (valveRegulator
     -> limiter), still targeting m_flow_startup, for the first controlActivationDelay
     seconds only; after that valve1 no longer trims flow toward m_wanted -- it's
     forced fully shut (Kv_shut) instead."
-    annotation (Placement(transformation(extent={{-56,160},{-36,180}})));
+    annotation (Placement(transformation(extent={{-98,160},{-78,180}})));
   ThermalSystems.GasComponents.Valves.Valve valve3(
     valveFlowVariableType=ThermalSystems.Internals.ValveFlowVariableType.KvValue,
     use_effectiveFlowAreaInput=false,
@@ -576,7 +548,7 @@ model  PFCircuit
     TInitialWall(displayUnit="K") = 80) annotation (Placement(transformation(
         extent={{8,-2},{-8,2}},
         rotation=90,
-        origin={-114,40})));
+        origin={-112,40})));
   Modelica.Thermal.HeatTransfer.Sources.PrescribedHeatFlow prescribedHeatFlow1
     annotation (Placement(transformation(extent={{-200,30},{-180,50}})));
   Modelica.Blocks.Continuous.FirstOrder firstOrder1(T=1)
@@ -608,13 +580,13 @@ model  PFCircuit
     "Tee at the suction node occupying junction6's old boundary.port slot -- portA to junction6.portB (unchanged coil-return topology), portB to RV07 (make-up), portC to RV08 (relief)."
     annotation (Placement(transformation(extent={{-4,4},{4,-4}},
         rotation=180,
-        origin={4,158})));
+        origin={12,142})));
   ThermalSystems.GasComponents.Boundaries.Boundary makeupReservoir(
     TFixed(displayUnit="K") = TStorageReservoirs,
     boundaryType="p",
     pFixed=pMakeupReservoir)
     "Infinite make-up storage reservoir, above pressureSetpoint. Fixed p,T (boundaryType=\"p\"), free mass flow -- one of the model's two remaining fixed-pressure points."
-    annotation (Placement(transformation(extent={{28,168},{36,188}})));
+    annotation (Placement(transformation(extent={{34,194},{42,214}})));
   ThermalSystems.GasComponents.Boundaries.Boundary reliefReservoir(
     TFixed(displayUnit="K") = TStorageReservoirs,
     boundaryType="p",
@@ -630,7 +602,7 @@ model  PFCircuit
     TInitial(displayUnit="K") = TStorageReservoirs,
     nPorts=2)
     "Small compliant buffer between makeupReservoir (ideal, zero-compliance p,T boundary) and RV07 -- added 2026-08-10 after repeated solver collapses ('corrector could not converge', stepsize -> ~1e-13) that persisted even after cutting KvGainMakeup/KvMakeupMax and lengthening valveRampTime; the last failure hit a SECOND, otherwise-unrelated nonlinear subsystem (junction8/10/1/13/23/14/12/19/21, nothing to do with RV07/junction22) at the same instant, pointing at a structural issue -- a valve bridging directly from a compliant network node to a rigid ideal boundary -- rather than just Kv magnitude. This gives the DAE a real pressure state to relax through instead of an algebraic jump against an infinitely stiff boundary. Small enough not to meaningfully change the reservoir's effectively-infinite capacity."
-    annotation (Placement(transformation(extent={{34,178},{42,186}})));
+    annotation (Placement(transformation(extent={{52,194},{60,202}})));
   ThermalSystems.GasComponents.Volumes.Volume reliefBuffer(
     volume=1e-3,
     enableHeatPort=false,
@@ -640,31 +612,31 @@ model  PFCircuit
     TInitial(displayUnit="K") = TStorageReservoirs,
     nPorts=2)
     "Same purpose as makeupBuffer, on RV08's reservoir side -- see makeupBuffer's docstring."
-    annotation (Placement(transformation(extent={{-30,178},{-22,186}})));
+    annotation (Placement(transformation(extent={{-38,180},{-30,188}})));
   ThermalSystems.GasComponents.Valves.Valve RV07(
     valveFlowVariableType=ThermalSystems.Internals.ValveFlowVariableType.KvValue,
     use_effectiveFlowAreaInput=false,
     use_KvValueInput=true,
     KvValueFixed=Kv_shut_pressureValves)
     "Make-up valve: makeupReservoir -> junction22. Opens proportionally (RV07Limiter/firstOrderRV07) when suction pressure sits below pressureSetpoint-pressureDeadband for pressureDwellTime continuously (makeupActive)."
-    annotation (Placement(transformation(extent={{-6,-3},{6,3}},
+    annotation (Placement(transformation(extent={{6,-3},{-6,3}},
         rotation=0,
-        origin={22,168})));
+        origin={16,180})));
   ThermalSystems.GasComponents.Valves.Valve RV08(
     valveFlowVariableType=ThermalSystems.Internals.ValveFlowVariableType.KvValue,
     use_effectiveFlowAreaInput=false,
     use_KvValueInput=true,
     KvValueFixed=Kv_shut_pressureValves)
     "Relief valve: junction22 -> reliefReservoir. Opens proportionally (RV08Limiter/firstOrderRV08) when suction pressure sits above pressureSetpoint+pressureDeadband for pressureDwellTime continuously (reliefActive)."
-    annotation (Placement(transformation(extent={{-6,-3},{6,3}},
+    annotation (Placement(transformation(extent={{6,-3},{-6,3}},
         rotation=0,
-        origin={-8,168})));
+        origin={-16,166})));
   ThermalSystems.GasComponents.Sensors.Sensor_p sensor_p_suction
     "Suction-node pressure sensor -- CLASS NAME ASSUMED by analogy with Sensor_T/Sensor_m_flow (no pressure sensor existed anywhere in this model before; the ThermalSystems library isn't vendored in this repo so this couldn't be confirmed against source -- verify at translate-check, fix the class path here if Dymola reports it unresolved)."
     annotation (Placement(transformation(extent={{-4,178},{4,186}})));
   Modelica.Blocks.Sources.RealExpression pressureSetpointSource(y=
         pressureSetpoint)
-    annotation (Placement(transformation(extent={{-100,196},{-80,216}})));
+    annotation (Placement(transformation(extent={{-158,238},{-138,258}})));
   Modelica.Blocks.Continuous.LimPID PID_pressure(
     controllerType=Modelica.Blocks.Types.SimpleController.PI,
     k=kPressurePID,
@@ -674,27 +646,27 @@ model  PFCircuit
     initType=Modelica.Blocks.Types.Init.InitialOutput,
     y_start=0)
     "u_s=pressureSetpoint, u_m=sensor_p_suction.sensorValue, e=u_s-u_m: y>0 when suction pressure is below setpoint (feeds RV07Limiter), y<0 when above (feeds RV08Limiter via -y). Same LimPID class/PI form as PID (temperature loop) above; yMax/yMin/k/Ti are placeholders -- tune together with KvGainMakeup/KvGainRelief."
-    annotation (Placement(transformation(extent={{-70,196},{-50,216}})));
+    annotation (Placement(transformation(extent={{-118,238},{-98,258}})));
   Modelica.Blocks.Sources.RealExpression dp_suction(y=
         sensor_p_suction.sensorValue - pressureSetpoint)
     "Raw suction pressure error, Pa: positive = above setpoint (relief side), negative = below (make-up side). Drives the makeupActive/reliefActive dwell FSM directly in physical units, independent of PID_pressure's gain."
-    annotation (Placement(transformation(extent={{-40,196},{-20,216}})));
+    annotation (Placement(transformation(extent={{-194,274},{-174,294}})));
   Modelica.Blocks.Sources.RealExpression RV07Limiter(y=if makeupActive then
         min(max(PID_pressure.y, 0)*KvGainMakeup, KvMakeupMax) else
         Kv_shut_pressureValves)
     "RV07 Kv command: proportional (via PID_pressure.y) while makeupActive, Kv_shut_pressureValves otherwise."
-    annotation (Placement(transformation(extent={{10,196},{30,216}})));
+    annotation (Placement(transformation(extent={{-40,300},{-20,320}})));
   Modelica.Blocks.Continuous.FirstOrder firstOrderRV07(T=valveRampTime)
     "Opening ramp for RV07 -- same anti-chatter role as firstOrder/firstOrder2 on valve6/valve5."
-    annotation (Placement(transformation(extent={{40,196},{60,216}})));
+    annotation (Placement(transformation(extent={{0,300},{20,320}})));
   Modelica.Blocks.Sources.RealExpression RV08Limiter(y=if reliefActive then
         min(max(-PID_pressure.y, 0)*KvGainRelief, KvReliefMax) else
         Kv_shut_pressureValves)
     "RV08 Kv command: proportional (via -PID_pressure.y) while reliefActive, Kv_shut_pressureValves otherwise."
-    annotation (Placement(transformation(extent={{10,226},{30,246}})));
+    annotation (Placement(transformation(extent={{-80,260},{-60,280}})));
   Modelica.Blocks.Continuous.FirstOrder firstOrderRV08(T=valveRampTime)
     "Opening ramp for RV08 -- same anti-chatter role as firstOrder/firstOrder2 on valve6/valve5."
-    annotation (Placement(transformation(extent={{40,226},{60,246}})));
+    annotation (Placement(transformation(extent={{-40,260},{-20,280}})));
   ThermalSystems.GasComponents.JunctionElements.VolumeJunction junction6(
     volume=1e-2,
     m_flowStart=1e-5,
@@ -844,10 +816,6 @@ equation
       thickness=0.5));
   connect(coldSurface.port, tube1.heatPort[1]) annotation (Line(points={{-50,-40},
           {-50,-58}},                           color={191,0,0}));
-  connect(volume.portArray[1], valve.portA) annotation (Line(
-      points={{-109,-81.825},{-106,-81.825},{-106,-96},{-146,-96},{-146,-83}},
-      color={255,153,0},
-      thickness=0.5));
   connect(fan2ndOrder.portA, junction4.portC) annotation (Line(
       points={{-52,120},{-24,120}},
       color={255,153,0},
@@ -986,10 +954,11 @@ equation
     annotation (Line(points={{-12,46},{-12,52},{-50,52},{-50,50},{-58,50}},
                                                           color={0,0,127}));
   connect(sensor_T.sensorValue, sensorTFiltered.u)
-    annotation (Line(points={{-12,46},{-12,22},{-18,22}}, color={0,0,127}));
-  connect(valveRegulator.y, limiter.u) annotation (Line(points={{-119,170},{-82,
-          170}},                            color={0,0,127}));
-  connect(valve1Command.y, valve1.KvValue_in) annotation (Line(points={{-35,170},
+    annotation (Line(points={{-12,46},{-12,52},{-50,52},{-50,32},{-60,32},{-60,
+          18},{-47.6,18}},                                color={0,0,127}));
+  connect(valveRegulator.y, limiter.u) annotation (Line(points={{-161,170},{
+          -124,170}},                       color={0,0,127}));
+  connect(valve1Command.y, valve1.KvValue_in) annotation (Line(points={{-77,170},
           {-42,170},{-42,102.75}},                     color={0,0,127}));
   connect(tube1.portB, valve3.portA) annotation (Line(
       points={{-42,-60},{-42,-59},{-32,-59}},
@@ -1009,10 +978,6 @@ equation
       thickness=0.5));
   connect(junction20.portA, junction18.portB) annotation (Line(
       points={{16,120},{200,120},{200,20},{184,20}},
-      color={255,153,0},
-      thickness=0.5));
-  connect(valve.portB, junction2.portB) annotation (Line(
-      points={{-146,-71},{-146,68},{-116,68}},
       color={255,153,0},
       thickness=0.5));
   connect(junction7.portC, valve6.portA) annotation (Line(
@@ -1035,10 +1000,6 @@ equation
       points={{-68,-5},{-20,-5},{-20,-6},{-16,-6}},
       color={255,153,0},
       thickness=0.5));
-  connect(junction5.portC, junction2.portA) annotation (Line(
-      points={{-112,96},{-112,72}},
-      color={255,153,0},
-      thickness=0.5));
   connect(CoolingLimiter1.y, firstOrder.u)
     annotation (Line(points={{-205,-44},{-194,-44}}, color={0,0,127}));
   connect(firstOrder.y, valve6.KvValue_in) annotation (Line(points={{-171,-44},{
@@ -1047,12 +1008,8 @@ equation
     annotation (Line(points={{-277,40},{-250,40}}, color={0,0,127}));
   connect(firstOrder1.y, prescribedHeatFlow1.Q_flow)
     annotation (Line(points={{-227,40},{-200,40}},color={0,0,127}));
-  connect(junction2.portC, Heater.portA) annotation (Line(
-      points={{-112,64},{-112,52},{-114,52},{-114,48}},
-      color={255,153,0},
-      thickness=0.5));
   connect(Heater.portB, junction7.portA) annotation (Line(
-      points={{-114,32},{-114,2},{-112,2},{-112,-2}},
+      points={{-112,32},{-112,-2}},
       color={255,153,0},
       thickness=0.5));
   connect(junction23.portA, junction21.portA) annotation (Line(
@@ -1064,7 +1021,7 @@ equation
       color={255,153,0},
       thickness=0.5));
   connect(prescribedHeatFlow1.port, Heater.heatPort[1])
-    annotation (Line(points={{-180,40},{-116,40}}, color={191,0,0}));
+    annotation (Line(points={{-180,40},{-114,40}}, color={191,0,0}));
   connect(BypassLimiter.y, firstOrder2.u)
     annotation (Line(points={{-221,8},{-194,8}}, color={0,0,127}));
   connect(firstOrder2.y, valve5.KvValue_in)
@@ -1082,51 +1039,57 @@ equation
       color={255,153,0},
       thickness=0.5));
   connect(junction6.portB, junction22.portA) annotation (Line(
-      points={{-4,124},{-4,158},{8,158}},
+      points={{-4,124},{-4,132},{20,132},{20,142},{16,142}},
       color={255,153,0},
       thickness=0.5));
   connect(RV07.portB, junction22.portB) annotation (Line(
-      points={{28,168},{16,168},{16,162},{4,162}},
+      points={{10,180},{10,150},{12,150},{12,146}},
       color={255,153,0},
       thickness=0.5));
   connect(junction22.portC, RV08.portA) annotation (Line(
-      points={{0,158},{-2,158},{-2,168},{-14,168}},
+      points={{8,142},{-4,142},{-4,166},{-10,166}},
       color={255,153,0},
       thickness=0.5));
   connect(makeupReservoir.port, makeupBuffer.portArray[1]) annotation (Line(
-      points={{32,178},{38,178},{38,177.975}},
+      points={{38,204},{48,204},{48,190},{56,190},{56,193.975}},
       color={255,153,0},
       thickness=0.5));
   connect(makeupBuffer.portArray[2], RV07.portA) annotation (Line(
-      points={{38,178.225},{38,168},{16,168}},
+      points={{56,194.225},{56,180},{22,180}},
       color={255,153,0},
       thickness=0.5));
   connect(RV08.portB, reliefBuffer.portArray[1]) annotation (Line(
-      points={{-2,168},{-26,168},{-26,177.975}},
+      points={{-22,166},{-34,166},{-34,179.975}},
       color={255,153,0},
       thickness=0.5));
   connect(reliefBuffer.portArray[2], reliefReservoir.port) annotation (Line(
-      points={{-26,178.225},{-26,178},{-20,178}},
+      points={{-34,180.225},{-34,178},{-20,178}},
       color={255,153,0},
       thickness=0.5));
   connect(sensor_p_suction.port, junction22.portA) annotation (Line(
-      points={{0,178},{0,168},{0,158},{8,158}},
+      points={{0,178},{0,132},{20,132},{20,142},{16,142}},
       color={255,153,0},
       thickness=0.5));
   connect(pressureSetpointSource.y, PID_pressure.u_s) annotation (Line(
-      points={{-79,206},{-72,206}}, color={0,0,127}));
+      points={{-137,248},{-120,248}},
+                                    color={0,0,127}));
   connect(sensor_p_suction.sensorValue, PID_pressure.u_m) annotation (Line(
-      points={{0,184},{-60,184},{-60,194}}, color={0,0,127}));
+      points={{0,184},{0,198},{-96,198},{-96,226},{-108,226},{-108,236}},
+                                            color={0,0,127}));
   connect(RV07Limiter.y, firstOrderRV07.u) annotation (Line(
-      points={{31,206},{38,206}}, color={0,0,127}));
+      points={{-19,310},{-2,310}},color={0,0,127}));
   connect(firstOrderRV07.y, RV07.KvValue_in) annotation (Line(
-      points={{61,206},{68,206},{68,171.75},{22,171.75}},
+      points={{21,310},{26,310},{26,194},{16,194},{16,183.75}},
                                                        color={0,0,127}));
   connect(RV08Limiter.y, firstOrderRV08.u) annotation (Line(
-      points={{31,236},{38,236}}, color={0,0,127}));
+      points={{-59,270},{-42,270}},
+                                  color={0,0,127}));
   connect(firstOrderRV08.y, RV08.KvValue_in) annotation (Line(
-      points={{61,236},{74,236},{74,171.75},{-8,171.75}},
-                                                       color={0,0,127}));
+      points={{-19,270},{-16,270},{-16,169.75}},       color={0,0,127}));
+  connect(junction5.portC, Heater.portA) annotation (Line(
+      points={{-112,96},{-112,48}},
+      color={255,153,0},
+      thickness=0.5));
   annotation (Diagram(coordinateSystem(preserveAspectRatio=false, extent={{-100,
             -100},{100,100}})),
     experiment(
