@@ -23,7 +23,7 @@
 //             -- include your own date/time if you want one, see note
 //             above on why this script doesn't auto-generate one.
 saveFolder := "pressureCompensation";
-saveName   := "5s-dwell-default";
+saveName   := "pulse-pid-stuck-version";
 
 // --- 2. Paths ----------------------------------------------------------
 packagePath := "Z:/compass-u-cryo-loop/dymola-thermal-systems/CoilLoopCompassU";
