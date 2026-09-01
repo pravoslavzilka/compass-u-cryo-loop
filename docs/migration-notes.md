@@ -12,6 +12,76 @@ way to recognize the same bug again.
 
 ---
 
+## 2026-09-01 — RV07/RV08 pulse controller stuck permanently open: chained `when/elsewhen` branch collision silently ate a transition
+
+**Status: fix applied.** The run that exposed the bug is also the evidence
+for it (see below); the fix itself needs a fresh VM run to confirm.
+
+**Symptom:** after rewriting RV07/RV08's suction-pressure control from a
+plain hysteresis band to a feedforward-pulse-then-PID-trim design (see
+`docs/algorithms.md` for the full design), a run came back looking
+dramatically better: state events dropped to 51 (vs. 731–1007 in prior
+hysteresis-only runs) and `sensor_p_suction` sat dead flat at exactly
+`3,650,000` Pa for hundreds of seconds at a stretch, from t≈400s to the
+1815s stop time. It looked like the rewrite had worked perfectly on the
+first try.
+
+**Root cause:** it hadn't — `makeupActive` got stuck `true` for the entire
+second half of the run (confirmed via `result.mat`: an unbroken `1` from
+t=126s to t=1815s). The cause was the three-branch `when ... elsewhen ...
+elsewhen ... end when` block driving `makeupActive`/`makeupPulsing`. A
+chained `when/elsewhen` behaves like an if-elseif: whenever ANY branch's
+condition gets a fresh edge, Dymola evaluates all branches top-to-bottom
+and executes only the body of the FIRST one that's currently true — even
+if a later branch's own condition is also true at that same instant, its
+body is silently skipped. The "stop pulsing" branch
+(`makeupDeliveredMass >= makeupPulseTargetMass OR sensor_p_suction >=
+pMakeupClose`) and the "stop active" branch (`sensor_p_suction >=
+pMakeupClose`) shared that same pressure-crossing trigger. Whenever a
+pulse happened to end because pressure itself reached `pMakeupClose`
+(rather than the mass integral reaching its target first), both
+conditions went true at the identical instant, and "stop pulsing" —
+listed first — silently swallowed "stop active" every time. With
+`makeupActive` stuck `true`, `RV07Limiter`'s PID-trim branch ran
+unconditionally for the rest of the run, quietly converging the whole
+loop to `pressureSetpoint` with a tiny self-balancing Kv — a genuine
+stable equilibrium, which is exactly why the run *looked* like a clean
+success rather than a bug. `RV08`/relief happened to escape the same
+collision in this particular run only because its pulse ended much
+earlier (t≈5s) than its active-close event (t≈124s) — no shared instant,
+no collision, purely by luck of the timing.
+
+**Fix applied:** split each valve's chained `when/elsewhen/elsewhen` into
+three independent `when` blocks (`PFCircuit.mo`, RV07/RV08 make-up/relief
+section, right before the final `equation` block). Independent
+`when`-blocks are each evaluated on their own edge regardless of what
+else is true at the same instant — Modelica does not apply if-elseif
+branch priority *across* separate `when` statements, only *within* one
+chained `when/elsewhen` — so this exact collision can no longer suppress
+one transition with another.
+
+**How it was found:** the "it looks too good" result itself was the
+trigger to investigate rather than accept it. Pulled `makeupActive`/
+`reliefActive`/`makeupPulsing`/`RV07.KvValue_in`/`PID_pressure.y` traces
+from `result.mat` via `scipy.io.loadmat`, saw `makeupActive` never
+toggling back to `false` after ~t=126s despite pressure clearly climbing
+well past `pMakeupClose` shortly after, then re-read the `.mo` source's
+`when/elsewhen` chain against Modelica's documented if-elseif
+branch-priority semantics to find the exact collision.
+
+**General lesson:** a suspiciously clean result right after a nontrivial
+control-logic rewrite is itself a signal worth checking, not just
+accepting — "51 state events and dead-flat pressure" was a symptom of a
+stuck latch, not evidence the new design worked. Separately: a chained
+`when ... elsewhen ... end when` is only safe when the branch conditions
+are genuinely mutually exclusive. If two branches' conditions can
+plausibly become true at the same simulation instant — here, both driven
+off the identical threshold crossing — use independent `when` blocks
+instead, so each transition is guaranteed to fire on its own edge rather
+than competing for priority with another.
+
+---
+
 ## 2026-09-01 — RV07/RV08 capacity raised 5 → 15 (first incremental step), paired with buffer volume and `PID_pressure.yMax`/`yMin` increases
 
 **Status: change applied, not yet run in the VM to confirm.**
