@@ -37,7 +37,8 @@ model  PFCircuit
     "Per-coil isolation valve reopens once within this much of T_gas_out_max";
   parameter Boolean enableLowTempCoolantOptimization = false
     "Master switch for the absolute-threshold lowTempCoolantOptimization algorithm below. This flag only gates the when-clauses (coilOpen close/reopen, lowTempPending dwell) -- it does NOT gate lowTempOtherHotCount_PF's continuous comparison against lowTempCoolantOptimizationThreshold, which is evaluated every step regardless. Keep lowTempCoolantOptimizationThreshold at 0 (unreachable) while this is false, so that comparison never actually crosses and never generates a state event; only raise the threshold at the same time you set this true.";
-  parameter Modelica.Units.SI.Temperature lowTempCoolantOptimizationThreshold=0
+  parameter Modelica.Units.SI.Temperature lowTempCoolantOptimizationThreshold(
+      displayUnit="K")=0
     "Absolute T_gas_out threshold (K, independent of coilIsolationCloseMargin's relative-to-max logic) for the lowTempCoolantOptimization algorithm: an assembly colder than this can be shut once enough other assemblies are still hotter than it. Must be raised (e.g. to 80) together with enableLowTempCoolantOptimization=true to actually take effect -- see enableLowTempCoolantOptimization's docstring for why leaving it at 0 matters even while disabled.";
   parameter Integer lowTempCoolantOptimizationMinHotOthers = 2
     "Minimum number of OTHER assemblies that must have T_gas_out above lowTempCoolantOptimizationThreshold before a cold assembly is shut by lowTempCoolantOptimization";
@@ -50,7 +51,7 @@ model  PFCircuit
 
   parameter Boolean enablePressureControl = true
     "Master switch for the RV07 (make-up)/RV08 (relief) split-range pressure-control valve pair at the suction node. When false, both valves are forced to Kv_shut regardless of suction pressure.";
-  parameter Modelica.Units.SI.AbsolutePressure pressureSetpoint=3650000
+  parameter Modelica.Units.SI.AbsolutePressure pressureSetpoint=2650000
     "Suction-node pressure setpoint held by the RV07/RV08 pair, Pa (35.5 barg abs) -- matches the old ideal boundary's pFixed.";
   parameter Modelica.Units.SI.Pressure pressureDeadband=20000
     "Half-width of the dead zone around pressureSetpoint, Pa (+-0.2 bar). Inside [setpoint-deadband, setpoint+deadband] both RV07 and RV08 are commanded shut; this is a physical-unit threshold on the raw sensor_p_suction reading, independent of PID_pressure's gain.";
@@ -98,15 +99,15 @@ model  PFCircuit
 
   Boolean makeupActive(start=false, fixed=true)
     "Confirmed (post-dwell) state of RV07: true -> RV07 allowed to open proportionally (magnitude from PID_pressure.y). Opens only after pressureDwellTime of continuous dwell (makeupOpenPending) below threshold; closes IMMEDIATELY (no dwell) the instant suction pressure recovers back inside the deadband -- see pressureDwellTime's docstring for why the close side deliberately has no dwell.";
-  Boolean makeupOpenPending(start=false, fixed=true)
-    "True while suction pressure has been continuously below (pressureSetpoint - pressureDeadband) but hasn't stayed there for pressureDwellTime yet, with RV07 not yet active. Reset the instant pressure recovers above the threshold, so the wait restarts on the next continuous dip.";
+  Boolean makeupOpenPending(start=dp_suction.y < -pressureDeadband, fixed=true)
+    "True while suction pressure has been continuously below (pressureSetpoint - pressureDeadband) but hasn't stayed there for pressureDwellTime yet, with RV07 not yet active. Reset the instant pressure recovers above the threshold, so the wait restarts on the next continuous dip. start is evaluated from dp_suction.y rather than hardcoded false, so a model that initializes already outside the deadband (pInitial far from pressureSetpoint) still enters the dwell instead of the when-clause's rising edge being missed at t=0 -- see the 2026-09-01 migration-notes entry for why a hardcoded false silently disabled RV07/RV08 for an entire run.";
   Real makeupOpenPendingSince(start=0, fixed=true)
     "Time suction pressure most recently dipped below (pressureSetpoint - pressureDeadband) -- gates the pressureDwellTime hold before RV07 actually opens.";
 
   Boolean reliefActive(start=false, fixed=true)
     "Confirmed (post-dwell) state of RV08: true -> RV08 allowed to open proportionally (magnitude from -PID_pressure.y). Mirrors makeupActive (dwell to open, immediate close) on the opposite side of the deadband.";
-  Boolean reliefOpenPending(start=false, fixed=true)
-    "True while suction pressure has been continuously above (pressureSetpoint + pressureDeadband) but hasn't stayed there for pressureDwellTime yet, with RV08 not yet active.";
+  Boolean reliefOpenPending(start=dp_suction.y > pressureDeadband, fixed=true)
+    "True while suction pressure has been continuously above (pressureSetpoint + pressureDeadband) but hasn't stayed there for pressureDwellTime yet, with RV08 not yet active. start is evaluated from dp_suction.y rather than hardcoded false -- see makeupOpenPending's docstring and the 2026-09-01 migration-notes entry.";
   Real reliefOpenPendingSince(start=0, fixed=true)
     "Time suction pressure most recently rose above (pressureSetpoint + pressureDeadband) -- gates the pressureDwellTime hold before RV08 actually opens.";
 
@@ -224,12 +225,12 @@ model  PFCircuit
     annotation (Placement(transformation(extent={{-4,-4},{4,4}},
         rotation=-90,
         origin={140,80})));
-  ThermalSystems.GasComponents.Valves.Valve valve1(
+  ThermalSystems.GasComponents.Valves.Valve PF_RV01(
     valveFlowVariableType=ThermalSystems.Internals.ValveFlowVariableType.KvValue,
     use_effectiveFlowAreaInput=false,
     use_KvValueInput=true,
-    KvValueFixed=0.0001)
-    annotation (Placement(transformation(extent={{-6,-3},{6,3}},
+    KvValueFixed=0.0001) annotation (Placement(transformation(
+        extent={{-6,-3},{6,3}},
         rotation=0,
         origin={-42,99})));
   ThermalSystems.GasComponents.JunctionElements.VolumeJunction junction4(
@@ -650,12 +651,12 @@ model  PFCircuit
   Modelica.Blocks.Sources.RealExpression dp_suction(y=
         sensor_p_suction.sensorValue - pressureSetpoint)
     "Raw suction pressure error, Pa: positive = above setpoint (relief side), negative = below (make-up side). Drives the makeupActive/reliefActive dwell FSM directly in physical units, independent of PID_pressure's gain."
-    annotation (Placement(transformation(extent={{-130,198},{-110,218}})));
+    annotation (Placement(transformation(extent={{-100,198},{-80,218}})));
   Modelica.Blocks.Sources.RealExpression RV07Limiter(y=if makeupActive then
         min(max(PID_pressure.y, 0)*KvGainMakeup, KvMakeupMax) else
         Kv_shut_pressureValves)
     "RV07 Kv command: proportional (via PID_pressure.y) while makeupActive, Kv_shut_pressureValves otherwise."
-    annotation (Placement(transformation(extent={{-40,260},{-20,280}})));
+    annotation (Placement(transformation(extent={{-40,258},{-20,278}})));
   Modelica.Blocks.Continuous.FirstOrder firstOrderRV07(T=valveRampTime)
     "Opening ramp for RV07 -- same anti-chatter role as firstOrder/firstOrder2 on valve6/valve5."
     annotation (Placement(transformation(extent={{0,260},{20,280}})));
@@ -820,11 +821,11 @@ equation
       points={{-52,120},{-24,120}},
       color={255,153,0},
       thickness=0.5));
-  connect(junction4.portB, valve1.portB) annotation (Line(
+  connect(junction4.portB, PF_RV01.portB) annotation (Line(
       points={{-20,116},{-20,99},{-36,99}},
       color={255,153,0},
       thickness=0.5));
-  connect(valve1.portA, junction5.portB) annotation (Line(
+  connect(PF_RV01.portA, junction5.portB) annotation (Line(
       points={{-48,99},{-50,100},{-108,100}},
       color={255,153,0},
       thickness=0.5));
@@ -958,8 +959,8 @@ equation
           18},{-47.6,18}},                                color={0,0,127}));
   connect(valveRegulator.y, limiter.u) annotation (Line(points={{-161,170},{
           -124,170}},                       color={0,0,127}));
-  connect(valve1Command.y, valve1.KvValue_in) annotation (Line(points={{-77,170},
-          {-42,170},{-42,102.75}},                     color={0,0,127}));
+  connect(valve1Command.y, PF_RV01.KvValue_in) annotation (Line(points={{-77,
+          170},{-42,170},{-42,102.75}}, color={0,0,127}));
   connect(tube1.portB, valve3.portA) annotation (Line(
       points={{-42,-60},{-42,-59},{-32,-59}},
       color={255,153,0},
@@ -1076,7 +1077,8 @@ equation
       points={{62,140},{62,148},{130,148},{130,158}},
                                             color={0,0,127}));
   connect(RV07Limiter.y, firstOrderRV07.u) annotation (Line(
-      points={{-19,270},{-2,270}},color={0,0,127}));
+      points={{-19,268},{-10,268},{-10,270},{-2,270}},
+                                  color={0,0,127}));
   connect(firstOrderRV07.y, RV07.KvValue_in) annotation (Line(
       points={{21,270},{26,270},{26,188},{16,188},{16,183.75}},
                                                        color={0,0,127}));

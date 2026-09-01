@@ -12,6 +12,90 @@ way to recognize the same bug again.
 
 ---
 
+## 2026-09-01 — RV07/RV08 make-up/relief mechanism silently inert for a full run when `pInitial` and `pressureSetpoint` disagree: `when`-clause rising edge missed at t=0
+
+**Status: fix applied, not yet re-run in the VM to confirm** — the trace below
+is from the *pre-fix* run that exposed the bug; a fresh run is needed to
+confirm `reliefOpenPending`/`reliefActive` actually engage now.
+
+**Symptom:** lowered `pressureSetpoint` from `3650000` to `2650000` Pa
+(26.5 bar) to see whether the pressure-control loop's earlier oscillation
+would go away. It did — but `fan2ndOrder.portA.p`/`portB.p` never converged
+anywhere near the new setpoint either: suction pressure traced a smooth decay
+from ~5.5 MPa (t≈25s, startup transient) down to a minimum of ~2.83 MPa
+(t≈1400s), then crept back up to ~2.89 MPa by the 1815s stop time — nowhere
+near the intended 2.65 MPa band, for the entire run.
+
+**Root cause:** confirmed directly from `debugging/result.mat`
+(`scipy.io.loadmat`, same technique as the 2026-07-14 entries below):
+`makeupActive`, `reliefActive`, `makeupOpenPending`, `reliefOpenPending` were
+`false` for all 518 saved points, and `RV07.KvValue_in`/`RV08.KvValue_in` sat
+flat at `Kv_shut_pressureValves` (0.01) for the entire run — both valves
+stayed fully commanded shut throughout. Every junction in the loop still
+initializes at `pInitial=3650000` Pa (unchanged), so
+`dp_suction.y(0) = sensor_p_suction(0) - pressureSetpoint = 1,000,000` Pa —
+already ~50x past the `pressureDeadband=20000` Pa threshold before
+integration even starts. The `when` clauses driving
+`makeupOpenPending`/`reliefOpenPending` (`PFCircuit.mo`, ~line 781/795) only
+fire on a false→true transition of their condition; per Modelica semantics
+`pre(v)=v` for every variable at the initial event, so a condition already
+true at t=0 registers no transition and the clause never fires.
+`dp_suction.y`'s minimum over the whole run was 177,231 Pa — it never dipped
+back inside the deadband either, so there was never a second chance at a
+rising edge. Net effect: the entire pressure-control mechanism was silently
+disabled for the full 1815s, and the smooth pressure trace could easily be
+misread as "it converged" — it was actually just the loop's own
+thermal/hydraulic dynamics (compressor dp establishing itself from a
+uniform initial pressure field, plus `coldSurface`'s constant 77K heat
+removal cooling the bulk gas at ~constant mass) running completely
+unregulated.
+
+This is the same trap the original `pInitial=pressureSetpoint=3650000`
+configuration avoided by accident, not by design — with the two matched,
+`dp_suction.y(0)~=0` starts *inside* the deadband, so ordinary
+startup/transient noise crossing the deadband edges generated real events
+and the FSM engaged (arguably too eagerly — see the RV07/RV08 chattering
+referenced in `pressureDwellTime`'s own docstring, from the 2026-08-10
+debugging runs). Changing only `pressureSetpoint` without touching
+`pInitial` (or the FSM's initialization) traded "chatters right at the
+noisy start" for "never engages at all" — neither is the intended behavior.
+
+**Fix applied:** `makeupOpenPending` and `reliefOpenPending`'s `start`
+values (`PFCircuit.mo`, ~line 102/109) now evaluate
+`dp_suction.y < -pressureDeadband` / `dp_suction.y > pressureDeadband`
+instead of a hardcoded `false`. `*OpenPendingSince` stays `start=0` (dwell
+timing starts from t=0 if already pending at initialization). Deliberately
+did **not** initialize `makeupActive`/`reliefActive` directly to skip
+straight to "open" — that would bypass `pressureDwellTime`'s debounce for
+the initial condition; routing through `*OpenPending` first means an
+already-outside-deadband start still has to survive the same 15s dwell as
+any mid-run excursion before a valve actually opens, matching the existing
+noise-filtering intent. `pInitial` was deliberately left untouched — setting
+it equal to `pressureSetpoint` was considered and rejected (see root cause
+above: it only avoids this specific bug by accident, and reintroduces
+edge-of-deadband startup sensitivity).
+
+**How it was found:** `result.mat` from a live VM run (2026-09-01,
+`dslog.txt` timestamp 10:20:32, `SUCCESSFUL simulation`, 7 state events,
+17.8s CPU) pulled via `scipy.io.loadmat` on the host and cross-checked
+against the `PFCircuit.mo` source for `pInitial`/`pressureSetpoint`/the
+`when`-clause definitions.
+
+**General lesson:** a `Boolean`/`Real` discrete state driven only by `when`
+clauses (never given a defining equation) needs its `start` value to
+actually reflect the condition it's meant to track, if that condition can
+plausibly already be true when the simulation starts. Hardcoding
+`start=false` "for a clean initial state" is only safe if the corresponding
+condition is also guaranteed false at t=0 — here that guarantee depended on
+an unstated coupling between two independently-tunable parameters
+(`pInitial` and `pressureSetpoint`) that nothing in the model enforced. Any
+other edge-triggered dwell/pending FSM in this file (the
+`overCoolRecovering`/`coilOpen` families use the same pattern) is worth
+checking for the same silent assumption before changing an initial
+condition or a setpoint independently of the other.
+
+---
+
 ## 2026-08-31 — Dead-end `volume`/`valve` pocket on the Heater-inlet branch stalled `PFCircuit` for days: TSMedia `h_min` chattering
 
 **Status: fix confirmed working**, via before/after `dslog_simulate.txt` (commit
