@@ -12,6 +12,57 @@ way to recognize the same bug again.
 
 ---
 
+## 2026-09-01 — RV07/RV08 capacity raised 5 → 15 (first incremental step), paired with buffer volume and `PID_pressure.yMax`/`yMin` increases
+
+**Status: change applied, not yet run in the VM to confirm.**
+
+**Context:** once the `when`-clause initialization bug below was fixed,
+RV08 started actually opening — but it saturated at its `KvReliefMax=5`
+cap almost immediately and stayed there for ~1700s of a 1815s run without
+bringing suction pressure into the `pressureSetpoint` deadband; it only
+managed to plateau the rise around 3.0 MPa, ~350,000 Pa above target. `5`
+was deliberately undersized (cut from an original `500` after the
+2026-08-10 debugging runs — see `KvGainMakeup`'s docstring) specifically
+because this loop's small internal compliance next to the effectively
+rigid, fixed-pressure `makeupReservoir`/`reliefReservoir` boundaries makes
+a large Kv numerically stiff enough to collapse the solver's corrector
+step. Simply raising the cap back toward the old value risks reproducing
+that exact failure.
+
+**Change applied (incremental, paired, not a jump back to 500):**
+- `KvMakeupMax`/`KvReliefMax`: `5 → 15`.
+- `makeupBuffer`/`reliefBuffer` volume: `1e-3 → 1e-2` m³ — raised
+  alongside the Kv cap specifically to buy back some of the compliance
+  margin a bigger Kv spends, rather than just pushing more flow through
+  the same narrow numerical bottleneck.
+- `PID_pressure.yMax`/`yMin`: `2.5 → 7.5` — kept at exactly
+  `KvReliefMax/KvGainRelief` (`15/2=7.5`), preserving the "yMax sits at
+  the downstream Kv clamp, no windup headroom past what's usable"
+  invariant the 2026-08-31 anti-windup fix established (see
+  `PID_pressure`'s own docstring) — raising the Kv cap without also
+  raising this in proportion would have made `PID_pressure`'s own output
+  saturation the new hidden bottleneck instead, silently capping the
+  effective Kv at the *old* value regardless of what `KvReliefMax` said.
+
+**Not changed:** `KvGainMakeup`/`KvGainRelief` (still `2`), `valveRampTime`
+(still `8`s), `pInitial` (still `3650000` everywhere). Intent is to take
+one incremental step, re-run in the VM, and check `dslog.txt` for
+corrector-step collapse or a warning-count spike before raising further —
+per `KvGainMakeup`'s docstring, even `Kv~15` alone (without the larger
+buffer) was already enough to nearly equalize the loop with the reservoir
+within one dwell window in the 2026-08-10 runs, so this step is not
+assumed safe, just a smaller, more diagnosable step than jumping straight
+back to a much larger cap.
+
+**How to confirm:** re-run in the VM, then check `reliefActive`/
+`RV08.KvValue_in`/`fan2ndOrder.portA.p` in the new `result.mat` the same
+way as the entry below, and check `dslog.txt`'s warning/state-event counts
+and CPU time against this run's baseline (7 state events, 65.5s CPU,
+`SUCCESSFUL simulation`) for signs of the 2026-08-10 stiffness failure
+re-emerging.
+
+---
+
 ## 2026-09-01 — RV07/RV08 make-up/relief mechanism silently inert for a full run when `pInitial` and `pressureSetpoint` disagree: `when`-clause rising edge missed at t=0
 
 **Status: fix applied, not yet re-run in the VM to confirm** — the trace below
