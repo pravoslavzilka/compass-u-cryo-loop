@@ -53,32 +53,50 @@ model  PFCircuit
     "Master switch for the RV07 (make-up)/RV08 (relief) split-range pressure-control valve pair at the suction node. When false, both valves are forced to Kv_shut regardless of suction pressure.";
   parameter Modelica.Units.SI.AbsolutePressure pressureSetpoint=3650000
     "Suction-node pressure setpoint held by the RV07/RV08 pair, Pa (35.5 barg abs) -- matches the old ideal boundary's pFixed.";
-  parameter Modelica.Units.SI.Pressure pressureDeadband=20000
-    "Half-width of the dead zone around pressureSetpoint, Pa (+-0.2 bar). Inside [setpoint-deadband, setpoint+deadband] both RV07 and RV08 are commanded shut; this is a physical-unit threshold on the raw sensor_p_suction reading, independent of PID_pressure's gain.";
-  parameter Modelica.Units.SI.Time pressureDwellTime=5
-    "Suction pressure must stay continuously past a valve's deadband threshold for this long before that valve OPENS -- same continuous-dwell debounce pattern as overCoolStabilizeDelay (see makeupOpenPending/reliefOpenPending below), but applied only to opening. Any excursion back across the threshold before the dwell elapses cancels the pending open and the wait restarts on the next continuous crossing. Deliberately NOT applied to closing (see makeupActive/reliefActive) -- unlike overCoolStabilizeDelay's valve4 (where staying open longer is harmless bypass flow), RV07/RV08 sit against fixed ideal-boundary reservoirs, so a matching close-side dwell let RV07 stay open ~15s after pressure had already recovered and dumped the loop up to ~pMakeupReservoir before it was allowed to shut (2026-08-10 debugging run, junction7.p/tube1.p/volume.p all converged to ~4.48-4.50e6 Pa at the solver crash) -- closing must be immediate once back in band.";
+  parameter Modelica.Units.SI.AbsolutePressure pMakeupOpen(displayUnit="bar")=
+    3400000
+    "RV07 (make-up) hysteresis ON threshold, Pa (34 bar abs). makeupActive turns true (and a feedforward pulse starts, see makeupPulsing) the instant sensor_p_suction drops to/below this.";
+  parameter Modelica.Units.SI.AbsolutePressure pMakeupClose(displayUnit="bar")=
+    3500000
+    "RV07 (make-up) hysteresis OFF threshold, Pa (35 bar abs). makeupActive turns false once sensor_p_suction recovers to/above this -- must stay > pMakeupOpen so the band gives real chatter margin. 2026-09-01: this hysteresis band on its own still limit-cycled (bang-bang between pMakeupOpen/pMakeupClose, ~10s period observed) because RV07Limiter drove full trim authority (KvGainMakeup*PID_pressure.y, capped at KvMakeupMax) for the whole time makeupActive was true, so each opening still delivered far more mass than needed to just cross the band -- see the pulse-then-trim rewrite at makeupPulsing/KvMakeupPulse below, which fixes this by sizing the correction to the actual deviation instead of relying on the band width to absorb the overshoot.";
+  parameter Modelica.Units.SI.AbsolutePressure pReliefOpen(displayUnit="bar")=
+    3900000
+    "RV08 (relief) hysteresis ON threshold, Pa (39 bar abs). reliefActive turns true (and a feedforward pulse starts, see reliefPulsing) the instant sensor_p_suction rises to/above this.";
+  parameter Modelica.Units.SI.AbsolutePressure pReliefClose(displayUnit="bar")=
+    3750000
+    "RV08 (relief) hysteresis OFF threshold, Pa (37.5 bar abs). reliefActive turns false once sensor_p_suction falls to/below this.";
   parameter Real kPressurePID=0.05
     "PLACEHOLDER P gain for PID_pressure -- conservative starting value, tune after reviewing the baseline (ideal-boundary) run's pressure excursions.";
   parameter Modelica.Units.SI.Time TiPressurePID=30
     "PLACEHOLDER integral time for PID_pressure, s -- tune after baseline run.";
+  parameter Modelica.Units.SI.Volume V_loopEffective = 0.5
+    "PLACEHOLDER estimate of the compliant helium gas volume on the suction side that RV07/RV08 pressurize/vent (loop tubing + coil headers + junction22 -- NOT the reservoirs/buffers, which are on the other side of the valves). Used only for the feedforward pulse-mass estimate (ideal gas law, see makeupPulseTargetMass/reliefPulseTargetMass) added 2026-09-01. An inaccurate guess only makes the pulse over/undersized -- it does not affect correctness elsewhere, and the trim phase that follows every pulse (KvGainMakeup/KvGainRelief, now capped much lower than the pulse) absorbs whatever the pulse under/overshoots. REPLACE with the actual summed suction-side volume once known, to make the pulse land closer to pMakeupClose/pReliefClose in one shot.";
+  parameter Modelica.Units.SI.Temperature T_loopEstimate = 80
+    "PLACEHOLDER constant gas temperature for the feedforward pulse-mass estimate (ideal gas law) -- matches TStorageReservoirs/valve TInitial elsewhere in this model as a representative cold-loop value. Same caveat as V_loopEffective: only affects pulse sizing, not correctness.";
+  parameter Real R_specificHelium = 2077.1
+    "Specific gas constant for helium, J/(kg.K) (R_universal/M_He = 8314.46/4.0026) -- used only for the feedforward pulse-mass estimate.";
   parameter Real KvGainMakeup = 2
-    "PLACEHOLDER: maps PID_pressure.y (>0 when pressure below setpoint) to RV07's Kv command once makeupActive. Tune together with kPressurePID/KvMakeupMax. Cut from an initial 50 -> 2 after the 2026-08-10 debugging runs: even Kv~15 (well under the old KvMakeupMax=500 cap) was enough to drag this loop's small internal volume up to within ~13000 Pa of the full pMakeupReservoir within the ~15s open dwell -- this loop has very little gas compliance relative to a reservoir-scale dp, so both gain and cap needed to come down together, not just the cap.";
+    "PLACEHOLDER: maps PID_pressure.y (>0 when pressure below setpoint) to RV07's Kv command during the POST-PULSE TRIM phase only (pre(makeupActive) and not makeupPulsing -- see RV07Limiter). Tune together with kPressurePID/KvMakeupMax. Cut from an initial 50 -> 2 after the 2026-08-10 debugging runs: even Kv~15 (well under the old KvMakeupMax=500 cap) was enough to drag this loop's small internal volume up to within ~13000 Pa of the full pMakeupReservoir within the ~15s open dwell -- this loop has very little gas compliance relative to a reservoir-scale dp, so both gain and cap needed to come down together, not just the cap.";
   parameter Real KvMakeupMax = 15
-    "PLACEHOLDER Kv cap for RV07 -- REPLACE with a value sized to the peak make-up mass flow measured from the ideal-boundary baseline run (e.g. via sensor_m_flow during the largest cooldown/isolation transient). Cut from an initial 500 -> 5 for the same reason as KvGainMakeup above -- this is a deliberately weak trim valve until real sizing data is available, not yet sized to correct a real deficit quickly. Raised 5 -> 15 on 2026-09-01 as a first incremental step back up (see the 2026-09-01 migration-notes entry on RV07/RV08 capacity) paired with makeupBuffer's volume increase 1e-3 -> 1e-2 -- re-check dslog.txt for corrector-step collapse before raising further; the 2026-08-10 runs showed even Kv~15 alone (without the larger buffer) was enough to nearly equalize the loop with the reservoir in one dwell window.";
+    "PLACEHOLDER Kv cap for RV07's POST-PULSE TRIM phase (see KvGainMakeup) -- REPLACE with a value sized to the peak make-up mass flow measured from the ideal-boundary baseline run (e.g. via sensor_m_flow during the largest cooldown/isolation transient). Cut from an initial 500 -> 5 for the same reason as KvGainMakeup above -- this is a deliberately weak trim valve until real sizing data is available, not yet sized to correct a real deficit quickly. Raised 5 -> 15 on 2026-09-01 as a first incremental step back up (see the 2026-09-01 migration-notes entry on RV07/RV08 capacity) paired with makeupBuffer's volume increase 1e-3 -> 1e-2 -- re-check dslog.txt for corrector-step collapse before raising further; the 2026-08-10 runs showed even Kv~15 alone (without the larger buffer) was enough to nearly equalize the loop with the reservoir in one dwell window. Since the 2026-09-01 pulse-then-trim rewrite this is no longer the value that does the bulk of the correction -- KvMakeupPulse is.";
+  parameter Real KvMakeupPulse = 60
+    "PLACEHOLDER fixed (non-PID) Kv commanded during RV07's feedforward pulse (makeupPulsing=true), added 2026-09-01. Deliberately much larger than KvMakeupMax's trim authority -- an oversized value here only shortens the pulse (it's cut off by makeupDeliveredMass reaching makeupPulseTargetMass, or by sensor_p_suction reaching pMakeupClose, whichever comes first), it does not cause overshoot the way running full trim authority for the whole open window did under the pure-hysteresis design (see pMakeupClose's docstring). REPLACE once real make-up flow requirements are known -- this is a first guess, not sized.";
   parameter Real KvGainRelief = 2
-    "PLACEHOLDER: maps -PID_pressure.y (>0 when pressure above setpoint) to RV08's Kv command once reliefActive. Tune together with kPressurePID/KvReliefMax. Cut from an initial 50 -> 2, same reasoning as KvGainMakeup. PID_pressure.yMax/yMin must stay at >= KvReliefMax/KvMakeupMax divided by this gain, or PID_pressure's own output saturation becomes the binding cap instead of KvReliefMax/KvMakeupMax -- see PID_pressure's yMax/yMin docstring.";
+    "PLACEHOLDER: maps -PID_pressure.y (>0 when pressure above setpoint) to RV08's Kv command during the POST-PULSE TRIM phase only (pre(reliefActive) and not reliefPulsing -- see RV08Limiter). Tune together with kPressurePID/KvReliefMax. Cut from an initial 50 -> 2, same reasoning as KvGainMakeup. PID_pressure.yMax/yMin must stay at >= KvReliefMax/KvMakeupMax divided by this gain, or PID_pressure's own output saturation becomes the binding cap instead of KvReliefMax/KvMakeupMax -- see PID_pressure's yMax/yMin docstring.";
   parameter Real KvReliefMax = 15
-    "PLACEHOLDER Kv cap for RV08 -- REPLACE with a value sized to the peak relief mass flow measured from the ideal-boundary baseline run. Cut from an initial 500 -> 5, same reasoning as KvMakeupMax. Raised 5 -> 15 on 2026-09-01, same reasoning as KvMakeupMax.";
+    "PLACEHOLDER Kv cap for RV08's POST-PULSE TRIM phase (see KvGainRelief) -- REPLACE with a value sized to the peak relief mass flow measured from the ideal-boundary baseline run. Cut from an initial 500 -> 5, same reasoning as KvMakeupMax. Raised 5 -> 15 on 2026-09-01, same reasoning as KvMakeupMax. Since the 2026-09-01 pulse-then-trim rewrite this is no longer the value that does the bulk of the correction -- KvReliefPulse is.";
+  parameter Real KvReliefPulse = 60
+    "PLACEHOLDER fixed (non-PID) Kv commanded during RV08's feedforward pulse (reliefPulsing=true) -- mirror of KvMakeupPulse, see its docstring.";
   parameter Modelica.Units.SI.AbsolutePressure pMakeupReservoir=4500000
     "Make-up storage reservoir pressure (ideal p,T boundary feeding RV07), Pa. Above pressureSetpoint so RV07 can admit helium when the loop runs low.";
   parameter Modelica.Units.SI.AbsolutePressure pReliefReservoir=3000000
     "Relief storage reservoir pressure (ideal p,T boundary drained by RV08), Pa. Below pressureSetpoint so RV08 can bleed helium when the loop runs high.";
   parameter Modelica.Units.SI.Temperature TStorageReservoirs=80
     "Temperature of both storage reservoir boundaries, K.";
-  parameter Modelica.Units.SI.Time valveRampTime = 8
-    "FirstOrder smoothing time constant on RV07/RV08's Kv command -- opening ramp, same anti-chatter role as firstOrder/firstOrder2 on valve6/valve5 (avoids instantaneous Kv steps). Raised from an initial 2s to 8s after the 2026-08-10 debugging run: RV08 crashed the solver (corrector step collapsed to ~6e-13 at t=24.6s, 'the corrector could not converge') while ramping open from Kv_shut_pressureValves, the same '6-decade Kv collapse' class of failure firstOrderCoilKv above documents -- worse here because RV07/RV08 ramp against a fixed, zero-compliance ideal-boundary dp (reservoir) rather than a compliant junction volume, so needs more margin than firstOrderCoilKv's T=3 precedent.";
+  parameter Modelica.Units.SI.Time valveRampTime=3
+    "FirstOrder smoothing time constant on RV07/RV08's Kv command -- opening ramp, same anti-chatter role as firstOrder/firstOrder2 on valve6/valve5 (avoids instantaneous Kv steps). Raised from an initial 2s to 8s after the 2026-08-10 debugging run: RV08 crashed the solver (corrector step collapsed to ~6e-13 at t=24.6s, 'the corrector could not converge') while ramping open from Kv_shut_pressureValves, the same '6-decade Kv collapse' class of failure firstOrderCoilKv above documents -- worse here because RV07/RV08 ramp against a fixed, zero-compliance ideal-boundary dp (reservoir) rather than a compliant junction volume, so needs more margin than firstOrderCoilKv's T=3 precedent. Briefly lowered 8 -> 3 on 2026-09-01 to try to shrink the RV07/RV08 ramp-overlap window in the post-relocation oscillation; reverted the same day -- confirmed worse on every measure (state events 836->1007, CPU 743s->1190s, oscillation period 17.7s->a tighter 14.6s, and 3 genuine 'Failed to solve nonlinear system using Newton solver' warnings appeared that were not present at 8s). The ramp speed was never the actual driver -- it just let the same excess valve authority (KvReliefMax/KvMakeupMax) get applied faster, shortening the bang-bang cycle instead of damping it. Superseded by the 2026-09-01 hysteresis rewrite (see pMakeupOpen/pMakeupClose/pReliefOpen/pReliefClose) which addresses the cycle at its source instead of tuning around it.";
   parameter Real Kv_shut_pressureValves = 1e-2
-    "RV07/RV08's shut-state Kv -- deliberately less extreme than the shared Kv_shut (1e-4) used elsewhere in this model. Same 2026-08-10 debugging fix as valveRampTime above: RV07/RV08 ramp against a fixed ideal-boundary dp (reservoir), so the full 1e-4-to-open span was numerically harsher than the coil case Kv_shut is tuned for; backing the shut value off by two decades shortens the stiff part of the ramp without meaningfully changing the 'closed' leak flow.";
+    "RV07/RV08's shut-state Kv -- deliberately less extreme than the shared Kv_shut (1e-4) used elsewhere in this model. Same 2026-08-10 debugging fix as valveRampTime above: RV07/RV08 ramp against a fixed ideal-boundary dp (reservoir), so the full 1e-4-to-open span was numerically harsher than the coil case Kv_shut is tuned for; backing the shut value off by two decades shortens the stiff part of the ramp without meaningfully changing the 'closed' leak flow. Since the 2026-09-01 split-range rewrite (see RV07Limiter/RV08Limiter) this is no longer selected just because makeupActive/reliefActive is false -- RV07/RV08 now always run at least their small PID trim while enablePressureControl is true. It's still reachable, though: it's what both Limiters fall back to whenever the enablePressureControl master switch itself is false, preserving that switch's 'both valves forced shut' contract.";
 
   Real T_ref(start=0, fixed=true)
     "T_gas_out_max snapshot for valve4's own control logic only (PID/wanted_temp are unaffected) -- re-recorded every time valve4 reopens, held constant otherwise";
@@ -97,19 +115,23 @@ model  PFCircuit
   Real lowTempPendingSince[nPF](each start=0, each fixed=true)
     "Time assembly i most recently entered the lowTempCoolantOptimization pending state -- gates the lowTempCoolantOptimizationMinDuration hold.";
 
-  Boolean makeupActive(start=false, fixed=true)
-    "Confirmed (post-dwell) state of RV07: true -> RV07 allowed to open proportionally (magnitude from PID_pressure.y). Opens only after pressureDwellTime of continuous dwell (makeupOpenPending) below threshold; closes IMMEDIATELY (no dwell) the instant suction pressure recovers back inside the deadband -- see pressureDwellTime's docstring for why the close side deliberately has no dwell.";
-  Boolean makeupOpenPending(start=dp_suction.y < -pressureDeadband, fixed=true)
-    "True while suction pressure has been continuously below (pressureSetpoint - pressureDeadband) but hasn't stayed there for pressureDwellTime yet, with RV07 not yet active. Reset the instant pressure recovers above the threshold, so the wait restarts on the next continuous dip. start is evaluated from dp_suction.y rather than hardcoded false, so a model that initializes already outside the deadband (pInitial far from pressureSetpoint) still enters the dwell instead of the when-clause's rising edge being missed at t=0 -- see the 2026-09-01 migration-notes entry for why a hardcoded false silently disabled RV07/RV08 for an entire run.";
-  Real makeupOpenPendingSince(start=0, fixed=true)
-    "Time suction pressure most recently dipped below (pressureSetpoint - pressureDeadband) -- gates the pressureDwellTime hold before RV07 actually opens.";
+  Boolean makeupActive(start=sensor_p_suction.sensorValue <= pMakeupOpen, fixed=true)
+    "RV07's pulse-arming latch. As of the 2026-09-01 split-range rewrite this no longer gates RV07's Kv directly (RV07Limiter runs its small PID trim continuously regardless of makeupActive -- see RV07Limiter's docstring); makeupActive's only remaining job is to arm/cool down the large feedforward PULSE: turns true the instant sensor_p_suction drops to/below pMakeupOpen (arming a pulse, see makeupPulsing), turns false once it recovers to/above pMakeupClose, and a new pulse can't be armed again until that recovery happens -- this is what stops the pulse from re-firing repeatedly while pressure lingers just below pMakeupOpen. This design was arrived at by observing an actual bug: a 2026-09-01 run where makeupActive got stuck true (a when/elsewhen collision, since fixed -- see the git history right above the when-blocks below) accidentally left RV07 running this same always-on continuous trim for the whole run, and that run was dead stable/non-oscillating specifically because a continuously-modulated valve has no discrete state to hunt between, unlike the old hysteresis-gated on/off design. This rewrite makes that behavior deliberate. start is evaluated from the live sensor rather than hardcoded false, so a model that initializes already below pMakeupOpen still latches active instead of the when-clause's crossing edge being missed at t=0 -- see the 2026-09-01 migration-notes entry for why a hardcoded false previously silently disabled RV07/RV08 for an entire run.";
+  Boolean makeupPulsing(start=false, fixed=true)
+    "True for the first part of a makeupActive episode: RV07 commanded to a large fixed Kv (KvMakeupPulse, not PID-moderated) to deliver makeupPulseTargetMass quickly, added 2026-09-01 to replace running full trim authority for the whole open window (see pMakeupClose's docstring for why that limit-cycled). Set true on the same edge that sets makeupActive; cleared (see the when-clause below) once makeupDeliveredMass reaches makeupPulseTargetMass or sensor_p_suction already reached pMakeupClose, whichever comes first -- after that RV07Limiter drops back to its normal small PID-moderated trim (KvGainMakeup/KvMakeupMax), the same trim that's running continuously at all other times too (see RV07Limiter's docstring).";
+  Real makeupPulseTargetMass(start=0, fixed=true)
+    "Estimated helium mass, kg, to admit during the current pulse to bring sensor_p_suction from its value at the triggering instant up to pMakeupClose -- ideal gas law: (pMakeupClose - p_trigger)*V_loopEffective/(R_specificHelium*T_loopEstimate). Recomputed only on the makeupPulsing rising edge (frozen for the rest of the episode); an estimate, not exact -- see V_loopEffective's docstring for why that's fine (the trim phase that follows absorbs the error).";
+  Real makeupDeliveredMass(start=0, fixed=true)
+    "Integral of the actual RV07 loop-side mass flow (abs(RV07.summary.m_flow_gas_B)) since the current pulse started -- see the equation-section der()/reinit pair. Compared against makeupPulseTargetMass to decide when to end the pulse; using the model's own simulated flow (not the Kv/dp estimate that sized the pulse) makes the pulse cutoff self-correcting even if KvMakeupPulse or V_loopEffective/T_loopEstimate are inaccurate.";
 
-  Boolean reliefActive(start=false, fixed=true)
-    "Confirmed (post-dwell) state of RV08: true -> RV08 allowed to open proportionally (magnitude from -PID_pressure.y). Mirrors makeupActive (dwell to open, immediate close) on the opposite side of the deadband.";
-  Boolean reliefOpenPending(start=dp_suction.y > pressureDeadband, fixed=true)
-    "True while suction pressure has been continuously above (pressureSetpoint + pressureDeadband) but hasn't stayed there for pressureDwellTime yet, with RV08 not yet active. start is evaluated from dp_suction.y rather than hardcoded false -- see makeupOpenPending's docstring and the 2026-09-01 migration-notes entry.";
-  Real reliefOpenPendingSince(start=0, fixed=true)
-    "Time suction pressure most recently rose above (pressureSetpoint + pressureDeadband) -- gates the pressureDwellTime hold before RV08 actually opens.";
+  Boolean reliefActive(start=sensor_p_suction.sensorValue >= pReliefOpen, fixed=true)
+    "RV08's pulse-arming latch -- mirror of makeupActive, see its docstring for the full 2026-09-01 split-range rationale. No longer gates RV08's Kv directly; only arms/cools down the feedforward pulse (reliefPulsing). Turns true the instant sensor_p_suction rises to/above pReliefOpen, turns false once it falls to/below pReliefClose.";
+  Boolean reliefPulsing(start=false, fixed=true)
+    "Mirror of makeupPulsing for RV08/reliefActive -- see its docstring.";
+  Real reliefPulseTargetMass(start=0, fixed=true)
+    "Estimated helium mass, kg, to vent during the current pulse to bring sensor_p_suction from its value at the triggering instant down to pReliefClose: (p_trigger - pReliefClose)*V_loopEffective/(R_specificHelium*T_loopEstimate). Mirror of makeupPulseTargetMass -- see its docstring.";
+  Real reliefDeliveredMass(start=0, fixed=true)
+    "Integral of the actual RV08 loop-side mass flow (abs(RV08.summary.m_flow_gas_A)) since the current pulse started. Mirror of makeupDeliveredMass -- see its docstring.";
 
   output Modelica.Units.SI.Temperature T_gas_out_max = max(T_gas_out_compare_PF)
     "Hottest coil-assembly gas outlet temperature -- uses each coil's live reading while open, frozen closing-time snapshot while isolated, so a closed coil's post-isolation reheating can't distort this (or wanted_temp/other coils' close decisions)";
@@ -619,7 +641,7 @@ model  PFCircuit
     use_effectiveFlowAreaInput=false,
     use_KvValueInput=true,
     KvValueFixed=Kv_shut_pressureValves)
-    "Make-up valve: makeupReservoir -> junction22. Opens proportionally (RV07Limiter/firstOrderRV07) when suction pressure sits below pressureSetpoint-pressureDeadband for pressureDwellTime continuously (makeupActive)."
+    "Make-up valve: makeupReservoir -> junction22. Opens proportionally (RV07Limiter/firstOrderRV07, PID-moderated) once suction pressure drops to/below pMakeupOpen (32 bar); stays open, still PID-moderated, until pressure recovers to/above pMakeupClose (35 bar) -- see makeupActive's hysteresis docstring."
     annotation (Placement(transformation(extent={{6,-3},{-6,3}},
         rotation=0,
         origin={16,180})));
@@ -628,7 +650,7 @@ model  PFCircuit
     use_effectiveFlowAreaInput=false,
     use_KvValueInput=true,
     KvValueFixed=Kv_shut_pressureValves)
-    "Relief valve: junction22 -> reliefReservoir. Opens proportionally (RV08Limiter/firstOrderRV08) when suction pressure sits above pressureSetpoint+pressureDeadband for pressureDwellTime continuously (reliefActive)."
+    "Relief valve: junction22 -> reliefReservoir. Opens proportionally (RV08Limiter/firstOrderRV08, PID-moderated) once suction pressure rises to/above pReliefOpen (37 bar); stays open, still PID-moderated, until pressure falls to/below pReliefClose (35 bar) -- see reliefActive's hysteresis docstring."
     annotation (Placement(transformation(extent={{6,-3},{-6,3}},
         rotation=0,
         origin={-8,204})));
@@ -648,22 +670,20 @@ model  PFCircuit
     y_start=0)
     "u_s=pressureSetpoint, u_m=sensor_p_suction.sensorValue, e=u_s-u_m: y>0 when suction pressure is below setpoint (feeds RV07Limiter), y<0 when above (feeds RV08Limiter via -y). Same LimPID class/PI form as PID (temperature loop) above; k/Ti are still placeholders, tune together with KvGainMakeup/KvGainRelief. yMax/yMin tightened from a placeholder +-1e5 to +-2.5 (2026-08-31, diagnosing an enableOverCoolPrevention=true run that hard-failed at t=37.86s with 'corrector could not converge') -- 2.5 was exactly where RV07Limiter/RV08Limiter's own min(...,KvMakeupMax)/(KvGainMakeup) downstream clamp already saturated at the time, so anything y accumulated past that was pure integrator windup with no effect on the commanded Kv. End-state dump from that failed run showed PID_pressure.I.y=-199708, ~2x past even the old yMin -- this bound stops that windup at the DAE level instead of letting it grow unchecked until a valve4-triggered pressure transient (e.g. overcool-bypass opening) forces a slow unwind that compounds with the transient's own stiffness. Raised 2.5 -> 7.5 on 2026-09-01 in lockstep with KvMakeupMax/KvReliefMax 5 -> 15 (7.5*KvGainMakeup/KvGainRelief=2 = 15), preserving the same 'yMax sits exactly at the downstream Kv clamp, no windup headroom beyond what's usable' invariant the 2026-08-31 fix established -- do not raise KvMakeupMax/KvReliefMax again without moving this in the same proportion, or the 2026-08-31 windup failure mode is back in play."
     annotation (Placement(transformation(extent={{120,160},{140,180}})));
-  Modelica.Blocks.Sources.RealExpression dp_suction(y=
-        sensor_p_suction.sensorValue - pressureSetpoint)
-    "Raw suction pressure error, Pa: positive = above setpoint (relief side), negative = below (make-up side). Drives the makeupActive/reliefActive dwell FSM directly in physical units, independent of PID_pressure's gain."
-    annotation (Placement(transformation(extent={{-100,198},{-80,218}})));
-  Modelica.Blocks.Sources.RealExpression RV07Limiter(y=if makeupActive then
-        min(max(PID_pressure.y, 0)*KvGainMakeup, KvMakeupMax) else
-        Kv_shut_pressureValves)
-    "RV07 Kv command: proportional (via PID_pressure.y) while makeupActive, Kv_shut_pressureValves otherwise."
+  Modelica.Blocks.Sources.RealExpression RV07Limiter(y=if not
+        enablePressureControl then Kv_shut_pressureValves else if
+        makeupPulsing then KvMakeupPulse else min(max(PID_pressure.y, 0)*
+        KvGainMakeup, KvMakeupMax))
+    "RV07 Kv command, 2026-09-01 split-range trim (made permanent/deliberate, see makeupActive's docstring): Kv_shut_pressureValves only while the enablePressureControl master switch is off (preserves its documented 'both valves forced shut' contract); otherwise fixed KvMakeupPulse (feedforward burst, not PID) while makeupPulsing, else PID-proportional trim (min(PID_pressure.y*KvGainMakeup, KvMakeupMax)) at ALL times whether or not makeupActive -- RV07 never fully closes just because makeupActive is false, it just trims toward ~0 on its own once PID_pressure.y<=0 (pressure at/above setpoint)."
     annotation (Placement(transformation(extent={{-40,258},{-20,278}})));
   Modelica.Blocks.Continuous.FirstOrder firstOrderRV07(T=valveRampTime)
     "Opening ramp for RV07 -- same anti-chatter role as firstOrder/firstOrder2 on valve6/valve5."
     annotation (Placement(transformation(extent={{0,260},{20,280}})));
-  Modelica.Blocks.Sources.RealExpression RV08Limiter(y=if reliefActive then
-        min(max(-PID_pressure.y, 0)*KvGainRelief, KvReliefMax) else
-        Kv_shut_pressureValves)
-    "RV08 Kv command: proportional (via -PID_pressure.y) while reliefActive, Kv_shut_pressureValves otherwise."
+  Modelica.Blocks.Sources.RealExpression RV08Limiter(y=if not
+        enablePressureControl then Kv_shut_pressureValves else if
+        reliefPulsing then KvReliefPulse else min(max(-PID_pressure.y, 0)*
+        KvGainRelief, KvReliefMax))
+    "RV08 Kv command, 2026-09-01 split-range trim (made permanent/deliberate, see reliefActive's docstring): Kv_shut_pressureValves only while the enablePressureControl master switch is off (preserves its documented 'both valves forced shut' contract); otherwise fixed KvReliefPulse (feedforward burst, not PID) while reliefPulsing, else PID-proportional trim (min(-PID_pressure.y*KvGainRelief, KvReliefMax)) at ALL times whether or not reliefActive -- RV08 never fully closes just because reliefActive is false, it just trims toward ~0 on its own once -PID_pressure.y<=0 (pressure at/below setpoint)."
     annotation (Placement(transformation(extent={{-80,220},{-60,240}})));
   Modelica.Blocks.Continuous.FirstOrder firstOrderRV08(T=valveRampTime)
     "Opening ramp for RV08 -- same anti-chatter role as firstOrder/firstOrder2 on valve6/valve5."
@@ -768,45 +788,103 @@ algorithm
     end when;
   end for;
 
-  // RV07/RV08 make-up/relief debounce -- same pending-flag/timestamp dwell
-  // idiom as valve4's overCoolRecovering/overCoolRecoveredAt above, but
-  // asymmetric on purpose: dwell gates OPENING only (filters noise/blips
-  // before admitting/venting real gas mass), closing is immediate the
-  // instant pressure recovers into the deadband. A symmetric dwell (dwell
-  // on close too) was tried first and caused a real overpressure runaway --
-  // RV07 was held open ~15s after the loop had already recovered, which was
-  // enough for the fixed-pressure makeupReservoir to drag the whole loop up
-  // to ~pMakeupReservoir (2026-08-10 debugging run) and then crash the
-  // solver. See pressureDwellTime's docstring.
-  when enablePressureControl and dp_suction.y < -pressureDeadband and not
-      pre(makeupActive) and not pre(makeupOpenPending) then
-    makeupOpenPendingSince := time;
-    makeupOpenPending := true;
-  elsewhen pre(makeupOpenPending) and dp_suction.y >= -pressureDeadband then
-    makeupOpenPending := false;
-  elsewhen pre(makeupOpenPending) and time >= makeupOpenPendingSince +
-      pressureDwellTime then
+  // RV07/RV08 make-up/relief hysteresis + feedforward pulse/trim.
+  // 2026-08-31: pressureDeadband+pressureDwellTime debounce FSM -- dwell
+  // gated OPENING only with an immediate, narrow-band close, which let each
+  // valve's own ramp-down/residual flow push the pressure straight through
+  // to the opposite valve's threshold and re-trigger it, sustaining a
+  // ~14.5s bang-bang limit cycle indefinitely instead of settling.
+  // 2026-09-01 rewrite #1: replaced the debounce with a wide fixed
+  // hysteresis band (pMakeupOpen/pMakeupClose, pReliefOpen/pReliefClose).
+  // Still limit-cycled (~10s period observed) because RV07Limiter/
+  // RV08Limiter ran full trim authority (PID*KvGain, capped at KvMax) for
+  // the ENTIRE time the valve was active, so each opening still dumped far
+  // more mass than the deviation actually needed -- the band width was
+  // absorbing the same kind of overshoot the dwell used to, just less of it.
+  // 2026-09-01 rewrite #2 (this one): estimate the mass needed to correct
+  // the deviation (ideal gas law, makeupPulseTargetMass/reliefPulseTargetMass)
+  // the instant the threshold is crossed, and deliver it with a large FIXED
+  // Kv (KvMakeupPulse/KvReliefPulse, not PID-moderated) until the model's
+  // own measured delivered mass (makeupDeliveredMass/reliefDeliveredMass,
+  // integrated in the equation section below) reaches that estimate -- or
+  // until the pressure already got there on its own, whichever is first.
+  // Only after that does control hand off to the old, deliberately weak PID
+  // trim (KvGainMakeup/KvMakeupMax etc.) for the rest of the episode, so the
+  // trim is now correcting a small residual instead of doing the whole job.
+  // Each valve's open/stop-pulse/close transitions are THREE INDEPENDENT
+  // when-blocks, not one chained when/elsewhen -- deliberately, after a
+  // 2026-09-01 bug where chaining them let one collision silently eat
+  // another. A chained when/elsewhen behaves like an if-elseif: at any
+  // instant where ANY branch's condition gets a fresh edge, the branches
+  // are evaluated top-to-bottom and only the FIRST currently-true one
+  // fires -- the rest are skipped even if their own condition is also true
+  // at that same instant. The old chained version's "stop pulsing"
+  // (pulse-mass reached OR pressure >= pMakeupClose) and "stop active"
+  // (pressure >= pMakeupClose) branches shared that same pressure-crossing
+  // trigger, so whenever the pulse was ended BY the pressure reaching
+  // pMakeupClose (rather than by the mass integral), both conditions went
+  // true simultaneously and "stop pulsing" (listed first) silently
+  // swallowed "stop active" -- makeupActive got stuck true permanently
+  // (confirmed via result.mat: makeupActive stayed 1 from t=126s to the
+  // end of a 1815s run), leaving RV07 in its PID-trim branch forever
+  // instead of shutting once pressure recovered. Trim then quietly
+  // converged the whole loop to pressureSetpoint (its own target, not
+  // pMakeupClose) with a tiny self-balancing Kv -- a real equilibrium, so
+  // the run LOOKED perfectly settled/non-oscillating, but only because the
+  // hysteresis close logic was dead, not because it was working. Splitting
+  // into independent when-blocks means each fires on its own edge
+  // regardless of what else is true at that instant, so this collision
+  // can't happen again.
+  when enablePressureControl and sensor_p_suction.sensorValue <= pMakeupOpen
+      and not pre(makeupActive) then
     makeupActive := true;
-    makeupOpenPending := false;
-  elsewhen pre(makeupActive) and dp_suction.y >= -pressureDeadband then
+    makeupPulsing := true;
+    makeupPulseTargetMass := (pMakeupClose - sensor_p_suction.sensorValue)*
+      V_loopEffective/(R_specificHelium*T_loopEstimate);
+  end when;
+  when pre(makeupPulsing) and (makeupDeliveredMass >= makeupPulseTargetMass
+      or sensor_p_suction.sensorValue >= pMakeupClose) then
+    makeupPulsing := false;
+  end when;
+  when pre(makeupActive) and sensor_p_suction.sensorValue >= pMakeupClose then
     makeupActive := false;
+    makeupPulsing := false;
   end when;
 
-  when enablePressureControl and dp_suction.y > pressureDeadband and not pre(
-      reliefActive) and not pre(reliefOpenPending) then
-    reliefOpenPendingSince := time;
-    reliefOpenPending := true;
-  elsewhen pre(reliefOpenPending) and dp_suction.y <= pressureDeadband then
-    reliefOpenPending := false;
-  elsewhen pre(reliefOpenPending) and time >= reliefOpenPendingSince +
-      pressureDwellTime then
+  when enablePressureControl and sensor_p_suction.sensorValue >= pReliefOpen
+      and not pre(reliefActive) then
     reliefActive := true;
-    reliefOpenPending := false;
-  elsewhen pre(reliefActive) and dp_suction.y <= pressureDeadband then
+    reliefPulsing := true;
+    reliefPulseTargetMass := (sensor_p_suction.sensorValue - pReliefClose)*
+      V_loopEffective/(R_specificHelium*T_loopEstimate);
+  end when;
+  when pre(reliefPulsing) and (reliefDeliveredMass >= reliefPulseTargetMass
+      or sensor_p_suction.sensorValue <= pReliefClose) then
+    reliefPulsing := false;
+  end when;
+  when pre(reliefActive) and sensor_p_suction.sensorValue <= pReliefClose then
     reliefActive := false;
+    reliefPulsing := false;
   end when;
 
 equation
+  // RV07/RV08 pulse-mass integrators (see makeupPulsing/reliefPulsing above):
+  // only accumulate while a pulse is running, and reinit to 0 right on the
+  // pulse-start event so each episode's pulse is measured from zero.
+  der(makeupDeliveredMass) = if makeupPulsing then abs(RV07.summary.m_flow_gas_B)
+    else 0;
+  when enablePressureControl and sensor_p_suction.sensorValue <= pMakeupOpen
+      and not pre(makeupActive) then
+    reinit(makeupDeliveredMass, 0);
+  end when;
+
+  der(reliefDeliveredMass) = if reliefPulsing then abs(RV08.summary.m_flow_gas_A)
+    else 0;
+  when enablePressureControl and sensor_p_suction.sensorValue >= pReliefOpen
+      and not pre(reliefActive) then
+    reinit(reliefDeliveredMass, 0);
+  end when;
+
   connect(smoothStep.y,rotatoryBoundary. n_in)
     annotation (Line(points={{-179.4,156},{-60,156},{-60,135}},
                                                      color={0,0,127}));
