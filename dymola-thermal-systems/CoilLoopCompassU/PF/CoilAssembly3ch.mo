@@ -21,6 +21,8 @@ model CoilAssembly3ch
   parameter Modelica.Units.SI.Temperature TInitial = 80 "Initial coil/gas temperature";
   parameter Integer assemblyIndex = 0
     "Unique index of this coil-assembly instance among all assemblies in the circuit (no physical meaning, only makes the anti-degeneracy offset below unique circuit-wide instead of just within this instance)";
+  parameter Integer nCellsPerTube = 1
+    "Per-tube wall/gas discretization cell count for this coil assembly instance only, so nCells can be tested on a single coil without subdividing every coil in the circuit at once (see project memory on nCells>1 circuit-wide Newton failures)";
 
   final parameter Modelica.Units.SI.Diameter diameters[3] = diameters_mm*1e-3 "Per-channel tube inner diameter, converted to m";
   final parameter Modelica.Units.SI.Length lengthsAdjusted[3] = {lengths[i]*(1 + 1e-5*(10*assemblyIndex + i)) for i in 1:3}
@@ -66,7 +68,7 @@ model CoilAssembly3ch
       wallThickness=0.00488,
       crossSectionType=ThermalSystems.Internals.CrossSectionType.Circular),
     pressureDropPosition=ThermalSystems.Internals.PressureDropPosition.center,
-    nCells=1,
+    nCells=nCellsPerTube,
     enableHeatPorts=true,
     redeclare model HeatTransferModel =
         ThermalSystems.GasComponents.Tubes.TransportPhenomena.HeatTransfer.GnielinskiDittusBoelter,
@@ -136,7 +138,7 @@ model CoilAssembly3ch
       wallThickness=0.00488,
       crossSectionType=ThermalSystems.Internals.CrossSectionType.Circular),
     pressureDropPosition=ThermalSystems.Internals.PressureDropPosition.center,
-    nCells=1,
+    nCells=nCellsPerTube,
     enableHeatPorts=true,
     redeclare model HeatTransferModel =
         ThermalSystems.GasComponents.Tubes.TransportPhenomena.HeatTransfer.GnielinskiDittusBoelter,
@@ -166,7 +168,7 @@ model CoilAssembly3ch
       wallThickness=0.00488,
       crossSectionType=ThermalSystems.Internals.CrossSectionType.Circular),
     pressureDropPosition=ThermalSystems.Internals.PressureDropPosition.center,
-    nCells=1,
+    nCells=nCellsPerTube,
     enableHeatPorts=true,
     redeclare model HeatTransferModel =
         ThermalSystems.GasComponents.Tubes.TransportPhenomena.HeatTransfer.GnielinskiDittusBoelter,
@@ -211,7 +213,8 @@ equation
     annotation (Line(points={{-71,84},{-48,84}},
                                                color={0,0,127}));
   connect(prescribedHeatFlow.port, tube2.heatPort[1])
-    annotation (Line(points={{-28,84},{40,84},{40,42}},color={191,0,0}));
+    annotation (Line(points={{-28,84},{40,84},{40,41.6}},
+                                                       color={191,0,0}));
   connect(valve1.portA, portA1) annotation (Line(
       points={{-80,1},{-114,1},{-114,0},{-128,0}},
       color={255,153,0},
@@ -219,11 +222,11 @@ equation
   connect(stepSource1.y, prescribedHeatFlow1.Q_flow)
     annotation (Line(points={{-71,64},{-48,64}}, color={0,0,127}));
   connect(prescribedHeatFlow1.port, tube1.heatPort[1]) annotation (Line(points={{-28,64},
-          {18,64},{18,38},{40,38},{40,0}},            color={191,0,0}));
+          {18,64},{18,38},{40,38},{40,-0.4}},         color={191,0,0}));
   connect(stepSource2.y, prescribedHeatFlow2.Q_flow)
     annotation (Line(points={{-71,46},{-46,46}}, color={0,0,127}));
   connect(prescribedHeatFlow2.port, tube3.heatPort[1]) annotation (Line(points={{-26,46},
-          {-22,46},{-22,34},{12,34},{12,-32},{40,-32},{40,-38}},
+          {-22,46},{-22,34},{12,34},{12,-32},{40,-32},{40,-38.4}},
                                                       color={191,0,0}));
   connect(junction1.portC, tube2.portA) annotation (Line(
       points={{20,24},{20,40},{32,40}},
