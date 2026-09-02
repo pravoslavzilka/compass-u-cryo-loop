@@ -21,6 +21,8 @@ model CoilAssembly3ch
   parameter Modelica.Units.SI.Temperature TInitial = 80 "Initial coil/gas temperature";
   parameter Integer assemblyIndex = 0
     "Unique index of this coil-assembly instance among all assemblies in the circuit (no physical meaning, only makes the anti-degeneracy offset below unique circuit-wide instead of just within this instance)";
+  parameter Integer nCellsPerTube = 1
+    "Per-tube wall/gas discretization cell count for this coil assembly instance only, so nCells can be tested on a single coil without subdividing every coil in the circuit at once (see project memory on nCells>1 circuit-wide Newton failures)";
 
   final parameter Modelica.Units.SI.Diameter diameters[3] = diameters_mm*1e-3 "Per-channel tube inner diameter, converted to m";
   final parameter Modelica.Units.SI.Length lengthsAdjusted[3] = {lengths[i]*(1 + 1e-5*(10*assemblyIndex + i)) for i in 1:3}
@@ -66,7 +68,7 @@ model CoilAssembly3ch
       wallThickness=0.00488,
       crossSectionType=ThermalSystems.Internals.CrossSectionType.Circular),
     pressureDropPosition=ThermalSystems.Internals.PressureDropPosition.center,
-    nCells=5,
+    nCells=nCellsPerTube,
     enableHeatPorts=true,
     redeclare model HeatTransferModel =
         ThermalSystems.GasComponents.Tubes.TransportPhenomena.HeatTransfer.GnielinskiDittusBoelter,
@@ -136,7 +138,7 @@ model CoilAssembly3ch
       wallThickness=0.00488,
       crossSectionType=ThermalSystems.Internals.CrossSectionType.Circular),
     pressureDropPosition=ThermalSystems.Internals.PressureDropPosition.center,
-    nCells=5,
+    nCells=nCellsPerTube,
     enableHeatPorts=true,
     redeclare model HeatTransferModel =
         ThermalSystems.GasComponents.Tubes.TransportPhenomena.HeatTransfer.GnielinskiDittusBoelter,
@@ -166,7 +168,7 @@ model CoilAssembly3ch
       wallThickness=0.00488,
       crossSectionType=ThermalSystems.Internals.CrossSectionType.Circular),
     pressureDropPosition=ThermalSystems.Internals.PressureDropPosition.center,
-    nCells=5,
+    nCells=nCellsPerTube,
     enableHeatPorts=true,
     redeclare model HeatTransferModel =
         ThermalSystems.GasComponents.Tubes.TransportPhenomena.HeatTransfer.GnielinskiDittusBoelter,

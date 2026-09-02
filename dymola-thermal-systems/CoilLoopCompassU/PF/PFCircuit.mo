@@ -312,12 +312,14 @@ model  PFCircuit
   CoilAssembly2ch PF2U(lengths={80,83},
     dischargeLoads={0,0},
     TInitial(displayUnit="K") = 160,
-    assemblyIndex=2)
+    assemblyIndex=2,
+    nCellsPerTube=5)
     annotation (Placement(transformation(extent={{100,20},{120,40}})));
   CoilAssembly2ch PF2L(lengths={80,83},
     dischargeLoads={0,0},
     TInitial(displayUnit="K") = 160,
-    assemblyIndex=1)
+    assemblyIndex=1,
+    nCellsPerTube=5)
     annotation (Placement(transformation(extent={{100,40},{120,60}})));
   CoilAssembly4ch PF1L(
     lengths={61,64,70,74},
@@ -336,12 +338,14 @@ model  PFCircuit
   CoilAssembly3ch PF3L(lengths={83,84,87},
     dischargeLoads={0,0,0},
     TInitial(displayUnit="K") = 160,
-    assemblyIndex=5)
+    assemblyIndex=5,
+    nCellsPerTube=5)
     annotation (Placement(transformation(extent={{100,0},{120,20}})));
   CoilAssembly3ch PF3U(lengths={83,84,87},
     dischargeLoads={0,0,0},
     TInitial(displayUnit="K") = 160,
-    assemblyIndex=6)
+    assemblyIndex=6,
+    nCellsPerTube=5)
     annotation (Placement(transformation(extent={{100,-20},{120,0}})));
   CoilAssembly4ch PF4L(lengths={90,90,90,75}, diameters_mm={9,9,9,9},
     wallThickness=0.0059,
