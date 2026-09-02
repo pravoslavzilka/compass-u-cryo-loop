@@ -174,11 +174,12 @@ model  PFCircuit
     orientation="symmetric",
     use_mechanicalPort=true,
     n_nominal=200,
-    dp_nominal(displayUnit="bar") = 1500000,
-    V_flow_nominal=0.031,
-    V_flow0=0.05,
-    T_nominal(displayUnit="K") = 80,
-    p_nominal=4000000,
+    dp_nominal(displayUnit="bar") = 560000,
+    V_flow_nominal=0.038,
+    V_flow0=0.046,
+    T_nominal(displayUnit="K") = 160,
+    p_nominal=3340000,
+    eta_maxPhyd=0.6,
     dpInitial(displayUnit="bar") = 4000000,
     V_flow_Start=0.003)
     annotation (Placement(transformation(extent={{8,-8},{-8,8}},
@@ -313,53 +314,53 @@ model  PFCircuit
     dischargeLoads={0,0},
     TInitial(displayUnit="K") = 160,
     assemblyIndex=2,
-    nCellsPerTube=5)
+    nCellsPerTube=8)
     annotation (Placement(transformation(extent={{100,20},{120,40}})));
   CoilAssembly2ch PF2L(lengths={80,83},
     dischargeLoads={0,0},
     TInitial(displayUnit="K") = 160,
     assemblyIndex=1,
-    nCellsPerTube=5)
+    nCellsPerTube=8)
     annotation (Placement(transformation(extent={{100,40},{120,60}})));
   CoilAssembly4ch PF1L(
     lengths={61,64,70,74},
     dischargeLoads={0,0,0,0},
     TInitial(displayUnit="K") = 160,
     assemblyIndex=3,
-    nCellsPerTube=5)
+    nCellsPerTube=8)
     annotation (Placement(transformation(extent={{100,80},{120,100}})));
   CoilAssembly4ch PF1U(
     lengths={61,64,70,74},
     dischargeLoads={0,0,0,0},
     TInitial(displayUnit="K") = 160,
     assemblyIndex=4,
-    nCellsPerTube=5)
+    nCellsPerTube=8)
     annotation (Placement(transformation(extent={{100,60},{120,80}})));
   CoilAssembly3ch PF3L(lengths={83,84,87},
     dischargeLoads={0,0,0},
     TInitial(displayUnit="K") = 160,
     assemblyIndex=5,
-    nCellsPerTube=5)
+    nCellsPerTube=8)
     annotation (Placement(transformation(extent={{100,0},{120,20}})));
   CoilAssembly3ch PF3U(lengths={83,84,87},
     dischargeLoads={0,0,0},
     TInitial(displayUnit="K") = 160,
     assemblyIndex=6,
-    nCellsPerTube=5)
+    nCellsPerTube=8)
     annotation (Placement(transformation(extent={{100,-20},{120,0}})));
   CoilAssembly4ch PF4L(lengths={90,90,90,75}, diameters_mm={9,9,9,9},
     wallThickness=0.0059,
     dischargeLoads={0,0,0,0},
     TInitial(displayUnit="K") = 160,
     assemblyIndex=7,
-    nCellsPerTube=5)
+    nCellsPerTube=8)
     annotation (Placement(transformation(extent={{100,-40},{120,-20}})));
   CoilAssembly4ch PF4U(lengths={90,90,90,75}, diameters_mm={9,9,9,9},
     wallThickness=0.0059,
     dischargeLoads={0,0,0,0},
     TInitial(displayUnit="K") = 160,
     assemblyIndex=8,
-    nCellsPerTube=5)
+    nCellsPerTube=8)
     annotation (Placement(transformation(extent={{100,-60},{120,-40}})));
   ThermalSystems.GasComponents.JunctionElements.VolumeJunction junction12(
     volume=1e-2,
