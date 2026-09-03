@@ -22,8 +22,8 @@
 // saveName:   this specific run's label, e.g. "k0.12_Ti10_2026-07-29_1430"
 //             -- include your own date/time if you want one, see note
 //             above on why this script doesn't auto-generate one.
-saveFolder := "pressureCompensation";
-saveName   := "pulse-pid-stuck-version";
+saveFolder := "circulatorPowerOpt";
+saveName   := "default";
 
 // --- 2. Paths ----------------------------------------------------------
 packagePath := "Z:/compass-u-cryo-loop/dymola-thermal-systems/CoilLoopCompassU";

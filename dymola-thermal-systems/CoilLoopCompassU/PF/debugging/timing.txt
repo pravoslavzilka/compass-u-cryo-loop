@@ -1,3 +1,1 @@
 run_start: see this file's own mtime
-translate_done: see statusFile mtime
-simulate_done: see result.mat mtime
