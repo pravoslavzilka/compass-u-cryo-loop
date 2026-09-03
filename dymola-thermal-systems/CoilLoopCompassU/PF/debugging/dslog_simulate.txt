@@ -1,5 +1,5 @@
 Log-file of program ./dymosim
-(generated: Thu Sep  3 12:11:30 2026)
+(generated: Thu Sep  3 12:53:00 2026)
 
 dymosim started
 ... "CoilLoopCompassU.PF.PFCircuit" simulating
@@ -10,21 +10,21 @@ Integration started at T = 0 using integration method DASSL
 (DAE multi-step solver (dassl/dasslrt of Petzold modified by Dassault Systemes))
 
 Integration terminated successfully at T = 1815
-   CPU-time for integration                : 2.29e+03 seconds
-   CPU-time for one grid interval          : 4.58e+03 milliseconds
-   CPU-time for initialization             : 0.11 seconds
-   Number of result points                 : 644
+   CPU-time for integration                : 2.51e+03 seconds
+   CPU-time for one grid interval          : 5.01e+03 milliseconds
+   CPU-time for initialization             : 0.152 seconds
+   Number of result points                 : 641
    Number of grid points                   : 501
-   Number of accepted steps                : 1479
-   Number of f-evaluations (dynamics)      : 3253
-   Number of crossing function evaluations : 2604
-   Number of Jacobian-evaluations          : 920
+   Number of accepted steps                : 1426
+   Number of f-evaluations (dynamics)      : 3114
+   Number of crossing function evaluations : 2551
+   Number of Jacobian-evaluations          : 893
    Number of model time events             : 1
    Number of input time events             : 0
-   Number of state events                  : 71
+   Number of state events                  : 69
    Number of step events                   : 0
    Minimum integration stepsize            : 1.59e-06
-   Maximum integration stepsize            : 46.9
+   Maximum integration stepsize            : 36.5
    Maximum integration order               : 5
 Calling terminal section
 ... "dsfinal.txt" creating (final states)
