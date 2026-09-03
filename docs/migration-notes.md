@@ -12,6 +12,116 @@ way to recognize the same bug again.
 
 ---
 
+## 2026-09-03 — **IMPORTANT:** `fan2ndOrder.maxDeltaT` default (5K) silently violated energy conservation across the whole loop — raised to 20K, confirmed against a fresh run
+
+**Status: fix confirmed working**, via a full before/after conservation-law
+audit (mass, energy, second law, CoolProp property cross-checks) of two
+`debugging/result.mat` runs — not just a parameter diff. Because this
+distorts every circulator-power, loop-energy, and HX-duty number from any
+run made before this fix, **treat P_shaft, total loop energy balance, and
+downstream Q_HX/duty-cycle figures from any `result.mat` older than
+2026-09-03 16:59 as unreliable** until re-checked.
+
+**Symptom:** an independent conservation-law audit of `debugging/result.mat`
+(a passive coil cooldown from a 160K initial condition, no active heat
+pulse) found the whole-loop energy balance short by 48.8 MJ — 44.5% of the
+heat extracted at the HX. Localizing it: `fan2ndOrder`'s own enthalpy rise
+(`mdot·(h_out−h_in)`, using the true upstream neighbor's outflow enthalpy,
+not the degenerate `port.h_outflow` — see the note in the audit report)
+was only 13.3 kW against a reported `P_shaft` of 40.3 kW (67.8% residual),
+and — the more serious finding — the circulator's outlet entropy was
+*lower* than its inlet on 79% of the sampled points, a straight-up
+second-law violation for an adiabatic compressor. None of this showed up
+as a solver failure, state-event spike, or `dslog.txt` warning storm — the
+run reported `SUCCESSFUL simulation` throughout. It was only visible by
+independently checking mass/energy/entropy balances against the
+trajectory data, not from any log Dymola produces on its own.
+
+**Root cause:** `fan2ndOrder.maxDeltaT` — a TIL `Fan2ndOrder` parameter
+that hard-limits the temperature rise it will compute from portA to
+portB — was left at its default, `5 K`. The measured ΔT sat clustered at
+4.5–4.8 K for the *entire* run regardless of operating point (mass flow
+swung 0.32–1.01 kg/s, P_shaft swung 28–71 kW) — the signature of a clamp,
+not free physics; a real compression ΔT would track those swings far more
+loosely. `fan2ndOrder.warningQ_flow_loss` was active 100% of the 641
+logged samples the whole time, and TIL's own User's Guide documents
+exactly this condition: *"warningQ_flow_loss indicates that the maximal
+possible temperature difference from portA to portB is reached. To avoid
+the warning, you can increase the value of maxDeltaT in the advanced
+tab."* 5 K reads like a generic/HVAC-fan default — nowhere near sized for
+a cryogenic helium circulator with this much compression heating.
+
+**Fix applied:** `PFCircuit.mo`, `fan2ndOrder` instance declaration (~line
+181) — added `maxDeltaT=20`. The same change also flipped
+`enableCirculatorPowerOptimization` `true→false` (forces `PF_RV01` shut
+for the whole run); that's a **separate, bundled, not-yet-isolated**
+change — see "Not yet confirmed" below.
+
+**Confirmed via a fresh VM run** (`debugging/result.mat`, re-run
+2026-09-03 16:59, `dslog_simulate.txt` shows `SUCCESSFUL simulation`, 52
+state events, no solver failures):
+
+| Check | Before (maxDeltaT=5) | After (maxDeltaT=20) |
+|---|---|---|
+| Circulator enthalpy balance | 67.8% residual | 0.38% |
+| Whole-loop energy balance | 44.5% short (48.8 MJ) | 0.96% (1.53 MJ) |
+| Circulator second law (entropy rise) | true 21% of samples, mean Δs = −154 J/(kg·K) | true 100%, mean Δs = +206 J/(kg·K), min +145 |
+| Coil copper cooldown closure (unaffected, sanity check) | 0.04–0.05% | 0.01–0.02% |
+
+The whole-loop fix shows up as `∫Q_cold` rising from 109.65 MJ to
+159.37 MJ, not `P_shaft` moving much (71.6→74.1 MJ) — the physically
+correct signature: previously the circulator was under-heating the gas,
+so less heat ever reached the HX to extract; fixed, the gas properly
+carries the circulator's full shaft input through to the coldSurface
+boundary.
+
+**Not yet confirmed:**
+- This run bundled two changes (`maxDeltaT` and
+  `enableCirculatorPowerOptimization`). The circulator-thermodynamics
+  fixes above (Check 3a/6a in the audit) are attributable to `maxDeltaT`
+  alone — `enableCirculatorPowerOptimization` only affects `PF_RV01`'s Kv
+  command, a separate valve, not `fan2ndOrder`'s own h/T/s relationship —
+  but the power-optimization control loop itself has not been re-tested
+  *with* the circulator fix in place. Needs a follow-up run with
+  `maxDeltaT=20` and `enableCirculatorPowerOptimization=true` together.
+- `warningQ_flow_loss` is still active 96.9% of the run at `maxDeltaT=20`
+  — ΔT now runs close to (occasionally at) the new 20K ceiling during the
+  hottest part of the cooldown, just no longer clamping hard enough to
+  lose energy. If this circuit is ever driven to a hotter/higher-flow duty
+  cycle than this scenario, re-check whether 20K still has margin.
+- `RV08.warningNegativeFlowArea` chatter (42% active, 50 toggles) is
+  **unchanged** by this fix — a separate, already-partially-documented
+  issue (see the RV07/RV08 entries elsewhere in this doc), still open.
+
+**How it was found:** not from `dslog.txt`/warnings — the run looked
+completely clean at the solver level. Found by treating "solver reports
+success" and "physically conserves mass/energy/entropy" as two different
+claims and checking the second one directly: extracted the full
+trajectory set via `DyMat`/`scipy.io.loadmat`, computed mass and energy
+balance residuals at every node/component, and cross-checked density and
+entropy against CoolProp's real-gas Helium EOS (with a datum-offset
+correction for TSMedia's enthalpy reference, fit from components that log
+both T and h). Once the residual was localized to `fan2ndOrder`, TIL's own
+`warningQ_flow_loss` documentation (surfaced by asking what the flag
+means, in Dymola's own diagnostic message) confirmed the mechanism
+directly — no source access to the proprietary `Fan2ndOrder` model was
+needed.
+
+**General lesson:** a component defaulting to "successful simulation, no
+warnings that look fatal" is not the same as "conserves energy correctly"
+— `maxDeltaT`'s clamp fired continuously for 1815s without ever aborting
+the run or spiking the event count, because it's designed to protect the
+solver from nonphysical Newton trial states, not to signal a steady-state
+energy leak. Any TIL/Modelica component with a similar protective clamp
+(anything with a `max*`/`min*` "advanced tab" parameter and a matching
+`warning*` output) is worth checking the same way — active-100%-of-the-run
+on that warning is a strong tell that the clamp isn't just protecting
+against transients anymore, it's silently gating the steady-state
+solution. Add this to the same "successful-looking run can still hide a
+real bug" family as the 2026-09-01 RV07/RV08 entry below.
+
+---
+
 ## 2026-09-01 — RV07/RV08 pulse controller stuck permanently open: chained `when/elsewhen` branch collision silently ate a transition
 
 **Status: fix applied.** The run that exposed the bug is also the evidence

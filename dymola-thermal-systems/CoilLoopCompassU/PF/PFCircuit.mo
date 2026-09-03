@@ -42,7 +42,7 @@ model  PFCircuit
     "Assembly i's own T_gas_out must stay continuously below lowTempCoolantOptimizationThreshold (with lowTempOtherHotCount_PF[i] continuously >= lowTempCoolantOptimizationMinHotOthers) for this long before lowTempCoolantOptimization actually shuts it -- filters out a brief/noisy dip that shouldn't count as a real close decision. Any excursion out of that condition before the duration elapses cancels the pending close; the wait restarts on the next continuous entry.";
   parameter Modelica.Units.SI.Time controlActivationDelay = 5
     "Reopen logic (valve4 and per-coil isolation) and PF_RV01's circulator-power-limit trigger all stay disabled until this much simulated time has passed, so none of them react to unsettled startup temperatures (T_gas_out_max briefly reads the 80K junction initial condition for about the first 1.2s of every run, before the coils' true ~160K start temperature propagates through -- see debugging/result.mat)";
-  parameter Boolean enableCirculatorPowerOptimization = true
+  parameter Boolean enableCirculatorPowerOptimization=false
     "Master switch for PF_RV01's circulator-power-limit PID (the trigger/PID_circulatorPower/PF_RV01Command block below). When false, PF_RV01 is forced to Kv_shut regardless of fan2ndOrder.P_shaft or T_gas_out_max, same 'both/all valves forced shut' contract as enablePressureControl.";
   parameter Modelica.Units.SI.Power P_shaftLimit=50000
     "Circulator shaft-power cap PF_RV01's power-limit PID trims fan2ndOrder.P_shaft toward once active, W. Sized from the 2026-09-02 baseline run (debugging/result.mat): P_shaft climbs from ~28kW (T_gas_out_max~160K) to ~58.6kW (T_gas_out_max~80K) at fixed circulator speed, because dp roughly doubles as the helium densifies while volumeFlowRate stays ~flat -- this cap is meant to claw back the back-loaded energy in that final stage by bleeding some flow through PF_RV01 instead of through the coils.";
@@ -178,6 +178,7 @@ model  PFCircuit
   ThermalSystems.GasComponents.Fans.Fan2ndOrder fan2ndOrder(
     orientation="symmetric",
     use_mechanicalPort=true,
+    maxDeltaT=20,
     n_nominal=200,
     dp_nominal(displayUnit="bar") = 560000,
     V_flow_nominal=0.038,
