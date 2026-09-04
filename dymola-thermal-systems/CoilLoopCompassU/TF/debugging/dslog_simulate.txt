@@ -1,5 +1,5 @@
 Log-file of program ./dymosim
-(generated: Fri Sep  4 21:07:24 2026)
+(generated: Fri Sep  4 21:41:06 2026)
 
 dymosim started
 ... "CoilLoopCompassU.TF.TFCircuit" simulating
@@ -10,7 +10,7 @@ Integration started at T = 0 using integration method DASSL
 (DAE multi-step solver (dassl/dasslrt of Petzold modified by Dassault Systemes))
 
 Warning: Failed to solve nonlinear system using Newton solver.
-  Time: 88.59248223247369
+  Time: 85.42023733079688
   Tag: simulation.nonlinear[11]
   For debugging information enable
   Simulation/Setup/Debug/Nonlinear solver diagnostics/Detailed logging of failed nonlinear solutions.
@@ -18,35 +18,41 @@ Solver will attempt to handle this problem.
 
 
 Warning: Failed to solve nonlinear system using Newton solver.
-  Time: 88.59248223247369
+  Time: 85.42023733079688
   Tag: simulation.nonlinear[11]
 Solver will attempt to handle this problem.
 
 Failed to evaluate model for ODE-Jacobian
 
 Warning: Failed to solve nonlinear system using Newton solver.
-  Time: 88.59248223247369
+  Time: 85.45116060922528
+  Tag: simulation.nonlinear[11]
+Solver will attempt to handle this problem.
+
+
+Warning: Failed to solve nonlinear system using Newton solver.
+  Time: 85.45116060922528
   Tag: simulation.nonlinear[11]
 Solver will attempt to handle this problem.
 
 Failed to evaluate model for ODE-Jacobian
 
 Integration terminated successfully at T = 1800
-   CPU-time for integration                : 28 seconds
-   CPU-time for one grid interval          : 56.1 milliseconds
-   CPU-time for initialization             : 0.021 seconds
-   Number of result points                 : 570
+   CPU-time for integration                : 19.5 seconds
+   CPU-time for one grid interval          : 38.9 milliseconds
+   CPU-time for initialization             : 0.019 seconds
+   Number of result points                 : 608
    Number of grid points                   : 501
-   Number of accepted steps                : 971
-   Number of f-evaluations (dynamics)      : 2164
-   Number of crossing function evaluations : 1734
-   Number of Jacobian-evaluations          : 514
+   Number of accepted steps                : 1228
+   Number of f-evaluations (dynamics)      : 2681
+   Number of crossing function evaluations : 2151
+   Number of Jacobian-evaluations          : 806
    Number of model time events             : 1
    Number of input time events             : 0
-   Number of state events                  : 33
+   Number of state events                  : 52
    Number of step events                   : 0
-   Minimum integration stepsize            : 8.76e-07
-   Maximum integration stepsize            : 70.8
+   Minimum integration stepsize            : 7.55e-07
+   Maximum integration stepsize            : 46.7
    Maximum integration order               : 5
 Calling terminal section
 ... "dsfinal.txt" creating (final states)
