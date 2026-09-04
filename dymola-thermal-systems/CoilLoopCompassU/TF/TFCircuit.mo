@@ -182,7 +182,7 @@ model TFCircuit
     annotation (Placement(transformation(
         extent={{8,-2},{-8,2}},
         rotation=90,
-        origin={-112,40})));
+        origin={-160,40})));
 
   Modelica.Blocks.Continuous.LimPID PID(
     controllerType=Modelica.Blocks.Types.SimpleController.PI,
@@ -194,9 +194,9 @@ model TFCircuit
     y_start=5)
     annotation (Placement(transformation(extent={{-10,10},{10,-10}},
         rotation=-90,
-        origin={-70,50})));
+        origin={-230,90})));
   Modelica.Blocks.Sources.RealExpression wantedTemp(y=wanted_temp)
-    annotation (Placement(transformation(extent={{-156,70},{-136,90}})));
+    annotation (Placement(transformation(extent={{-276,112},{-256,132}})));
   ThermalSystems.GasComponents.Sensors.Sensor_T sensor_T
     annotation (Placement(transformation(extent={{-16,40},{-8,48}})));
   Modelica.Blocks.Logical.Hysteresis heaterHysteresis(uLow=u_dead -
@@ -380,46 +380,71 @@ algorithm
   end for;
 
 equation
-  connect(fan2ndOrder.portA, junction1.portB) annotation (Line(points={{-60,112},{-60,60},{56,60}}, color={255,153,0}, thickness=0.5));
+  connect(fan2ndOrder.portA, junction1.portB) annotation (Line(points={{-52,120},
+          {-52,60},{56,60}},                                                                        color={255,153,0}, thickness=0.5));
   connect(smoothStep.y, rotatoryBoundary.n_in)
-    annotation (Line(points={{-179.4,156},{-70,156},{-70,140}}, color={0,0,127}));
+    annotation (Line(points={{-179.4,156},{-60,156},{-60,135}}, color={0,0,127}));
   connect(rotatoryBoundary.rotatoryFlange, fan2ndOrder.rotatoryFlange)
-    annotation (Line(points={{-60,127},{-60,128}}, color={135,135,135}, thickness=0.5));
+    annotation (Line(points={{-60,131},{-60,128}}, color={135,135,135}, thickness=0.5));
   connect(coldSurface.port, tube1.heatPort[1]) annotation (Line(points={{-50,-40},{-50,-58}}, color={191,0,0}));
-  connect(prescribedHeatFlow1.port, Heater.heatPort[1]) annotation (Line(points={{-180,40},{-112,40}}, color={191,0,0}));
+  connect(prescribedHeatFlow1.port, Heater.heatPort[1]) annotation (Line(points={{-180,40},
+          {-162,40}},                                                                                  color={191,0,0}));
 
-  connect(fan2ndOrder.portB, Heater.portA) annotation (Line(points={{-60,128},{-60,140},{-160,140},{-160,40},{-120,40}}, color={255,153,0}, thickness=0.5));
-  connect(Heater.portB, junction6.portA) annotation (Line(points={{-112,32},{-112,-20}}, color={255,153,0}, thickness=0.5));
-  connect(sensor_T.port, junction6.portA) annotation (Line(points={{-12,44},{-112,44},{-112,-20}}, color={255,153,0}, thickness=0.5));
-  connect(junction6.portB, junction7.portC) annotation (Line(points={{-108,-24},{-100,-24},{-100,-6},{-108,-6}}, color={255,153,0}, thickness=0.5));
-  connect(junction7.portA, valve5.portA) annotation (Line(points={{-112,-10},{-112,-5},{-80,-5}}, color={255,153,0}, thickness=0.5));
-  connect(valve5.portB, valve6.portA) annotation (Line(points={{-68,-5},{-60,-5},{-60,-30},{-112,-30},{-112,-39}}, color={255,153,0}, thickness=0.5));
-  connect(valve6.portB, tube1.portA) annotation (Line(points={{-112,-47},{-112,-60},{-58,-60}}, color={255,153,0}, thickness=0.5));
+  connect(fan2ndOrder.portB, Heater.portA) annotation (Line(points={{-68,120},{
+          -160,120},{-160,48}},                                                                                          color={255,153,0}, thickness=0.5));
+  connect(Heater.portB, junction6.portA) annotation (Line(points={{-160,32},{
+          -160,-34},{-114,-34},{-114,-28},{-112,-28}},                                   color={255,153,0}, thickness=0.5));
+  connect(sensor_T.port, junction6.portA) annotation (Line(points={{-12,40},{
+          -112,40},{-112,-28}},                                                                    color={255,153,0}, thickness=0.5));
+  connect(junction6.portB, junction7.portC) annotation (Line(points={{-116,-24},
+          {-100,-24},{-100,-10},{-112,-10}},                                                                     color={255,153,0}, thickness=0.5));
+  connect(junction7.portA, valve5.portA) annotation (Line(points={{-112,-2},{
+          -112,-5},{-80,-5}},                                                                     color={255,153,0}, thickness=0.5));
+  connect(valve5.portB, valve6.portA) annotation (Line(points={{-68,-5},{-60,-5},
+          {-60,-30},{-112,-30},{-112,-37}},                                                                        color={255,153,0}, thickness=0.5));
+  connect(valve6.portB, tube1.portA) annotation (Line(points={{-112,-49},{-112,
+          -60},{-58,-60}},                                                                      color={255,153,0}, thickness=0.5));
   connect(tube1.portB, junctionSupply.portA) annotation (Line(points={{-42,-60},{40,-60},{40,36}}, color={255,153,0}, thickness=0.5));
 
   connect(junctionSupply.portB, junctionCL.portA) annotation (Line(points={{36,40},{20,40},{20,76}}, color={255,153,0}, thickness=0.5));
-  connect(junctionSupply.portC, junctionUL.portA) annotation (Line(points={{44,40},{20,40},{20,4}}, color={255,153,0}, thickness=0.5));
-  connect(junctionCL.portB, TFCL1.portA1) annotation (Line(points={{20,84},{60,84},{60,90},{100,90}}, color={255,153,0}, thickness=0.5));
-  connect(junctionCL.portC, TFCL2.portA1) annotation (Line(points={{24,80},{60,80},{60,70},{100,70}}, color={255,153,0}, thickness=0.5));
-  connect(junctionUL.portB, TFUL1.portA1) annotation (Line(points={{20,4},{60,4},{60,10},{100,10}}, color={255,153,0}, thickness=0.5));
-  connect(junctionUL.portC, TFUL2.portA1) annotation (Line(points={{24,0},{60,0},{60,-10},{100,-10}}, color={255,153,0}, thickness=0.5));
+  connect(junctionSupply.portC, junctionUL.portA) annotation (Line(points={{40,44},
+          {20,44},{20,-4}},                                                                         color={255,153,0}, thickness=0.5));
+  connect(junctionCL.portB, TFCL1.portA1) annotation (Line(points={{16,80},{60,
+          80},{60,70},{97.2,70}},                                                                     color={255,153,0}, thickness=0.5));
+  connect(junctionCL.portC, TFCL2.portA1) annotation (Line(points={{20,84},{60,
+          84},{60,90},{97.2,90}},                                                                     color={255,153,0}, thickness=0.5));
+  connect(junctionUL.portB, TFUL1.portA1) annotation (Line(points={{16,0},{60,0},
+          {60,-10},{97.2,-10}},                                                                     color={255,153,0}, thickness=0.5));
+  connect(junctionUL.portC, TFUL2.portA1) annotation (Line(points={{20,4},{60,4},
+          {60,10},{97.2,10}},                                                                         color={255,153,0}, thickness=0.5));
 
-  connect(TFCL1.portB1, junctionReturnCL.portA) annotation (Line(points={{120,90},{140,90},{140,84}}, color={255,153,0}, thickness=0.5));
-  connect(TFCL2.portB1, junctionReturnCL.portC) annotation (Line(points={{120,70},{140,70},{140,76}}, color={255,153,0}, thickness=0.5));
-  connect(TFUL1.portB1, junctionReturnUL.portA) annotation (Line(points={{120,10},{140,10},{140,4}}, color={255,153,0}, thickness=0.5));
-  connect(TFUL2.portB1, junctionReturnUL.portC) annotation (Line(points={{120,-10},{140,-10},{140,-4}}, color={255,153,0}, thickness=0.5));
+  connect(TFCL1.portB1, junctionReturnCL.portA) annotation (Line(points={{120.4,
+          69.8},{140,69.8},{140,84}},                                                                 color={255,153,0}, thickness=0.5));
+  connect(TFCL2.portB1, junctionReturnCL.portC) annotation (Line(points={{120.4,
+          89.8},{140,89.8},{140,76}},                                                                 color={255,153,0}, thickness=0.5));
+  connect(TFUL1.portB1, junctionReturnUL.portA) annotation (Line(points={{120.4,
+          -10.2},{140,-10.2},{140,4}},                                                               color={255,153,0}, thickness=0.5));
+  connect(TFUL2.portB1, junctionReturnUL.portC) annotation (Line(points={{120.4,
+          9.8},{140,9.8},{140,-4}},                                                                     color={255,153,0}, thickness=0.5));
   connect(junctionReturnCL.portB, junctionReturn.portA) annotation (Line(points={{144,80},{160,80},{160,44}}, color={255,153,0}, thickness=0.5));
   connect(junctionReturnUL.portB, junctionReturn.portC) annotation (Line(points={{144,0},{160,0},{160,36}}, color={255,153,0}, thickness=0.5));
 
-  connect(junctionReturn.portB, junction1.portC) annotation (Line(points={{160,40},{60,40},{60,64}}, color={255,153,0}, thickness=0.5));
+  connect(junctionReturn.portB, junction1.portC) annotation (Line(points={{164,40},
+          {60,40},{60,64}},                                                                          color={255,153,0}, thickness=0.5));
   connect(junction1.portA, junction22.portA) annotation (Line(points={{60,56},{60,20},{-2,20},{-2,152}}, color={255,153,0}, thickness=0.5));
-  connect(junction22.portB, RV07.portA) annotation (Line(points={{2,158},{10,158},{10,180}}, color={255,153,0}, thickness=0.5));
-  connect(RV07.portB, makeupBuffer.portArray[1]) annotation (Line(points={{22,180},{56,180},{56,194}}, color={255,153,0}, thickness=0.5));
-  connect(makeupBuffer.portArray[2], makeupReservoir.port) annotation (Line(points={{56,200},{38,200},{38,194}}, color={255,153,0}, thickness=0.5));
+  connect(junction22.portB, RV07.portA) annotation (Line(points={{2,156},{22,
+          156},{22,180}},                                                                    color={255,153,0}, thickness=0.5));
+  connect(RV07.portB, makeupBuffer.portArray[1]) annotation (Line(points={{10,180},
+          {56,180},{56,193.975}},                                                                      color={255,153,0}, thickness=0.5));
+  connect(makeupBuffer.portArray[2], makeupReservoir.port) annotation (Line(points={{56,
+          194.225},{38,194.225},{38,204}},                                                                       color={255,153,0}, thickness=0.5));
   connect(junction22.portC, RV08.portA) annotation (Line(points={{-2,160},{-2,204}}, color={255,153,0}, thickness=0.5));
-  connect(RV08.portB, reliefBuffer.portArray[1]) annotation (Line(points={{-14,204},{-32,204},{-32,190}}, color={255,153,0}, thickness=0.5));
-  connect(reliefBuffer.portArray[2], reliefReservoir.port) annotation (Line(points={{-32,184},{-20,184},{-20,178}}, color={255,153,0}, thickness=0.5));
-  connect(sensor_p_suction.port, junction1.portB) annotation (Line(points={{62,134},{62,60},{64,60}}, color={255,153,0}, thickness=0.5));
+  connect(RV08.portB, reliefBuffer.portArray[1]) annotation (Line(points={{-14,204},
+          {-32,204},{-32,181.975}},                                                                       color={255,153,0}, thickness=0.5));
+  connect(reliefBuffer.portArray[2], reliefReservoir.port) annotation (Line(points={{-32,
+          182.225},{-20,182.225},{-20,178}},                                                                        color={255,153,0}, thickness=0.5));
+  connect(sensor_p_suction.port, junction1.portB) annotation (Line(points={{62,134},
+          {62,60},{56,60}},                                                                           color={255,153,0}, thickness=0.5));
 
   annotation (Diagram(coordinateSystem(preserveAspectRatio=false, extent={{-360,-100},{220,300}})),
     experiment(
