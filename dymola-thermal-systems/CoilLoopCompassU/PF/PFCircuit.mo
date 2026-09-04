@@ -1,8 +1,6 @@
 within CoilLoopCompassU.PF;
 model  PFCircuit
   extends ThermalSystems.Internals.ClassTypes.ExampleModel;
-  parameter Real m_wanted = 0.9
-    "flow I want in the circuit, kg/s -- recalibrated 2026-07-28 from debugging/result.mat (sensor_m_flow.sensorValue averaged ~0.895 kg/s over t=1600-1815s, still rising ~0.03 kg/s/100s at end of run -- old value of 0.095 predated the coil-geometry/isolation changes and no longer matched the achieved flow by ~10x)";
   parameter Real m_total = 0.1 "total flow from the pump, kg/s";
   parameter Real u_dead = 1;
   parameter Real Kv_shut = 1e-4;
@@ -10,8 +8,6 @@ model  PFCircuit
   parameter Real heater_gain = 100;
   parameter Real Kv_gain = 100;
   parameter Real bypass_limit = 10;
-  parameter Real Kv_circuit = 5.0
-    "Equivalent Kv (m3/h) of the circuit branch (junction5.portC -> ... -> junction4.portA), as seen in parallel with valve1's bypass branch across the shared junction5/junction4 dp -- measured 2026-07-28 from debugging/result.mat via two independent methods (flow-ratio: 5.49 m3/h; direct dp/mdot/rho: 4.99 m3/h), re-identify with debugging/identify_circuit_kv.py if the coil/header geometry changes again";
   parameter Real hysteresisHalfWidth = 0.3
     "Half-width of the ON/OFF gap around each PID.y switching threshold (heater/cooling/bypass), prevents state-event chattering when PID.y settles right on a threshold";
   parameter Modelica.Units.SI.TemperatureDifference tempMargin=40
@@ -45,9 +41,22 @@ model  PFCircuit
   parameter Modelica.Units.SI.Time lowTempCoolantOptimizationMinDuration = 10
     "Assembly i's own T_gas_out must stay continuously below lowTempCoolantOptimizationThreshold (with lowTempOtherHotCount_PF[i] continuously >= lowTempCoolantOptimizationMinHotOthers) for this long before lowTempCoolantOptimization actually shuts it -- filters out a brief/noisy dip that shouldn't count as a real close decision. Any excursion out of that condition before the duration elapses cancels the pending close; the wait restarts on the next continuous entry.";
   parameter Modelica.Units.SI.Time controlActivationDelay = 5
-    "Reopen logic (valve4 and per-coil isolation) stays disabled until this much simulated time has passed, so it isn't triggered by unsettled startup temperatures";
-  parameter Real m_flow_startup = 0.2
-    "Circuit flow target valve1 bypasses down to for the first controlActivationDelay seconds (same startup window as the reopen-logic delay above), so coil temperatures can be read before valve1 releases to the normal m_wanted trim control, kg/s";
+    "Reopen logic (valve4 and per-coil isolation) and PF_RV01's circulator-power-limit trigger all stay disabled until this much simulated time has passed, so none of them react to unsettled startup temperatures (T_gas_out_max briefly reads the 80K junction initial condition for about the first 1.2s of every run, before the coils' true ~160K start temperature propagates through -- see debugging/result.mat)";
+  parameter Boolean enableCirculatorPowerOptimization=false
+    "Master switch for PF_RV01's circulator-power-limit PID (the trigger/PID_circulatorPower/PF_RV01Command block below). When false, PF_RV01 is forced to Kv_shut regardless of fan2ndOrder.P_shaft or T_gas_out_max, same 'both/all valves forced shut' contract as enablePressureControl.";
+  parameter Modelica.Units.SI.Power P_shaftLimit=50000
+    "Circulator shaft-power cap PF_RV01's power-limit PID trims fan2ndOrder.P_shaft toward once active, W. Sized from the 2026-09-02 baseline run (debugging/result.mat): P_shaft climbs from ~28kW (T_gas_out_max~160K) to ~58.6kW (T_gas_out_max~80K) at fixed circulator speed, because dp roughly doubles as the helium densifies while volumeFlowRate stays ~flat -- this cap is meant to claw back the back-loaded energy in that final stage by bleeding some flow through PF_RV01 instead of through the coils.";
+  parameter Modelica.Units.SI.Temperature valve1PowerLimitTriggerTemp(
+      displayUnit="K")=140
+    "T_gas_out_max threshold below which PF_RV01's power-limit PID is allowed to open the valve (gated together with time>=controlActivationDelay, see its docstring). In the baseline run fan2ndOrder.P_shaft only crosses P_shaftLimit=40000 once T_gas_out_max drops to ~127K, so 140K gives the PID some room to start trimming gently before the cap would otherwise be exceeded, rather than starting from zero right at the limit.";
+  parameter Real kPowerLimitPID = 0.0005
+    "Gentle P gain for PID_circulatorPower, 1/W -- sized so the ~20kW worst-case overshoot above P_shaftLimit seen in the baseline run (P_shaft up to ~58.6kW) maps to the PID's full output swing, not an early saturation. Deliberately gentle (see kPowerLimitPID/TiPowerLimitPID/yMin docstrings collectively) so PF_RV01 eases open rather than snapping open and dragging P_shaft well below P_shaftLimit.";
+  parameter Modelica.Units.SI.Time TiPowerLimitPID = 60
+    "Integral time for PID_circulatorPower, s -- deliberately slow (vs. TiPressurePID=30 for the much faster suction-pressure loop) because the driver here is a slow, monotonic cooldown, not a fast transient; a slow integrator avoids winding up into an overcorrection that would pull P_shaft down well below P_shaftLimit.";
+  parameter Real KvGainPowerLimit = 50
+    "Converts PID_circulatorPower.y to a Kv command, so that y=yMin (-10) maps to exactly KvPowerLimitMax -- keeps the LimPID's own anti-windup bound sitting exactly at the downstream Kv clamp, same 'no windup headroom beyond what's usable' invariant PID_pressure/KvGainMakeup/KvGainRelief already use.";
+  parameter Real KvPowerLimitMax = 500
+    "Kv cap for PF_RV01's power-limit trim -- same order as this valve's old flow-trim limiter (uMax=500) and RV07/RV08's Kv range, well within the valve's characteristic range.";
 
   parameter Boolean enablePressureControl = true
     "Master switch for the RV07 (make-up)/RV08 (relief) split-range pressure-control valve pair at the suction node. When false, both valves are forced to Kv_shut regardless of suction pressure.";
@@ -71,7 +80,7 @@ model  PFCircuit
     "PLACEHOLDER integral time for PID_pressure, s -- tune after baseline run.";
   parameter Modelica.Units.SI.Volume V_loopEffective = 0.5
     "PLACEHOLDER estimate of the compliant helium gas volume on the suction side that RV07/RV08 pressurize/vent (loop tubing + coil headers + junction22 -- NOT the reservoirs/buffers, which are on the other side of the valves). Used only for the feedforward pulse-mass estimate (ideal gas law, see makeupPulseTargetMass/reliefPulseTargetMass) added 2026-09-01. An inaccurate guess only makes the pulse over/undersized -- it does not affect correctness elsewhere, and the trim phase that follows every pulse (KvGainMakeup/KvGainRelief, now capped much lower than the pulse) absorbs whatever the pulse under/overshoots. REPLACE with the actual summed suction-side volume once known, to make the pulse land closer to pMakeupClose/pReliefClose in one shot.";
-  parameter Modelica.Units.SI.Temperature T_loopEstimate = 80
+  parameter Modelica.Units.SI.Temperature T_loopEstimate=80
     "PLACEHOLDER constant gas temperature for the feedforward pulse-mass estimate (ideal gas law) -- matches TStorageReservoirs/valve TInitial elsewhere in this model as a representative cold-loop value. Same caveat as V_loopEffective: only affects pulse sizing, not correctness.";
   parameter Real R_specificHelium = 2077.1
     "Specific gas constant for helium, J/(kg.K) (R_universal/M_He = 8314.46/4.0026) -- used only for the feedforward pulse-mass estimate.";
@@ -139,10 +148,6 @@ model  PFCircuit
     "PID setpoint: hottest coil outlet minus margin, revalued continuously";
   output Modelica.Units.SI.Temperature sensor_T_filtered = sensorTFiltered.y
     "Low-pass-filtered copy of sensor_T.sensorValue, reporting only";
-  Real m_flowTarget = if time < controlActivationDelay then m_flow_startup else
-      m_wanted
-    "valve1's circuit-flow target: m_flow_startup for the first controlActivationDelay seconds (coil-temperature read window), m_wanted afterwards";
-
   Real T_gas_out_PF[nPF] = {PF1U.T_gas_out, PF1L.T_gas_out, PF2U.T_gas_out,
       PF2L.T_gas_out, PF3U.T_gas_out, PF3L.T_gas_out, PF4U.T_gas_out,
       PF4L.T_gas_out} "Same order as coilOpen";
@@ -173,6 +178,7 @@ model  PFCircuit
   ThermalSystems.GasComponents.Fans.Fan2ndOrder fan2ndOrder(
     orientation="symmetric",
     use_mechanicalPort=true,
+    maxDeltaT=20,
     n_nominal=200,
     dp_nominal(displayUnit="bar") = 560000,
     V_flow_nominal=0.038,
@@ -434,9 +440,6 @@ model  PFCircuit
     annotation (Placement(transformation(extent={{-4,-4},{4,4}},
         rotation=90,
         origin={40,20})));
-  Modelica.Blocks.Sources.RealExpression valveRegulator(y=Kv_circuit*(
-        sensor_m_flow.sensorValue - m_flowTarget)/m_flowTarget)
-    annotation (Placement(transformation(extent={{-238,174},{-218,194}})));
   ThermalSystems.GasComponents.Sensors.Sensor_m_flow sensor_m_flow
     annotation (Placement(transformation(extent={{-72,116},{-80,124}})));
   Modelica.Blocks.Continuous.LimPID PID(
@@ -463,15 +466,34 @@ model  PFCircuit
     5-10s if scatter persists, but not so high it visibly lags real
     transients (heater on/off, coil isolation events)."
     annotation (Placement(transformation(extent={{-46,10},{-30,26}})));
-  Modelica.Blocks.Nonlinear.Limiter limiter(uMax=500, uMin=0.001)
+  Modelica.Blocks.Continuous.LimPID PID_circulatorPower(
+    controllerType=Modelica.Blocks.Types.SimpleController.PI,
+    k=kPowerLimitPID,
+    Ti=TiPowerLimitPID,
+    yMax=2,
+    yMin=-10,
+    initType=Modelica.Blocks.Types.Init.InitialOutput,
+    y_start=0)
+    "u_s=P_shaftLimit, u_m=fan2ndOrder.P_shaft, e=u_s-u_m: y<0 when shaft power is above the limit (feeds PF_RV01Command via -y, same direct/relief convention as PID_pressure/RV08Limiter above), y sits saturated at yMax>0 whenever P_shaft is comfortably under the limit (most of the run, including the whole pre-trigger phase) -- that's an idle saturation with anti-windup, not a knife-edge boundary, so it doesn't chatter. yMin=-10 is sized (via KvGainPowerLimit=50) to land exactly on KvPowerLimitMax, same no-windup-headroom-beyond-what's-usable invariant as PID_pressure."
     annotation (Placement(transformation(extent={{-178,174},{-158,194}})));
-  Modelica.Blocks.Sources.RealExpression valve1Command(y=if time <
-        controlActivationDelay then limiter.y else Kv_shut)
-    "valve1's final Kv command: the flow-trim proportional control (valveRegulator
-    -> limiter), still targeting m_flow_startup, for the first controlActivationDelay
-    seconds only; after that valve1 no longer trims flow toward m_wanted -- it's
-    forced fully shut (Kv_shut) instead."
+  Modelica.Blocks.Sources.RealExpression PF_RV01Command(y=if not
+        enableCirculatorPowerOptimization then Kv_shut else if not (time >=
+        controlActivationDelay and T_gas_out_max <= valve1PowerLimitTriggerTemp)
+         then Kv_shut else max(-PID_circulatorPower.y, 0)*KvGainPowerLimit)
+    "PF_RV01's final Kv command: master switch first (enableCirculatorPowerOptimization,
+    same 'forced shut regardless of everything else' contract as enablePressureControl);
+    otherwise forced fully shut (Kv_shut) until the
+    circulator-power-limit trigger gates on (time>=controlActivationDelay and
+    T_gas_out_max<=valve1PowerLimitTriggerTemp, i.e. late in the cooldown once the coils are
+    genuinely cold, not during the ~1.2s startup transient where T_gas_out_max briefly reads
+    the junctions' 80K initial condition); once triggered, PF_RV01 opens proportionally-and-gently
+    (PID_circulatorPower, PI on fan2ndOrder.P_shaft vs. P_shaftLimit) to bleed flow around the
+    coils and keep the circulator's shaft power near P_shaftLimit, instead of the old flow-trim
+    toward m_wanted this replaced."
     annotation (Placement(transformation(extent={{-154,174},{-134,194}})));
+  Modelica.Blocks.Continuous.FirstOrder firstOrderPF_RV01(T=valveRampTime)
+    "Opening/closing ramp for PF_RV01's power-limit command -- same anti-chatter role as firstOrderRV07/firstOrderRV08."
+    annotation (Placement(transformation(extent={{-118,174},{-98,194}})));
   ThermalSystems.GasComponents.Valves.Valve valve3(
     valveFlowVariableType=ThermalSystems.Internals.ValveFlowVariableType.KvValue,
     use_effectiveFlowAreaInput=false,
@@ -709,6 +731,8 @@ equation
   heaterHysteresis.u = PID.y;
   coolingHysteresis.u = -PID.y;
   bypassHysteresis.u = -PID.y;
+  PID_circulatorPower.u_s = P_shaftLimit;
+  PID_circulatorPower.u_m = fan2ndOrder.P_shaft;
 
   for i in 1:nPF loop
     kvTarget_PF[i] = if coilOpen[i] then valveKvNominal_PF[i] else Kv_shut;
@@ -1043,9 +1067,9 @@ equation
   connect(sensor_T.sensorValue, sensorTFiltered.u)
     annotation (Line(points={{-12,46},{-12,52},{-50,52},{-50,32},{-60,32},{-60,
           18},{-47.6,18}},                                color={0,0,127}));
-  connect(valveRegulator.y, limiter.u) annotation (Line(points={{-217,184},{
-          -180,184}},                       color={0,0,127}));
-  connect(valve1Command.y, PF_RV01.KvValue_in) annotation (Line(points={{-133,
+  connect(PF_RV01Command.y, firstOrderPF_RV01.u) annotation (Line(points={{-133,
+          184},{-120,184}}, color={0,0,127}));
+  connect(firstOrderPF_RV01.y, PF_RV01.KvValue_in) annotation (Line(points={{-97,
           184},{-42,184},{-42,102.75}}, color={0,0,127}));
   connect(tube1.portB, valve3.portA) annotation (Line(
       points={{-42,-60},{-42,-59},{-32,-59}},

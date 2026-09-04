@@ -1,8 +1,8 @@
 // ============================================================
 // Dymola script: archive the current run's result.mat (+ log +
-// full parameter dump) into dymola-thermal-systems/data/PF/<folder>/,
+// full parameter dump) into dymola-thermal-systems/data/TF/<folder>/,
 // under a name you choose, so runs survive the next simulate
-// overwriting PF/debugging/result.mat -- and can be diffed/plotted
+// overwriting TF/debugging/result.mat -- and can be diffed/plotted
 // outside Dymola later.
 //
 // Run AFTER auto_translate_log.mos has completed a successful
@@ -13,22 +13,22 @@
 // Run from inside Dymola:
 //   Commands -> Run Script...  -> pick this file
 // or from the Command Log:
-//   RunScript("Z:/compass-u-cryo-loop/dymola-thermal-systems/CoilLoopCompassU/PF/save_run.mos");
+//   RunScript("Z:/compass-u-cryo-loop/dymola-thermal-systems/CoilLoopCompassU/TF/save_run.mos");
 // ============================================================
 
 // --- 1. SETTINGS (edit these before every save) ----------------------
-// saveFolder: category/experiment subfolder under data/PF/, e.g.
-//             "overCoolStabilize delay" (created if it doesn't exist yet)
-// saveName:   this specific run's label, e.g. "k0.12_Ti10_2026-07-29_1430"
+// saveFolder: category/experiment subfolder under data/TF/, e.g.
+//             "coilIsolationMargin" (created if it doesn't exist yet)
+// saveName:   this specific run's label, e.g. "k0.12_Ti12_2026-09-04_1430"
 //             -- include your own date/time if you want one, see note
 //             above on why this script doesn't auto-generate one.
-saveFolder := "circulatorPowerOpt";
-saveName   := "optimizationOn";
+saveFolder := "baseline";
+saveName   := "firstRun";
 
 // --- 2. Paths ----------------------------------------------------------
 packagePath := "Z:/compass-u-cryo-loop/dymola-thermal-systems/CoilLoopCompassU";
-debugPath   := packagePath + "/PF/debugging";
-dataRoot    := "Z:/compass-u-cryo-loop/dymola-thermal-systems/data/PF";
+debugPath   := packagePath + "/TF/debugging";
+dataRoot    := "Z:/compass-u-cryo-loop/dymola-thermal-systems/data/TF";
 saveDir     := dataRoot + "/" + saveFolder;
 
 resultSrc := debugPath + "/result.mat";

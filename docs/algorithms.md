@@ -11,6 +11,143 @@ history" line at the top of the entry.
 
 ---
 
+## CirculatorPowerLimiter (PF_RV01): temperature-gated PID shaft-power cap
+
+**Name:** `CirculatorPowerLimiter` informally (no single Modelica instance
+carries this name) — the mechanism is `PID_circulatorPower` +
+`PF_RV01Command` + `firstOrderPF_RV01`, keyed off
+`enableCirculatorPowerOptimization`.
+
+**Where:** `dymola-thermal-systems/CoilLoopCompassU/PF/PFCircuit.mo`,
+parameters `enableCirculatorPowerOptimization`/`P_shaftLimit`/
+`valve1PowerLimitTriggerTemp`/`kPowerLimitPID`/`TiPowerLimitPID`/
+`KvGainPowerLimit`/`KvPowerLimitMax` (all declared together, right after
+`controlActivationDelay`), the `PID_circulatorPower`/`PF_RV01Command`/
+`firstOrderPF_RV01` block trio, and the two equations wiring
+`PID_circulatorPower.u_s`/`u_m` in the equation section.
+
+**Can it be fully turned off?** Yes — `enableCirculatorPowerOptimization`
+(default `true`), same `parameter Boolean enable*` convention as every
+other optional algorithm in this file. Setting it `false` forces
+`PF_RV01Command` to `Kv_shut` unconditionally — the outermost condition in
+its expression — regardless of `fan2ndOrder.P_shaft` or `T_gas_out_max`.
+
+**Revision history:** 2026-09-03, replacing an earlier undocumented
+flow-trim algorithm on the same valve (`valveRegulator`/`limiter`/
+`valve1Command`, never written up in this file) that only ran for the
+first `controlActivationDelay` seconds targeting `m_flow_startup`/
+`m_wanted`, then forced the valve shut (`Kv_shut`) for the rest of every
+run. That algorithm played no role in steady-state or end-of-cooldown
+behavior at all; this one replaces it with something that's actually
+active during the expensive part of the run.
+
+### What problem this solves
+
+`fan2ndOrder` (the circulator) runs at a fixed speed (`n=200`, held
+constant by `rotatoryBoundary`/`smoothStep` for the entire simulation —
+there is no speed control available on this hardware). At fixed speed,
+`fan2ndOrder.volumeFlowRate` stays roughly flat (~32–35 L/s) through most
+of a cooldown, but as the helium densifies while cooling, the pressure
+rise (`fan2ndOrder.dp`) needed to push that same volumetric flow through
+the coil circuit climbs steeply — from ~5.9 bar (`T_gas_out_max`≈160K) to
+~10.8 bar (`T_gas_out_max`≈80K) in the 2026-09-02 baseline run
+(`debugging/result.mat`). Since `fan2ndOrder.eta` stays essentially flat
+(~0.63–0.665) across that whole range — confirmed from the same run by
+checking `fan2ndOrder.P_loss_impact` against `fan2ndOrder.P_loss_blade`:
+impact (flow-mismatch) loss stays under ~2% of total loss the entire
+cooldown, so the fan is not poorly matched to this circuit — shaft power
+tracks `dp` almost 1:1: `fan2ndOrder.P_shaft` rises from ~28 kW to ~58.6
+kW over the run, with the **final third of the cooldown alone consuming
+43.7% of the run's total circulator energy** (30.9 of 70.8 MJ). Circulator
+speed can't be reduced to fix this (see above), so the only lever
+available is cutting the circuit resistance the fixed-speed fan has to
+push against — which is exactly what opening `PF_RV01` (a bypass valve in
+parallel with the coil branch, `junction5`→`PF_RV01`→`junction4`) does:
+diverting some flow around the coils lowers the `dp` the fan needs to
+produce, at the cost of some coil flow.
+
+### The mechanism
+
+**1. Temperature gate.** The whole thing is forced to `Kv_shut` — doing
+nothing — until two conditions both hold:
+
+```
+time >= controlActivationDelay
+and T_gas_out_max <= valve1PowerLimitTriggerTemp   -- default 140 K
+```
+
+`controlActivationDelay` (default 5s, shared with the reopen-logic gates
+elsewhere in this file) exists because `T_gas_out_max` briefly reads the
+junctions' 80K initial condition for about the first 1.2s of every run,
+before the coils' true ~160K start temperature propagates through — an
+ungated temperature check would spuriously trigger right at `t=0`.
+`valve1PowerLimitTriggerTemp` (140K) is set with margin above the ~127K
+point where `fan2ndOrder.P_shaft` naturally crosses `P_shaftLimit` in the
+baseline run, so the PID has room to start trimming gently before the cap
+would otherwise be exceeded, rather than starting from zero right at the
+limit.
+
+**2. PID relief control (only active past the gate).** `PID_circulatorPower`
+is a PI `LimPID`, wired in the same direct-acting/relief convention as
+`PID_pressure`/`RV08Limiter` above (see the PressureStabilizer entry):
+
+```
+PID_circulatorPower.u_s = P_shaftLimit            -- 40000 W
+PID_circulatorPower.u_m = fan2ndOrder.P_shaft
+
+PF_RV01Command.y = if not enableCirculatorPowerOptimization then Kv_shut
+                   elseif not (time >= controlActivationDelay
+                       and T_gas_out_max <= valve1PowerLimitTriggerTemp) then Kv_shut
+                   else max(-PID_circulatorPower.y, 0) * KvGainPowerLimit
+```
+
+Because of `max(-PID_circulatorPower.y, 0)`, the valve only ever opens
+when `fan2ndOrder.P_shaft` is *above* `P_shaftLimit` (error negative) —
+whenever `P_shaft` is comfortably under the limit, `PID_circulatorPower.y`
+sits saturated at `yMax=2` (an idle saturation with anti-windup, not a
+knife-edge boundary at 0, so it doesn't chatter), and
+`max(-y, 0) = 0`. `KvGainPowerLimit=50` is sized so `yMin=-10` maps to
+exactly `KvPowerLimitMax=500`, keeping the LimPID's own anti-windup bound
+sitting exactly at the downstream Kv clamp — the same
+no-windup-headroom-beyond-what's-usable invariant `PID_pressure`/
+`KvGainMakeup`/`KvGainRelief` already use.
+
+**3. Deliberately gentle tuning.** `kPowerLimitPID=0.0005` is sized so the
+~20kW worst-case overshoot above `P_shaftLimit` seen in the baseline run
+(`P_shaft` up to ~58.6kW) maps across the PID's full output swing rather
+than saturating early; `TiPowerLimitPID=60s` is slower than
+`TiPressurePID=30s` because the driver here is a slow, monotonic
+cooldown, not a fast transient. Both choices exist specifically so
+`PF_RV01` eases open rather than snapping open and dragging `P_shaft`
+well below `P_shaftLimit` — per the design brief, overshooting *down* on
+power is exactly as undesirable as exceeding the cap, since it means
+giving up coil flow for no power benefit.
+
+**4. Anti-chatter smoothing.** `firstOrderPF_RV01` (`T=valveRampTime`)
+sits between `PF_RV01Command` and `PF_RV01.KvValue_in`, same role as
+`firstOrderRV07`/`firstOrderRV08` on the pressure valves.
+
+### Known placeholders / not yet tuned
+
+- `P_shaftLimit=40000`, `valve1PowerLimitTriggerTemp=140` — both derived
+  from a single baseline run (`debugging/result.mat`, 2026-09-02); not
+  re-validated with the power-limiter itself active (which will change
+  the cooldown trajectory that produced these numbers in the first
+  place).
+- `kPowerLimitPID=0.0005`, `TiPowerLimitPID=60` — first-guess gentle
+  tuning, sized off the same single baseline run's worst-case overshoot;
+  needs a real closed-loop run to confirm `P_shaft` actually settles near
+  `P_shaftLimit` without excessive undershoot or slow drift.
+- `KvGainPowerLimit=50`/`KvPowerLimitMax=500` — carried over in spirit
+  from the old flow-trim limiter's `uMax=500` and RV07/RV08's Kv range,
+  not re-derived for this specific duty.
+
+All of the above needs a real VM run to confirm before treating this
+design as validated rather than "structurally sound, not yet proven at
+these exact numbers."
+
+---
+
 ## PressureStabilizer (RV07/RV08 suction-pressure control): split-range continuous trim + feedforward pulse
 
 **Name:** `PressureStabilizer` in commit messages (e.g. `c9934d5
