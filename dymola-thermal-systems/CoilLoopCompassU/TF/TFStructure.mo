@@ -2,38 +2,38 @@ within CoilLoopCompassU.TF;
 model TFStructure
   outer ThermalSystems.SystemInformationManager sim;
   // ===========================================================================
-  // One of 2 parallel busses (TFUL1, TFUL2 in TFCircuit.mo) lumping half of the
-  // "TF upper limb" channel group. FROM SOURCE (ATEKO 22172-Z-R1 Tab.3,
-  // S5.2.3, PFD 22179-0-R0): this group is 112 short copper channels (6x10mm
-  // elliptical, equivalent/hydraulic diameter 7.379796mm, length 7.7m each,
-  // coil weight 7808kg, max deposited energy 53.76MJ), confirmed by the PFD
-  // drawing to be fed from a single header that splits left/right into two
-  // symmetric halves around the ring -- same 2-bus split TFCoilBusCoreLower
-  // implements for the other channel group, see its docstring for the shared
-  // reasoning (per-half channel count ASSUMED even, not stated on the PFD;
-  // all 56 channels of one bus lumped into a single Tube via nParallelTubes).
+  // Replaces TFCL2 (formerly a second TFCoilBusCoreLower instance) at the same
+  // junctionCL/junctionReturnCL header. NOT the ATEKO channel geometry used by
+  // TFCoilBusCoreLower/TFCoilBusUpper -- this represents the TF coil case /
+  // support structure itself (316LN stainless, per ATEKO S6.1's "support
+  // structure has huge weight"), a single lumped cooling-channel network
+  // through that structure rather than the 6x10mm elliptical copper channels
+  // used elsewhere. Geometry below is USER-SUPPLIED (not independently
+  // reconciled against ATEKO source tables) -- see each parameter's docstring.
   // ===========================================================================
 
-  parameter Modelica.Units.SI.Length length = 7.7
-    "Channel length -- FROM SOURCE, ATEKO 22172-Z-R1 Tab.3 'TF upper limb' row (7.7 m), confirmed by PFD 22179-0-R0 channel callouts ('6x10mm, L=7.7m').";
-  parameter Modelica.Units.SI.Diameter diameter = 0.007379796
-    "Equivalent/hydraulic channel diameter -- FROM SOURCE, ATEKO Tab.3 'TF upper limb' row (same value as the core+lower limb group), confirmed by S5.2.3 ('elliptical channel 6x10mm, hydraulic diameter 7.379mm').";
-  parameter Integer nChannels = 56
-    "Number of parallel channels lumped into this bus's single Tube (affects flow area) -- CALCULATED: Tab.3 states 112 channels total for 'TF upper limb', TFCircuit.mo models this group as 2 busses (TFUL1, TFUL2); 112/2=56 is an ASSUMED even split -- see TFCoilBusCoreLower's docstring for the same reasoning.";
+  parameter Modelica.Units.SI.Length length = 3.5
+    "Channel length -- USER-SUPPLIED.";
+  parameter Modelica.Units.SI.Diameter diameter = 0.020
+    "Channel (bore) diameter -- USER-SUPPLIED.";
+  parameter Integer nChannels = 120
+    "Number of parallel channels lumped into this structure's single Tube (affects flow area) -- USER-SUPPLIED (nParallel).";
+  parameter Modelica.Units.SI.Length roughness = 12.5e-6
+    "Channel wall roughness -- USER-SUPPLIED (12.5 um), currently UNUSED. Confirmed at translate-check that ThermalSystems.GasComponents.Tubes.Geometry.TubeGeometry (1.13.0) has no roughness field, so it cannot be wired into tubeGeometry as guessed before. Plausible reason: the PressureDropModel in use here (Konakov) is a smooth-pipe correlation (f = (1.8*log10(Re)-1.5)^-2, Re-only, no roughness term), so there may be no roughness input anywhere on this component for that correlation choice -- a rough-pipe correlation (Colebrook/Haaland or similar, if the ThermalSystems library offers one) would be needed to make this parameter have any effect. Left declared (unconnected) so the requested value isn't lost; wire it in once the right consumer is identified.";
   parameter Modelica.Units.SI.Power dischargeLoad = 0
-    "Peak discharge heat [W] for this bus's lumped 56 channels -- set to 0 (heat load removed): the discharge pulse is not modeled here, and the coil's stored thermal energy is instead represented via its elevated initial temperature (TInitial, overridden to 137K at the TFCircuit.mo instantiation). Was CALCULATED from ATEKO 22172-Z-R1 Tab.3's 53.76 MJ max deposited energy for this group; see git history for that value.";
+    "Peak discharge heat [W] -- 0 (heat load removed), same convention as TFCoilBusCoreLower/TFCoilBusUpper: stored thermal energy is represented via TInitial (overridden to 137K at the TFCircuit.mo instantiation) instead of a discharge pulse.";
   parameter Modelica.Units.SI.Time pulseStart = 5 "Discharge start time -- unused while dischargeLoad=0.";
   parameter Modelica.Units.SI.Time pulseEnd = 10 "Discharge end time -- unused while dischargeLoad=0.";
   parameter Real valveOpening = 1.0 "Isolation valve opening (0-1), used only as the KvValueFixed fallback -- TFCircuit.mo drives this valve dynamically via KvValue_in1.";
   parameter Real valveKvNominal = 100 "Kv value at fully-open (valveOpening=1) -- ASSUMED, carried from PF/CS, no TF-specific valve Cv data found.";
   parameter Modelica.Units.SI.Temperature TInitial = 80 "Initial coil/gas temperature -- overridden to 137K at the TFCircuit.mo instantiation (stands in for the discharge heat load, which is set to 0 here).";
-  parameter Integer assemblyIndex = 0
-    "Unique index of this bus instance among all 4 TF busses (no physical meaning) -- TFUL1/TFUL2 both draw from the same junctionUL with otherwise-identical parameters, the same symmetric-parallel-branch degeneracy CS's CoilAssembly2ch.mo guards against; this tiny per-instance length offset (see lengthAdjusted) breaks that degeneracy so the flow split isn't numerically ambiguous.";
-  parameter Modelica.Units.SI.Thickness wallThickness = 0.014620
-    "CALCULATED, NOT the Tube model's library default (0.5mm, a thin structural pipe wall): sized so tube2's modeled copper mass (density 8960 kg/m3 x annulus volume x nChannels) equals half of ATEKO Tab.3's real 'TF upper limb' coil weight (7808kg total / 2 busses = 3904kg), reflecting that the real channels are drilled/brazed through a solid copper coil plate ('One huge coil made out of copper plates with brazed-on pipe', ATEKO S3.3.3), not thin-walled tubing. See TFCoilBusCoreLower's identical fix for how the 0.5mm default was found (via TFCL1.tube2.summary.mass_component in a translated result.mat) to give ~122x too little thermal mass, causing a solver stall/blow-up a couple seconds after the t=5s discharge pulse start. Does not affect flow/pressure drop (those use innerDiameter only).";
+  parameter Integer assemblyIndex = 2
+    "Unique index of this instance among all 4 TF busses/structures (no physical meaning) -- carried over from the TFCL2 instance this model replaces, at the same junctionCL header; this tiny per-instance length offset (see lengthAdjusted) breaks the symmetric-parallel-branch flow-split degeneracy against TFCL1, same role as in TFCoilBusCoreLower/TFCoilBusUpper.";
+  parameter Modelica.Units.SI.Thickness wallThickness = 0.144220
+    "CALCULATED so tube2's modeled 316LN mass (density 8000 kg/m3 x annulus volume x nChannels) equals the USER-SUPPLIED target wall mass of 250,000 kg: annulus OD solved from 120 * 8000 * 3.5 * (pi/4) * (OD^2 - 0.020^2) = 250000 -> OD=0.308440m -> wallThickness=(OD-diameter)/2=0.144220m. See TFCoilBusCoreLower's docstring for why the Tube model's 0.5mm library default is wrong for a structure like this (thin-walled-pipe assumption, ~122x too little thermal mass in that case) -- same reasoning applies here, more so given the scale. Does not affect flow/pressure drop (those use innerDiameter only).";
 
   final parameter Modelica.Units.SI.Length lengthAdjusted = length*(1 + 1e-5*assemblyIndex)
-    "length with a tiny (<=0.004% for assemblyIndex<=4) per-instance offset -- see assemblyIndex.";
+    "length with a tiny (<=0.006% for assemblyIndex=2) per-instance offset -- see assemblyIndex.";
 
   output Modelica.Units.SI.Temperature T_wall = tube2.heatPort[1].T "Coil wall temperature";
   output Modelica.Units.SI.Temperature T_gas_out = tube2.summary.T_gas_B "Helium outlet temperature";
@@ -55,11 +55,11 @@ model TFStructure
       wallThickness=wallThickness,
       crossSectionType=ThermalSystems.Internals.CrossSectionType.Circular),
     pressureDropPosition=ThermalSystems.Internals.PressureDropPosition.center,
-    nCells=20,
+    nCells=10,
     enableHeatPorts=true,
     redeclare model HeatTransferModel =
         ThermalSystems.GasComponents.Tubes.TransportPhenomena.HeatTransfer.GnielinskiDittusBoelter,
-    redeclare model WallMaterial = CoilLoopCompassU.Common.CopperOFHC_Tdep,
+    redeclare model WallMaterial = CoilLoopCompassU.Common.StainlessSteel316LN_Tdep,
     fixedTInitialWall=false,
     redeclare model PressureDropModel =
         ThermalSystems.GasComponents.Tubes.TransportPhenomena.PressureDrop.Konakov,
@@ -68,7 +68,7 @@ model TFStructure
     fixedInitialPressure=false,
     TInitial(displayUnit="K") = TInitial,
     TInitialWall(displayUnit="K") = TInitial)
-    "Wall material Copper (ATEKO S5.2.3: 'TF channels are made from Copper'). pInitial=2.5MPa(a)/m_flowStart=0.325kg/s CALCULATED from TFCircuit.mo's own m_total=1.3kg/s split evenly across all 4 busses (1.3/4), consistent with the rest of TFCircuit.mo's pInitial choices -- not independently sized per bus."
+    "Wall material 316LN stainless (USER-SUPPLIED, see StainlessSteel316LN_Tdep). nCells=10 axial cells per USER-SUPPLIED spec. pInitial=2.5MPa(a)/m_flowStart=0.325kg/s CALCULATED from TFCircuit.mo's own m_total=1.3kg/s split evenly across all 4 busses/structures (1.3/4), consistent with the rest of TFCircuit.mo's pInitial choices -- not independently resized for this structure's much larger flow area. OPEN ITEM: the requested 2-3 radial wall nodes could NOT be mapped to a verified parameter -- nothing else in this codebase (or the unvendored ThermalSystems.GasComponents.Tubes.Tube API) exposes radial wall discretization, only the axial nCells above; confirm in the Dymola parameter dialog whether such a control exists (e.g. under tubeGeometry or a WallMaterial-side setting) before assuming this Tube model only ever uses a single lumped radial wall node per axial cell."
     annotation (Placement(transformation(extent={{32,52},{48,56}})));
   ThermalSystems.GasComponents.Valves.Valve valve1(
     valveFlowVariableType=ThermalSystems.Internals.ValveFlowVariableType.KvValue,

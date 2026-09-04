@@ -351,7 +351,7 @@ model TFCircuit
   Modelica.Blocks.Continuous.FirstOrder firstOrderRV08(T=valveRampTime)
     annotation (Placement(transformation(extent={{-60,240},{-40,260}})));
 
-  TFStructure Structure(TInitial(displayUnit="K") = 137, assemblyIndex=2)
+  TFStructure Structure(TInitial(displayUnit="K") = 80,  assemblyIndex=2)
     annotation (Placement(transformation(extent={{100,80},{120,100}})));
 equation
   heaterHysteresis.u = PID.y;
