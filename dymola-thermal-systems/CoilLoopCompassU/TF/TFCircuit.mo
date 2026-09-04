@@ -37,6 +37,8 @@ model TFCircuit
   parameter Real Kv_cool_max = 5000;
   parameter Real heater_gain = 100;
   parameter Real Kv_gain = 100;
+  parameter Real bypass_limit = 10
+    "Threshold (on -PID.y) above which valve5's bypass leg is throttled back -- ASSUMED, carried unchanged from PFCircuit.mo's identical parameter/BypassLimiter mechanism (no TF-specific tuning data); structurally required, not optional -- see BypassLimiter's docstring.";
   parameter Real hysteresisHalfWidth = 0.3
     "Half-width of the ON/OFF gap around each PID.y switching threshold -- same anti-chatter role as PFCircuit.mo's identical parameter.";
   parameter Modelica.Units.SI.TemperatureDifference tempMargin=40
@@ -98,6 +100,7 @@ model TFCircuit
   ThermalSystems.GasComponents.Fans.Fan2ndOrder fan2ndOrder(
     orientation="symmetric",
     use_mechanicalPort=true,
+    maxDeltaT=20,
     n_nominal=200,
     dp_nominal(displayUnit="bar") = 200000,
     V_flow_nominal=0.125,
@@ -131,7 +134,7 @@ model TFCircuit
     "LIN-side evaporator boundary -- FROM SOURCE, ATEKO 22172-Z-R1 S6.2 (LIN evaporates at 77K, shared design across all 3 cooling circuits, same as PFCircuit.mo's coldSurface)."
     annotation (Placement(transformation(extent={{-10,-10},{10,10}},
         rotation=270,
-        origin={-50,-30})));
+        origin={-90,-30})));
   ThermalSystems.GasComponents.Tubes.Tube tube1(
     tubeGeometry(
       innerDiameter=0.012,
@@ -156,7 +159,7 @@ model TFCircuit
     "Evaporator geometry ASSUMED, carried from PFCircuit.mo's tube1 unchanged -- not TF-specific, sized only to plausibly pass m_total without excessive pressure drop; see Open Items."
     annotation (Placement(transformation(extent={{-8,-2},{8,2}},
         rotation=0,
-        origin={-50,-60})));
+        origin={-90,-60})));
   ThermalSystems.GasComponents.Tubes.Tube Heater(
     tubeGeometry(
       innerDiameter=0.05,
@@ -194,40 +197,50 @@ model TFCircuit
     y_start=5)
     annotation (Placement(transformation(extent={{-10,10},{10,-10}},
         rotation=-90,
-        origin={-230,90})));
+        origin={-90,70})));
   Modelica.Blocks.Sources.RealExpression wantedTemp(y=wanted_temp)
-    annotation (Placement(transformation(extent={{-276,112},{-256,132}})));
+    annotation (Placement(transformation(extent={{-140,80},{-120,100}})));
   ThermalSystems.GasComponents.Sensors.Sensor_T sensor_T
-    annotation (Placement(transformation(extent={{-16,40},{-8,48}})));
+    annotation (Placement(transformation(extent={{-50,30},{-42,38}})));
   Modelica.Blocks.Logical.Hysteresis heaterHysteresis(uLow=u_dead -
         hysteresisHalfWidth, uHigh=u_dead + hysteresisHalfWidth)
-    annotation (Placement(transformation(extent={{-330,54},{-310,74}})));
+    annotation (Placement(transformation(extent={{-340,20},{-320,40}})));
   Modelica.Blocks.Sources.RealExpression HeaterLimiter(y=if heaterHysteresis.y
          then PID.y*heater_gain else 0)
     annotation (Placement(transformation(extent={{-298,30},{-278,50}})));
   Modelica.Blocks.Logical.Hysteresis coolingHysteresis(uLow=-u_dead -
         hysteresisHalfWidth, uHigh=-u_dead + hysteresisHalfWidth)
-    annotation (Placement(transformation(extent={{-258,-78},{-238,-58}})));
+    annotation (Placement(transformation(extent={{-340,-20},{-320,0}})));
   Modelica.Blocks.Sources.RealExpression CoolingLimiter1(y=if
         coolingHysteresis.y then min(-PID.y*Kv_gain, Kv_cool_max) else
         Kv_shut)
-    annotation (Placement(transformation(extent={{-226,-54},{-206,-34}})));
+    annotation (Placement(transformation(extent={{-302,-56},{-282,-36}})));
   Modelica.Blocks.Continuous.FirstOrder firstOrder(T=2)
-    annotation (Placement(transformation(extent={{-192,-54},{-172,-34}})));
+    annotation (Placement(transformation(extent={{-268,-56},{-248,-36}})));
   Modelica.Blocks.Continuous.FirstOrder firstOrder1(T=1)
     annotation (Placement(transformation(extent={{-248,30},{-228,50}})));
   Modelica.Thermal.HeatTransfer.Sources.PrescribedHeatFlow prescribedHeatFlow1
     annotation (Placement(transformation(extent={{-200,30},{-180,50}})));
+  Modelica.Blocks.Logical.Hysteresis bypassHysteresis(uLow=bypass_limit -
+        hysteresisHalfWidth, uHigh=bypass_limit + hysteresisHalfWidth)
+    "Same role as PFCircuit.mo's identical block: a THIRD hysteresis gate on top of heaterHysteresis/coolingHysteresis, all keyed off the same PID.y (the split-range heater/cooling/bypass control triad) -- not to be confused with PF's separate valve4/overCoolRecovering state machine, which this file's top-of-file docstring correctly says was NOT ported to TF. valve5's BypassLimiter below is part of the base control triad, not that extra state machine, and was missing entirely (valve5.KvValue_in left unconnected, the actual root cause of the 'structurally singular, 22890 unknowns/22889 equations' translate error)."
+    annotation (Placement(transformation(extent={{-340,-60},{-320,-40}})));
+  Modelica.Blocks.Sources.RealExpression BypassLimiter(y=if bypassHysteresis.y
+         then max(500 + (PID.y*10), Kv_shut) else 500)
+    "ASSUMED, carried unchanged from PFCircuit.mo's identical block (including its literal *10 gain, not scaled by Kv_gain -- PF's own choice, not independently re-tuned for TF)."
+    annotation (Placement(transformation(extent={{-272,0},{-252,20}})));
+  Modelica.Blocks.Continuous.FirstOrder firstOrder2(T=1)
+    annotation (Placement(transformation(extent={{-238,0},{-218,20}})));
 
   ThermalSystems.GasComponents.Valves.Valve valve5(
     valveFlowVariableType=ThermalSystems.Internals.ValveFlowVariableType.KvValue,
     use_effectiveFlowAreaInput=false,
     use_KvValueInput=true,
     KvValueFixed=500)
-    "Cooling/bypass trim valve, carried directly from PF's valve5 -- same role, not TF-specific."
+    "Cooling/bypass trim valve, carried directly from PF's valve5 -- same role, not TF-specific. Driven by BypassLimiter/bypassHysteresis/firstOrder2 (see their docstrings), same as PF; KvValueFixed=500 is only the unused fallback while use_KvValueInput=true."
     annotation (Placement(transformation(extent={{-6,-3},{6,3}},
         rotation=0,
-        origin={-74,-5})));
+        origin={-92,1})));
   ThermalSystems.GasComponents.Valves.Valve valve6(
     valveFlowVariableType=ThermalSystems.Internals.ValveFlowVariableType.KvValue,
     use_effectiveFlowAreaInput=false,
@@ -235,20 +248,20 @@ model TFCircuit
     KvValueFixed=5000)
     annotation (Placement(transformation(extent={{-6,3},{6,-3}},
         rotation=-90,
-        origin={-112,-43})));
+        origin={-160,-45})));
 
   ThermalSystems.GasComponents.JunctionElements.VolumeJunction junction1(
     volume=1e-2, m_flowStart=1e-5, pInitial=2500000,
     fixedInitialPressure=false, TInitial(displayUnit="K") = 80)
-    annotation (Placement(transformation(extent={{-4,-4},{4,4}}, rotation=90, origin={60,60})));
+    annotation (Placement(transformation(extent={{-4,-4},{4,4}}, rotation=0,  origin={0,120})));
   ThermalSystems.GasComponents.JunctionElements.VolumeJunction junction6(
     volume=1e-2, m_flowStart=1e-5, pInitial=2500000,
     fixedInitialPressure=false, TInitial(displayUnit="K") = 80)
-    annotation (Placement(transformation(extent={{-4,-4},{4,4}}, rotation=90, origin={-112,-24})));
+    annotation (Placement(transformation(extent={{4,4},{-4,-4}}, rotation=90, origin={-160,0})));
   ThermalSystems.GasComponents.JunctionElements.VolumeJunction junction7(
     volume=1e-2, m_flowStart=1e-5, pInitial=2500000,
     fixedInitialPressure=false, TInitial(displayUnit="K") = 80)
-    annotation (Placement(transformation(extent={{-4,-4},{4,4}}, rotation=270, origin={-112,-6})));
+    annotation (Placement(transformation(extent={{-4,-4},{4,4}}, rotation=180, origin={-50,0})));
   ThermalSystems.GasComponents.JunctionElements.VolumeJunction junctionCL(
     volume=1e-2, m_flowStart=1e-5, pInitial=2500000,
     fixedInitialPressure=false, TInitial(displayUnit="K") = 80)
@@ -263,15 +276,15 @@ model TFCircuit
     volume=1e-2, m_flowStart=1e-5, pInitial=2500000,
     fixedInitialPressure=false, TInitial(displayUnit="K") = 80)
     "Splits supply between the core+lower-limb header and the upper-limb header."
-    annotation (Placement(transformation(extent={{-4,-4},{4,4}}, rotation=90, origin={40,40})));
+    annotation (Placement(transformation(extent={{-4,-4},{4,4}}, rotation=90, origin={-20,20})));
   ThermalSystems.GasComponents.JunctionElements.VolumeJunction junctionReturnCL(
     volume=1e-2, m_flowStart=1e-5, pInitial=2500000,
     fixedInitialPressure=false, TInitial(displayUnit="K") = 80)
-    annotation (Placement(transformation(extent={{-4,-4},{4,4}}, rotation=-90, origin={140,80})));
+    annotation (Placement(transformation(extent={{4,-4},{-4,4}}, rotation=-90, origin={140,80})));
   ThermalSystems.GasComponents.JunctionElements.VolumeJunction junctionReturnUL(
     volume=1e-2, m_flowStart=1e-5, pInitial=2500000,
     fixedInitialPressure=false, TInitial(displayUnit="K") = 80)
-    annotation (Placement(transformation(extent={{-4,-4},{4,4}}, rotation=-90, origin={140,0})));
+    annotation (Placement(transformation(extent={{4,-4},{-4,4}}, rotation=-90, origin={140,0})));
   ThermalSystems.GasComponents.JunctionElements.VolumeJunction junctionReturn(
     volume=1e-2, m_flowStart=1e-5, pInitial=2500000,
     fixedInitialPressure=false, TInitial(displayUnit="K") = 80)
@@ -283,21 +296,21 @@ model TFCircuit
     "Suction-node tee: portA to the return header, portB to RV07 (make-up), portC to RV08 (relief) -- same role as PFCircuit.mo's junction22."
     annotation (Placement(transformation(extent={{-4,4},{4,-4}}, rotation=90, origin={-2,156})));
 
-  TFCoilBusCoreLower TFCL1(TInitial(displayUnit="K") = 116)
+  TFCoilBusCoreLower TFCL1(TInitial(displayUnit="K") = 137, assemblyIndex=1)
     annotation (Placement(transformation(extent={{100,60},{120,80}})));
-  TFCoilBusCoreLower TFCL2(TInitial(displayUnit="K") = 116)
+  TFCoilBusCoreLower TFCL2(TInitial(displayUnit="K") = 137, assemblyIndex=2)
     annotation (Placement(transformation(extent={{100,80},{120,100}})));
-  TFCoilBusUpper TFUL1(TInitial(displayUnit="K") = 116)
+  TFCoilBusUpper TFUL1(TInitial(displayUnit="K") = 137, assemblyIndex=3)
     annotation (Placement(transformation(extent={{100,-20},{120,0}})));
-  TFCoilBusUpper TFUL2(TInitial(displayUnit="K") = 116)
+  TFCoilBusUpper TFUL2(TInitial(displayUnit="K") = 137, assemblyIndex=4)
     annotation (Placement(transformation(extent={{100,0},{120,20}})));
   Modelica.Blocks.Continuous.FirstOrder firstOrderCoilKv[nTF](each T=3)
     "Smooths each per-bus Kv step -- same anti-chatter role as PFCircuit.mo's identical block."
-    annotation (Placement(transformation(extent={{-20,-100},{0,-80}})));
+    annotation (Placement(transformation(extent={{-220,-100},{-200,-80}})));
 
   ThermalSystems.GasComponents.Sensors.Sensor_p sensor_p_suction
     "CLASS NAME ASSUMED by analogy with PFCircuit.mo's identical sensor and its own docstring caveat -- ThermalSystems isn't vendored in this repo, verify at translate-check."
-    annotation (Placement(transformation(extent={{58,134},{66,142}})));
+    annotation (Placement(transformation(extent={{64,160},{72,168}})));
   Modelica.Blocks.Continuous.LimPID PID_pressure(
     controllerType=Modelica.Blocks.Types.SimpleController.PI,
     k=kPressurePID, Ti=TiPressurePID, yMax=7.5, yMin=-7.5,
@@ -305,24 +318,24 @@ model TFCircuit
     annotation (Placement(transformation(extent={{120,160},{140,180}})));
   ThermalSystems.GasComponents.Boundaries.Boundary makeupReservoir(
     TFixed(displayUnit="K") = TStorageReservoirs, boundaryType="p", pFixed=pMakeupReservoir)
-    annotation (Placement(transformation(extent={{34,194},{42,214}})));
+    annotation (Placement(transformation(extent={{88,176},{96,196}})));
   ThermalSystems.GasComponents.Boundaries.Boundary reliefReservoir(
     TFixed(displayUnit="K") = TStorageReservoirs, boundaryType="p", pFixed=pReliefReservoir)
-    annotation (Placement(transformation(extent={{-24,168},{-16,188}})));
+    annotation (Placement(transformation(extent={{-76,194},{-68,214}})));
   ThermalSystems.GasComponents.Volumes.Volume makeupBuffer(
     volume=1e-2, enableHeatPort=false, m_flowStart=0, pInitial=pMakeupReservoir,
     fixedInitialPressure=false, TInitial(displayUnit="K") = TStorageReservoirs, nPorts=2)
     "Compliant buffer between the ideal makeupReservoir boundary and RV07 -- same structural fix PF applies (see PFCircuit.mo's makeupBuffer docstring: a valve bridging a compliant network node directly to a rigid ideal boundary is a known solver-stiffness risk)."
-    annotation (Placement(transformation(extent={{52,194},{60,202}})));
+    annotation (Placement(transformation(extent={{50,190},{58,198}})));
   ThermalSystems.GasComponents.Volumes.Volume reliefBuffer(
     volume=1e-2, enableHeatPort=false, m_flowStart=0, pInitial=pReliefReservoir,
     fixedInitialPressure=false, TInitial(displayUnit="K") = TStorageReservoirs, nPorts=2)
-    annotation (Placement(transformation(extent={{-36,182},{-28,190}})));
+    annotation (Placement(transformation(extent={{-48,212},{-40,220}})));
   ThermalSystems.GasComponents.Valves.Valve RV07(
     valveFlowVariableType=ThermalSystems.Internals.ValveFlowVariableType.KvValue,
     use_effectiveFlowAreaInput=false, use_KvValueInput=true,
     KvValueFixed=Kv_shut_pressureValves)
-    annotation (Placement(transformation(extent={{6,-3},{-6,3}}, rotation=0, origin={16,180})));
+    annotation (Placement(transformation(extent={{-6,-3},{6,3}}, rotation=0, origin={16,156})));
   ThermalSystems.GasComponents.Valves.Valve RV08(
     valveFlowVariableType=ThermalSystems.Internals.ValveFlowVariableType.KvValue,
     use_effectiveFlowAreaInput=false, use_KvValueInput=true,
@@ -331,30 +344,21 @@ model TFCircuit
   Modelica.Blocks.Sources.RealExpression RV07Limiter(y=if not enablePressureControl
          then Kv_shut_pressureValves else min(max(PID_pressure.y, 0)*KvGainMakeup, KvMakeupMax))
     "Plain continuous proportional trim -- SIMPLIFIED vs PFCircuit.mo's RV07Limiter, see the top-of-file note on why the pulse-then-trim rewrite was not ported over."
-    annotation (Placement(transformation(extent={{-40,258},{-20,278}})));
+    annotation (Placement(transformation(extent={{120,220},{100,240}})));
   Modelica.Blocks.Continuous.FirstOrder firstOrderRV07(T=valveRampTime)
-    annotation (Placement(transformation(extent={{0,260},{20,280}})));
+    annotation (Placement(transformation(extent={{80,220},{60,240}})));
   Modelica.Blocks.Sources.RealExpression RV08Limiter(y=if not enablePressureControl
          then Kv_shut_pressureValves else min(max(-PID_pressure.y, 0)*KvGainRelief, KvReliefMax))
-    annotation (Placement(transformation(extent={{-80,220},{-60,240}})));
+    annotation (Placement(transformation(extent={{-100,240},{-80,260}})));
   Modelica.Blocks.Continuous.FirstOrder firstOrderRV08(T=valveRampTime)
-    annotation (Placement(transformation(extent={{-40,220},{-20,240}})));
+    annotation (Placement(transformation(extent={{-60,240},{-40,260}})));
 
 equation
   heaterHysteresis.u = PID.y;
   coolingHysteresis.u = -PID.y;
-  wantedTemp.y = PID.u_s;
-  PID.u_m = sensor_T.sensorValue;
-  firstOrder1.u = HeaterLimiter.y;
-  prescribedHeatFlow1.Q_flow = firstOrder1.y;
-  firstOrder.u = CoolingLimiter1.y;
-  valve6.KvValue_in = firstOrder.y;
+  bypassHysteresis.u = -PID.y;
   PID_pressure.u_s = pressureSetpoint;
   PID_pressure.u_m = sensor_p_suction.sensorValue;
-  firstOrderRV07.u = RV07Limiter.y;
-  RV07.KvValue_in = firstOrderRV07.y;
-  firstOrderRV08.u = RV08Limiter.y;
-  RV08.KvValue_in = firstOrderRV08.y;
 
   for i in 1:nTF loop
     kvTarget_TF[i] = if coilOpen[i] then valveKvNominal_TF[i] else Kv_shut;
@@ -380,72 +384,127 @@ algorithm
   end for;
 
 equation
-  connect(fan2ndOrder.portA, junction1.portB) annotation (Line(points={{-52,120},
-          {-52,60},{56,60}},                                                                        color={255,153,0}, thickness=0.5));
   connect(smoothStep.y, rotatoryBoundary.n_in)
     annotation (Line(points={{-179.4,156},{-60,156},{-60,135}}, color={0,0,127}));
   connect(rotatoryBoundary.rotatoryFlange, fan2ndOrder.rotatoryFlange)
     annotation (Line(points={{-60,131},{-60,128}}, color={135,135,135}, thickness=0.5));
-  connect(coldSurface.port, tube1.heatPort[1]) annotation (Line(points={{-50,-40},{-50,-58}}, color={191,0,0}));
+  connect(coldSurface.port, tube1.heatPort[1]) annotation (Line(points={{-90,-40},
+          {-90,-58}},                                                                         color={191,0,0}));
   connect(prescribedHeatFlow1.port, Heater.heatPort[1]) annotation (Line(points={{-180,40},
           {-162,40}},                                                                                  color={191,0,0}));
 
   connect(fan2ndOrder.portB, Heater.portA) annotation (Line(points={{-68,120},{
           -160,120},{-160,48}},                                                                                          color={255,153,0}, thickness=0.5));
   connect(Heater.portB, junction6.portA) annotation (Line(points={{-160,32},{
-          -160,-34},{-114,-34},{-114,-28},{-112,-28}},                                   color={255,153,0}, thickness=0.5));
-  connect(sensor_T.port, junction6.portA) annotation (Line(points={{-12,40},{
-          -112,40},{-112,-28}},                                                                    color={255,153,0}, thickness=0.5));
-  connect(junction6.portB, junction7.portC) annotation (Line(points={{-116,-24},
-          {-100,-24},{-100,-10},{-112,-10}},                                                                     color={255,153,0}, thickness=0.5));
-  connect(junction7.portA, valve5.portA) annotation (Line(points={{-112,-2},{
-          -112,-5},{-80,-5}},                                                                     color={255,153,0}, thickness=0.5));
-  connect(valve5.portB, valve6.portA) annotation (Line(points={{-68,-5},{-60,-5},
-          {-60,-30},{-112,-30},{-112,-37}},                                                                        color={255,153,0}, thickness=0.5));
-  connect(valve6.portB, tube1.portA) annotation (Line(points={{-112,-49},{-112,
-          -60},{-58,-60}},                                                                      color={255,153,0}, thickness=0.5));
-  connect(tube1.portB, junctionSupply.portA) annotation (Line(points={{-42,-60},{40,-60},{40,36}}, color={255,153,0}, thickness=0.5));
+          -160,4}},                                                                      color={255,153,0}, thickness=0.5));
+  connect(valve6.portB, tube1.portA) annotation (Line(points={{-160,-51},{-160,
+          -60},{-98,-60}},                                                                      color={255,153,0}, thickness=0.5));
 
-  connect(junctionSupply.portB, junctionCL.portA) annotation (Line(points={{36,40},{20,40},{20,76}}, color={255,153,0}, thickness=0.5));
-  connect(junctionSupply.portC, junctionUL.portA) annotation (Line(points={{40,44},
-          {20,44},{20,-4}},                                                                         color={255,153,0}, thickness=0.5));
-  connect(junctionCL.portB, TFCL1.portA1) annotation (Line(points={{16,80},{60,
-          80},{60,70},{97.2,70}},                                                                     color={255,153,0}, thickness=0.5));
   connect(junctionCL.portC, TFCL2.portA1) annotation (Line(points={{20,84},{60,
           84},{60,90},{97.2,90}},                                                                     color={255,153,0}, thickness=0.5));
-  connect(junctionUL.portB, TFUL1.portA1) annotation (Line(points={{16,0},{60,0},
-          {60,-10},{97.2,-10}},                                                                     color={255,153,0}, thickness=0.5));
   connect(junctionUL.portC, TFUL2.portA1) annotation (Line(points={{20,4},{60,4},
           {60,10},{97.2,10}},                                                                         color={255,153,0}, thickness=0.5));
 
   connect(TFCL1.portB1, junctionReturnCL.portA) annotation (Line(points={{120.4,
-          69.8},{140,69.8},{140,84}},                                                                 color={255,153,0}, thickness=0.5));
+          69.8},{140,69.8},{140,76}},                                                                 color={255,153,0}, thickness=0.5));
   connect(TFCL2.portB1, junctionReturnCL.portC) annotation (Line(points={{120.4,
-          89.8},{140,89.8},{140,76}},                                                                 color={255,153,0}, thickness=0.5));
+          89.8},{140,89.8},{140,84}},                                                                 color={255,153,0}, thickness=0.5));
   connect(TFUL1.portB1, junctionReturnUL.portA) annotation (Line(points={{120.4,
-          -10.2},{140,-10.2},{140,4}},                                                               color={255,153,0}, thickness=0.5));
+          -10.2},{140,-10.2},{140,-4}},                                                              color={255,153,0}, thickness=0.5));
   connect(TFUL2.portB1, junctionReturnUL.portC) annotation (Line(points={{120.4,
-          9.8},{140,9.8},{140,-4}},                                                                     color={255,153,0}, thickness=0.5));
+          9.8},{140,9.8},{140,4}},                                                                      color={255,153,0}, thickness=0.5));
   connect(junctionReturnCL.portB, junctionReturn.portA) annotation (Line(points={{144,80},{160,80},{160,44}}, color={255,153,0}, thickness=0.5));
   connect(junctionReturnUL.portB, junctionReturn.portC) annotation (Line(points={{144,0},{160,0},{160,36}}, color={255,153,0}, thickness=0.5));
 
   connect(junctionReturn.portB, junction1.portC) annotation (Line(points={{164,40},
-          {60,40},{60,64}},                                                                          color={255,153,0}, thickness=0.5));
-  connect(junction1.portA, junction22.portA) annotation (Line(points={{60,56},{60,20},{-2,20},{-2,152}}, color={255,153,0}, thickness=0.5));
-  connect(junction22.portB, RV07.portA) annotation (Line(points={{2,156},{22,
-          156},{22,180}},                                                                    color={255,153,0}, thickness=0.5));
-  connect(RV07.portB, makeupBuffer.portArray[1]) annotation (Line(points={{10,180},
-          {56,180},{56,193.975}},                                                                      color={255,153,0}, thickness=0.5));
-  connect(makeupBuffer.portArray[2], makeupReservoir.port) annotation (Line(points={{56,
-          194.225},{38,194.225},{38,204}},                                                                       color={255,153,0}, thickness=0.5));
+          {168,40},{168,120},{4,120}},                                                               color={255,153,0}, thickness=0.5));
+  connect(junction22.portB, RV07.portA) annotation (Line(points={{2,156},{10,
+          156}},                                                                             color={255,153,0}, thickness=0.5));
+  connect(RV07.portB, makeupBuffer.portArray[1]) annotation (Line(points={{22,156},
+          {54,156},{54,189.975}},                                                                      color={255,153,0}, thickness=0.5));
+  connect(makeupBuffer.portArray[2], makeupReservoir.port) annotation (Line(points={{54,
+          190.225},{54,186},{92,186}},                                                                           color={255,153,0}, thickness=0.5));
   connect(junction22.portC, RV08.portA) annotation (Line(points={{-2,160},{-2,204}}, color={255,153,0}, thickness=0.5));
   connect(RV08.portB, reliefBuffer.portArray[1]) annotation (Line(points={{-14,204},
-          {-32,204},{-32,181.975}},                                                                       color={255,153,0}, thickness=0.5));
-  connect(reliefBuffer.portArray[2], reliefReservoir.port) annotation (Line(points={{-32,
-          182.225},{-20,182.225},{-20,178}},                                                                        color={255,153,0}, thickness=0.5));
-  connect(sensor_p_suction.port, junction1.portB) annotation (Line(points={{62,134},
-          {62,60},{56,60}},                                                                           color={255,153,0}, thickness=0.5));
+          {-44,204},{-44,211.975}},                                                                       color={255,153,0}, thickness=0.5));
+  connect(reliefBuffer.portArray[2], reliefReservoir.port) annotation (Line(points={{-44,
+          212.225},{-44,204},{-72,204}},                                                                            color={255,153,0}, thickness=0.5));
+  connect(sensor_p_suction.port, junction1.portB) annotation (Line(points={{68,160},
+          {68,130},{0,130},{0,124}},                                                                  color={255,153,0}, thickness=0.5));
 
+  connect(junction22.portA, junction1.portB) annotation (Line(
+      points={{-2,152},{-2,128},{0,128},{0,124}},
+      color={255,153,0},
+      thickness=0.5));
+  connect(junction1.portA, fan2ndOrder.portA) annotation (Line(
+      points={{-4,120},{-52,120}},
+      color={255,153,0},
+      thickness=0.5));
+  connect(RV07Limiter.y, firstOrderRV07.u)
+    annotation (Line(points={{99,230},{82,230}}, color={0,0,127}));
+  connect(RV08Limiter.y, firstOrderRV08.u)
+    annotation (Line(points={{-79,250},{-62,250}}, color={0,0,127}));
+  connect(firstOrderRV08.y, RV08.KvValue_in) annotation (Line(points={{-39,250},
+          {-8,250},{-8,207.75}}, color={0,0,127}));
+  connect(firstOrderRV07.y, RV07.KvValue_in)
+    annotation (Line(points={{59,230},{16,230},{16,159.75}}, color={0,0,127}));
+  connect(HeaterLimiter.y, firstOrder1.u)
+    annotation (Line(points={{-277,40},{-250,40}}, color={0,0,127}));
+  connect(firstOrder1.y, prescribedHeatFlow1.Q_flow)
+    annotation (Line(points={{-227,40},{-200,40}}, color={0,0,127}));
+  connect(CoolingLimiter1.y, firstOrder.u)
+    annotation (Line(points={{-281,-46},{-270,-46}}, color={0,0,127}));
+  connect(junction6.portC, valve6.portA) annotation (Line(
+      points={{-160,-4},{-160,-39}},
+      color={255,153,0},
+      thickness=0.5));
+  connect(valve5.portA, junction6.portB) annotation (Line(
+      points={{-98,1},{-152,1},{-152,0},{-156,0}},
+      color={255,153,0},
+      thickness=0.5));
+  connect(tube1.portB, junction7.portB) annotation (Line(
+      points={{-82,-60},{-50,-60},{-50,-4}},
+      color={255,153,0},
+      thickness=0.5));
+  connect(valve5.portB, junction7.portC) annotation (Line(
+      points={{-86,1},{-58,1},{-58,0},{-54,0}},
+      color={255,153,0},
+      thickness=0.5));
+  connect(TFUL1.portA1, junctionUL.portA) annotation (Line(
+      points={{97.2,-10},{60,-10},{60,-4},{20,-4}},
+      color={255,153,0},
+      thickness=0.5));
+  connect(sensor_T.port, junction7.portA) annotation (Line(
+      points={{-46,30},{-46,8},{-42,8},{-42,0},{-46,0}},
+      color={255,153,0},
+      thickness=0.5));
+  connect(junction7.portA, junctionSupply.portB) annotation (Line(
+      points={{-46,0},{-42,0},{-42,8},{-46,8},{-46,22},{-42,22},{-42,20},{-24,
+          20}},
+      color={255,153,0},
+      thickness=0.5));
+  connect(junctionSupply.portA, junctionUL.portB) annotation (Line(
+      points={{-20,16},{-20,0},{16,0}},
+      color={255,153,0},
+      thickness=0.5));
+  connect(junctionCL.portA, TFCL1.portA1) annotation (Line(
+      points={{20,76},{20,70},{97.2,70}},
+      color={255,153,0},
+      thickness=0.5));
+  connect(junctionCL.portB, junctionSupply.portC) annotation (Line(
+      points={{16,80},{-20,80},{-20,24}},
+      color={255,153,0},
+      thickness=0.5));
+  connect(firstOrder.y, valve6.KvValue_in) annotation (Line(points={{-247,-46},
+          {-246,-45},{-163.75,-45}}, color={0,0,127}));
+  connect(BypassLimiter.y, firstOrder2.u)
+    annotation (Line(points={{-251,10},{-240,10}},   color={0,0,127}));
+  connect(firstOrder2.y, valve5.KvValue_in) annotation (Line(points={{-217,10},
+          {-92,10},{-92,4.75}},   color={0,0,127}));
+  connect(wantedTemp.y, PID.u_s)
+    annotation (Line(points={{-119,90},{-90,90},{-90,82}}, color={0,0,127}));
+  connect(sensor_T.sensorValue, PID.u_m)
+    annotation (Line(points={{-46,36},{-46,70},{-78,70}}, color={0,0,127}));
   annotation (Diagram(coordinateSystem(preserveAspectRatio=false, extent={{-360,-100},{220,300}})),
     experiment(
       StopTime=1800,
