@@ -1,0 +1,83 @@
+// ============================================================
+// Dymola script: archive the current run's result.mat (+ log +
+// full parameter dump) into dymola-thermal-systems/data/TF/<folder>/,
+// under a name you choose, so runs survive the next simulate
+// overwriting TF/debugging/result.mat -- and can be diffed/plotted
+// outside Dymola later.
+//
+// Run AFTER auto_translate_log.mos has completed a successful
+// simulate (check debugging/status.txt), and BEFORE running the
+// next translate/simulate -- result.mat gets overwritten by the
+// next run, so save first.
+//
+// Run from inside Dymola:
+//   Commands -> Run Script...  -> pick this file
+// or from the Command Log:
+//   RunScript("Z:/compass-u-cryo-loop/dymola-thermal-systems/CoilLoopCompassU/TF/save_run.mos");
+// ============================================================
+
+// --- 1. SETTINGS (edit these before every save) ----------------------
+// saveFolder: category/experiment subfolder under data/TF/, e.g.
+//             "coilIsolationMargin" (created if it doesn't exist yet)
+// saveName:   this specific run's label, e.g. "k0.12_Ti12_2026-09-04_1430"
+//             -- include your own date/time if you want one, see note
+//             above on why this script doesn't auto-generate one.
+saveFolder := "baseline";
+saveName   := "firstRun";
+
+// --- 2. Paths ----------------------------------------------------------
+packagePath := "Z:/compass-u-cryo-loop/dymola-thermal-systems/CoilLoopCompassU";
+debugPath   := packagePath + "/TF/debugging";
+dataRoot    := "Z:/compass-u-cryo-loop/dymola-thermal-systems/data/TF";
+saveDir     := dataRoot + "/" + saveFolder;
+
+resultSrc := debugPath + "/result.mat";
+// prefer dslog_simulate.txt: auto_translate_log.mos preserves it right after
+// simulate, because a later FMU export silently overwrites plain dslog.txt.
+dslogSimSrc := debugPath + "/dslog_simulate.txt";
+dslogSrc    := debugPath + "/dslog.txt";
+dsinSrc     := debugPath + "/dsin.txt";
+
+resultDst := saveDir + "/result_" + saveName + ".mat";
+dslogDst  := saveDir + "/dslog_" + saveName + ".txt";
+dsinDst   := saveDir + "/dsin_" + saveName + ".txt";
+
+// --- 3. Guard rails ------------------------------------------------------
+if not Modelica.Utilities.Files.exist(resultSrc) then
+  Modelica.Utilities.Streams.print("ABORT: no result.mat found at " + resultSrc +
+    " -- run auto_translate_log.mos first and confirm it simulated successfully.");
+else
+
+  Modelica.Utilities.Files.createDirectory(saveDir);
+
+  if Modelica.Utilities.Files.exist(resultDst) then
+    Modelica.Utilities.Streams.print("ABORT: " + resultDst +
+      " already exists -- pick a different saveName so an existing labeled run isn't overwritten.");
+  else
+
+    // --- 4. Copy result.mat (always) --------------------------------
+    Modelica.Utilities.Files.copy(resultSrc, resultDst, false);
+    Modelica.Utilities.Streams.print("Saved: " + resultDst);
+
+    // --- 5. Copy whichever dslog is available (best-effort) ----------
+    if Modelica.Utilities.Files.exist(dslogSimSrc) then
+      Modelica.Utilities.Files.copy(dslogSimSrc, dslogDst, false);
+      Modelica.Utilities.Streams.print("Saved: " + dslogDst + " (from dslog_simulate.txt)");
+    elseif Modelica.Utilities.Files.exist(dslogSrc) then
+      Modelica.Utilities.Files.copy(dslogSrc, dslogDst, false);
+      Modelica.Utilities.Streams.print("Saved: " + dslogDst + " (from dslog.txt -- dslog_simulate.txt not found)");
+    else
+      Modelica.Utilities.Streams.print("NOTE: no dslog.txt/dslog_simulate.txt found, skipped.");
+    end if;
+
+    // --- 6. Copy the full parameter dump (dsin.txt) for this run -----
+    if Modelica.Utilities.Files.exist(dsinSrc) then
+      Modelica.Utilities.Files.copy(dsinSrc, dsinDst, false);
+      Modelica.Utilities.Streams.print("Saved: " + dsinDst);
+    else
+      Modelica.Utilities.Streams.print("NOTE: no dsin.txt found, skipped.");
+    end if;
+
+    Modelica.Utilities.Streams.print("Done: run '" + saveName + "' archived under " + saveDir);
+  end if;
+end if;
