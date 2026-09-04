@@ -2,10 +2,7 @@ within CoilLoopCompassU.TF;
 model TFTest
   "Single-bus run harness, structural analog of PF/Test.mo -- tests one
   TFCoilBusCoreLower instance against the circulator+evaporator pair in
-  isolation, not the full TFCircuit. Cannot be translated/simulated here
-  (no Dymola access, see CLAUDE_en.md) -- provided as the same kind of
-  minimal smoke-test harness PF/Test.mo is, for whenever this does run
-  inside the VM."
+  isolation, not the full TFCircuit."
   extends ThermalSystems.Internals.ClassTypes.ExampleModel;
 
   inner ThermalSystems.SystemInformationManager sim(
