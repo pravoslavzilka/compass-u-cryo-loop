@@ -1,0 +1,100 @@
+﻿ = true
+
+// Streams.print(string, fileName) only takes 2 arguments (no append flag) --
+// it always APPENDS, so stale status/error files from a previous run must
+// be removed explicitly, otherwise old and new statuses stack up forever.
+if Modelica.Utilities.Files.exist(statusFile) then
+  Modelica.Utilities.Files.remove(statusFile);
+end if;
+if Modelica.Utilities.Files.exist(errFile) then
+  Modelica.Utilities.Files.remove(errFile);
+end if;
+if Modelica.Utilities.Files.exist(timingFile) then
+  Modelica.Utilities.Files.remove(timingFile);
+end if;
+
+// Marker written BEFORE translate/simulate start, so that if Dymola hangs or
+// crashes mid-run, status.txt still shows "RUNNING" with its own file
+// timestamp instead of silently keeping stale content from the previous run
+// -- lets us tell "stuck" apart from "finished".
+Modelica.Utilities.Streams.print("RUNNING: translate started", statusFile);
+
+// Wall-clock checkpoints derived from the mtimes of files Dymola already
+// writes on its own (statusFile ~= translate-done time, result.mat ~=
+// simulate-done time) -- see PF/auto_translate_log.mos for why a scripted
+// getTime() call is avoided here (it corrupted PF's dsfinal.txt once).
+Modelica.Utilities.Streams.print("run_start: see this file's own mtime", timingFile);
+
+// --- 3. Translate (the actual error when assembling the equation
+//        system/solver shows up right here, before simulation) ----------------------
+// translateModel(modelName) alone reuses whatever class definition is
+// ALREADY loaded in Dymola's workspace -- it does not notice that the .mo
+// files on disk changed. Force a fresh read of the whole CoilLoopCompassU
+// package tree (Common, CS, PF, TF) via its root package.mo, so edits made
+// outside Dymola (e.g. by Claude Code) to TFCircuit.mo are actually picked up.
+modelFile := packagePath + "/package.mo";
+loaded := openModel(modelFile, mustRead=true);
+
+// openModel(..., mustRead=true) resets Dymola's working directory to the
+// opened file's folder as a side effect -- cd() has to come AFTER
+// openModel() and immediately before translateModel()/simulateModel() so it
+// actually sticks for the files those two calls write (see PF's script for
+// the confirmed failure mode when cd() is called before openModel()).
+cd(debugPath);
+Z:/compass-u-cryo-loop/dymola-thermal-systems/CoilLoopCompassU/TF/debugging
+ = true
+
+ok := translateModel(modelName);
+
+// Translate+compile checkpoint: use statusFile's own mtime (written right
+// below) rather than a scripted timestamp -- see note above.
+Modelica.Utilities.Streams.print("translate_done: see statusFile mtime", timingFile);
+
+// --- 4. Export the WHOLE Command/Translation log --------------------------
+// getLastErrorLog() only gives the last error, savelog() saves everything
+// Dymola printed during this run (warnings, errors, solver info...)
+savelog(logFile);
+ = true
+
+// --- 5. Short status file, so Claude Code knows at a glance
+//        whether there's anything to fix -----------------------------------------
+if ok then
+  Modelica.Utilities.Streams.print("OK: translation successful", statusFile);
+else
+  Modelica.Utilities.Streams.print("FAIL: translation failed", statusFile);
+  errMsg := getLastErrorLog();
+  Modelica.Utilities.Streams.print(errMsg, errFile);
+end if;
+
+// --- 6. (Optional) simulate right away, if translate passed -------------
+// stopTime/tolerance match TFCircuit.mo's own experiment annotation
+// (StopTime=1800). TF has had no real simulation run yet (unlike PF/CS),
+// so no TF-specific tolerance tuning history exists -- start at 1e-4
+// (PF's own settled value after testing 1e-6/1e-5/1e-4) rather than
+// re-deriving it from scratch; loosen/tighten from here based on what
+// this run's own dslog.txt shows.
+if ok then
+  simOk := simulateModel(modelName, stopTime=1800, tolerance=1e-4,
+                          resultFile=debugPath + "/result");
+
+  // Preserve THIS run's own dslog.txt (integrator/media warnings) before a
+  // later, separate FMU-export step -- run manually afterward in this same
+  // debugPath -- silently overwrites it (same clobbering PF's script guards
+  // against).
+  if Modelica.Utilities.Files.exist(debugPath + "/dslog.txt") then
+    Modelica.Utilities.Files.copy(debugPath + "/dslog.txt",
+                                   debugPath + "/dslog_simulate.txt", true);
+  end if;
+
+  savelog(logFile);  // overwrite the log with the simulation run too (e.g. solver chattering)
+
+  // Simulate checkpoint: use result.mat's own mtime instead of a scripted
+  // timestamp -- see note above.
+  Modelica.Utilities.Streams.print("simulate_done: see result.mat mtime", timingFile);
+
+  if not simOk then
+    Modelica.Utilities.Streams.print("FAIL: simulation failed", statusFile);
+    errMsg := getLastErrorLog();
+    Modelica.Utilities.Streams.print(errMsg, errFile);
+  end if;
+end if;
