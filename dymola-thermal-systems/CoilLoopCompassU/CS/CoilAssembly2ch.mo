@@ -14,7 +14,17 @@ model CoilAssembly2ch
   parameter Modelica.Units.SI.Length lengths[2] = {88,88}
     "Per-channel tube length [m] (Channel1, Channel2) -- ATEKO 22172-Z-R1 Tab.2: CS1/CS3U/CS3L are each 2 channels of 88 m, unlike PF's asymmetric per-channel lengths";
   parameter Real diameters_mm[2](each unit="mm") = {6.96025,6.96025}
-    "Per-channel tube inner diameter [mm] (Channel1, Channel2) -- ATEKO Tab.2 'Ekvivalent diameter' for the elliptical 8x6.2mm CS channel cross-section";
+    "Per-channel equivalent diameter [mm] (Channel1, Channel2) -- reference only, not fed into tube1/tube2 (superseded by crossSectionArea/outerCrossSectionalArea below, same as CoilAssembly.mo/TF's convention). ATEKO Tab.2 'Ekvivalent diameter' for the elliptical 8x6.2mm CS channel cross-section -- consistent with crossSectionArea/wettedPerimeter's directly-computed Dh=6.9584mm to within ~0.03mm.";
+  parameter Modelica.Units.SI.Area crossSectionArea = 38.956e-6
+    "[CALCULATED] Elliptical channel flow area, shared by both channels (same 8x6.2mm ellipse per ATEKO Tab.2 as CS2U/CS2L) -- see CoilAssembly.mo's docstring for the pi*a*b derivation and cross-check against TF's own 6x10mm ellipse.";
+  parameter Modelica.Units.SI.Length wettedPerimeter = 22.396e-3
+    "[CALCULATED] Elliptical channel wetted perimeter -- see CoilAssembly.mo's docstring (Ramanujan approximation).";
+  parameter Modelica.Units.SI.Area outerCrossSectionalArea = 491.73e-6
+    "[CALCULATED] Outer cross-sectional area per channel, sized so modeled copper mass matches ATEKO Tab.5's real CS1/CS3U/CS3L coil weight (714kg total, split evenly across the 2 channels -> 357kg/channel, same even-split convention as dischargeLoads below), length 88m, d_Cu=8960 kg/m3: copperArea=(357/8960)/88=452.77e-6 m^2; outerCrossSectionalArea=crossSectionArea+copperArea=491.73e-6 m^2. Same method as CoilAssembly.mo/TF's acba24f fix. Old wallThickness=0.00488m default (circular approximation) gave ~286kg total for both channels -- roughly 2.5x too little copper thermal mass versus the real 714kg.";
+  parameter Modelica.Units.SI.CoefficientOfHeatTransfer alphaConstant = 5284
+    "[CALCULATED] Gas-side convective heat transfer coefficient, Dittus-Boelter estimate at design flow: mdot_per_channel = (0.17 kg/s total design flow / 5 coil branches) / 2 channels = 0.017 kg/s. Scaled from TF's own reverse-engineered TFCoilBusCoreLower value the same way as CoilAssembly.mo's alphaConstant -- see its docstring for the full method and the TF-internal cross-check.";
+  parameter Modelica.Units.SI.ThermalResistance wallConductionR = 1.764e-5
+    "[CALCULATED] Lumped wall conduction resistance per channel -- same method as CoilAssembly.mo's wallConductionR (area-equivalent circular radii, k_Cu=130 W/(m.K) reverse-engineered from TF's own two bus instances).";
   parameter Modelica.Units.SI.Power dischargeLoads[2] = {1600000,1600000}
     "Per-channel peak discharge heat [W] (Channel1, Channel2) -- CS1/CS3U/CS3L max deposited energy per coil is 16 MJ (ATEKO Tab.2), split evenly across 2 channels and divided by a 5s pulse window carried from PF's own CoilAssembly2ch.mo convention, not a CS-specific sourced transient shape -- see docs/design-basis/cs-circulator-sizing.md Open Items";
   parameter Modelica.Units.SI.Time pulseStart = 5 "Discharge start time (after fan finishes accelerating)";
@@ -27,7 +37,8 @@ model CoilAssembly2ch
   parameter Integer nCellsPerTube = 1
     "Per-tube wall/gas discretization cell count for this coil assembly instance only -- carried from PF's CoilAssembly2ch.mo (see its docstring: project memory on nCells>1 circuit-wide Newton failures)";
 
-  final parameter Modelica.Units.SI.Diameter diameters[2] = diameters_mm*1e-3 "Per-channel tube inner diameter, converted to m";
+  final parameter Modelica.Units.SI.Diameter dHydraulic = 4*crossSectionArea/wettedPerimeter
+    "Hydraulic diameter computed directly from the real ellipse, used only for ChannelSummary reporting below (reference, matches diameters_mm to ~0.03mm).";
   final parameter Modelica.Units.SI.Length lengthsAdjusted[2] = {lengths[i]*(1 + 1e-5*(10*assemblyIndex + i)) for i in 1:2}
     "Per-channel length with a tiny (<=0.09%) offset, unique per (assemblyIndex, channel) pair, so no two branches anywhere in the circuit are numerically identical and create a degenerate flow split";
 
@@ -40,14 +51,14 @@ model CoilAssembly2ch
     T_gas_in=tube2.summary.T_gas_A,
     m_flow=tube2.summary.m_flow_gas_B,
     length=lengthsAdjusted[1],
-    diameter=diameters[1]) "Channel 1 summary (tube2 branch)";
+    diameter=dHydraulic) "Channel 1 summary (tube2 branch)";
   output ChannelSummary Channel2(
     T_wall=tube1.heatPort[1].T,
     T_gas_out=tube1.summary.T_gas_B,
     T_gas_in=tube1.summary.T_gas_A,
     m_flow=tube1.summary.m_flow_gas_B,
     length=lengthsAdjusted[2],
-    diameter=diameters[2]) "Channel 2 summary (tube1 branch)";
+    diameter=dHydraulic) "Channel 2 summary (tube1 branch)";
 
   Modelica.Thermal.HeatTransfer.Sources.PrescribedHeatFlow prescribedHeatFlow
     annotation (Placement(transformation(extent={{16,74},{36,94}})));
@@ -58,16 +69,21 @@ model CoilAssembly2ch
     annotation (Placement(transformation(extent={{-20,78},{-8,90}})));
   ThermalSystems.GasComponents.Tubes.Tube tube2(
     tubeGeometry(
-      innerDiameter=diameters[1],
       length=lengthsAdjusted[1],
       nParallelTubes=1,
-      wallThickness=0.00488,
-      crossSectionType=ThermalSystems.Internals.CrossSectionType.Circular),
+      crossSectionType=ThermalSystems.Internals.CrossSectionType.NonCircular,
+      innerCrossSectionalAreaNonCircular=crossSectionArea,
+      outerCrossSectionalAreaNonCircular=outerCrossSectionalArea,
+      innerPerimeterNonCircular=wettedPerimeter),
     pressureDropPosition=ThermalSystems.Internals.PressureDropPosition.center,
     nCells=nCellsPerTube,
     enableHeatPorts=true,
     redeclare model HeatTransferModel =
-        ThermalSystems.GasComponents.Tubes.TransportPhenomena.HeatTransfer.GnielinskiDittusBoelter,
+        ThermalSystems.GasComponents.Tubes.TransportPhenomena.HeatTransfer.ConstantAlpha
+        (constantAlpha=alphaConstant),
+    redeclare model WallHeatConductionModel =
+        ThermalSystems.GasComponents.Tubes.TransportPhenomena.WallHeatTransfer.ConstantR
+        (constantR=wallConductionR),
     redeclare model WallMaterial = CoilLoopCompassU.Common.CopperOFHC_Tdep,
     fixedTInitialWall=true,
 
@@ -78,6 +94,7 @@ model CoilAssembly2ch
     fixedInitialPressure=false,
     TInitial(displayUnit="K") = TInitial,
     TInitialWall(displayUnit="K") = TInitial)
+    "NonCircular geometry (real 8x6.2mm ellipse) with ConstantAlpha/ConstantR heat transfer -- same combination as CoilAssembly.mo/TF, since the library's geometry-based correlations (GnielinskiDittusBoelter, used here previously) only support circular tubes."
     annotation (Placement(transformation(extent={{32,18},{48,22}})));
   ThermalSystems.GasComponents.Valves.Valve valve1(
     valveFlowVariableType=ThermalSystems.Internals.ValveFlowVariableType.KvValue,
@@ -120,16 +137,21 @@ model CoilAssembly2ch
     annotation (Placement(transformation(extent={{-32,56},{-20,68}})));
   ThermalSystems.GasComponents.Tubes.Tube tube1(
     tubeGeometry(
-      innerDiameter=diameters[2],
       length=lengthsAdjusted[2],
       nParallelTubes=1,
-      wallThickness=0.00488,
-      crossSectionType=ThermalSystems.Internals.CrossSectionType.Circular),
+      crossSectionType=ThermalSystems.Internals.CrossSectionType.NonCircular,
+      innerCrossSectionalAreaNonCircular=crossSectionArea,
+      outerCrossSectionalAreaNonCircular=outerCrossSectionalArea,
+      innerPerimeterNonCircular=wettedPerimeter),
     pressureDropPosition=ThermalSystems.Internals.PressureDropPosition.center,
     nCells=nCellsPerTube,
     enableHeatPorts=true,
     redeclare model HeatTransferModel =
-        ThermalSystems.GasComponents.Tubes.TransportPhenomena.HeatTransfer.GnielinskiDittusBoelter,
+        ThermalSystems.GasComponents.Tubes.TransportPhenomena.HeatTransfer.ConstantAlpha
+        (constantAlpha=alphaConstant),
+    redeclare model WallHeatConductionModel =
+        ThermalSystems.GasComponents.Tubes.TransportPhenomena.WallHeatTransfer.ConstantR
+        (constantR=wallConductionR),
     redeclare model WallMaterial = CoilLoopCompassU.Common.CopperOFHC_Tdep,
     fixedTInitialWall=true,
 
@@ -140,6 +162,7 @@ model CoilAssembly2ch
     fixedInitialPressure=false,
     TInitial(displayUnit="K") = TInitial,
     TInitialWall(displayUnit="K") = TInitial)
+    "NonCircular geometry with ConstantAlpha/ConstantR heat transfer -- see tube2's docstring."
     annotation (Placement(transformation(extent={{32,-22},{48,-18}})));
   ThermalSystems.GasComponents.JunctionElements.VolumeJunction junction1(
     volume=1e-4,

@@ -10,16 +10,35 @@ model CSCircuit
   // tempMargin 40 K max inlet-outlet dT (S3.4), coil topology 5 objects /
   // 1-2 channels each (Tab.2, CS1/CS3U/CS3L=2ch@88m, CS2U/CS2L=1ch@86m),
   // channel equivalent diameter 6.96025 mm (Tab.2), channel-only pressure
-  // loss ~13.7 bar interpolated at 81 barg/137K (Tab.9).
+  // loss ~13.7 bar interpolated at 81 barg/137K (Tab.9), real coil weights
+  // 714 kg (CS1/CS3U/CS3L) / 349 kg (CS2U/CS2L) (Tab.5).
   // CALCULATED: fan2ndOrder dp_nominal/V_flow_nominal/p_nominal (channel
   // loss + assumed header/valve/HX margin -- see Open Items, this is the
   // weakest number in this file, same caveat TF's build flagged for its
   // own dp_nominal), pressure-control hysteresis bands (scaled from PF's
   // relative fractions around its own setpoint, not independently sized).
+  // CoilAssembly.mo/CoilAssembly2ch.mo now also carry: real 8x6.2mm
+  // elliptical channel geometry (crossSectionArea/wettedPerimeter, direct
+  // computation, replacing the old circular equivalent-diameter
+  // approximation -- see gap 1, same fix as TF's acba24f), copper wall
+  // thickness sized to the real ATEKO coil weights above (gap 2, same
+  // method as TF's acba24f), a Dittus-Boelter alphaConstant scaled from
+  // TF's own reverse-engineered value (gap 1's ConstantAlpha/ConstantR
+  // switch, needed because the library's geometry-based correlations only
+  // support circular tubes -- see TF's own tf-circulator-sizing.md), and
+  // an assemblyIndex/lengthAdjusted anti-degeneracy fix on CS2U/CS2L (gap
+  // 4 -- CoilAssembly2ch already had this for CS1/CS3U/CS3L, carried from
+  // PF; the plain CoilAssembly class did not, despite CS2U/CS2L being
+  // structurally identical instances connected via a chain of
+  // zero-resistance VolumeJunctions, the same class of risk TF's
+  // TFUL1/TFUL2 hit).
   // ASSUMED (carried from PF's validated choices, no CS-specific vendor
   // data): n_nominal=200 Hz, eta_maxPhyd=0.6, maxDeltaT=20 K,
   // coilIsolationCloseMargin/ReopenMargin=40/35 K, PID gains, evaporator
-  // tube sizing, discharge-pulse timing (5s window).
+  // tube sizing, discharge-pulse timing (5s window). RV07/RV08's plain PID
+  // trim (gap 3) is kept as-is, reasoned rather than silently copied or
+  // silently upgraded -- see RV07Command's docstring and
+  // cs-circulator-sizing.md S8.
   // ---------------------------------------------------------------------
 
   parameter Real Kv_shut = 1e-4;
@@ -225,10 +244,10 @@ model CSCircuit
     TInitial(displayUnit="K") = 137.5, assemblyIndex=1, nCellsPerTube=8)
     annotation (Placement(transformation(extent={{100,60},{120,80}})));
   CoilAssembly CS2U(length=86, TInitial(displayUnit="K") = 137.5,
-    dischargeLoad=1560000)
+    dischargeLoad=1560000, assemblyIndex=4)
     annotation (Placement(transformation(extent={{100,20},{120,40}})));
   CoilAssembly CS2L(length=86, TInitial(displayUnit="K") = 137.5,
-    dischargeLoad=1560000)
+    dischargeLoad=1560000, assemblyIndex=5)
     annotation (Placement(transformation(extent={{100,-20},{120,0}})));
   CoilAssembly2ch CS3U(
     TInitial(displayUnit="K") = 137.5, assemblyIndex=2, nCellsPerTube=8)
@@ -313,7 +332,7 @@ model CSCircuit
     annotation (Placement(transformation(extent={{120,160},{140,180}})));
   Modelica.Blocks.Sources.RealExpression RV07Command(y=min(max(PID_pressure.y,
       0)*KvGainMakeup, KvMakeupMax))
-    "Simplified vs. PF: plain PID-proportional trim, no pulse-then-trim feedforward -- see makeupActive's docstring."
+    "Simplified vs. PF: plain PID-proportional trim, no pulse-then-trim feedforward. Deliberately left this way, not ported from PF -- reasoned decision, not a silent gap: TF's own RV07/RV08 (the real structural analog -- TF's bypassHysteresis/BypassLimiter wiring that acba24f fixed governs a different subsystem, the heater/cooling/bypass triad on valve5/valve6, not suction pressure) use this identical plain-trim architecture, and TF's suction-node compliance (junction22+makeupBuffer+reliefBuffer, each 1e-2 m3) is numerically identical to CS's here, with TF's model translating/simulating successfully on it. See cs-circulator-sizing.md S8 for the full comparison."
     annotation (Placement(transformation(extent={{-40,258},{-20,278}})));
   Modelica.Blocks.Continuous.FirstOrder firstOrderRV07(T=valveRampTime)
     annotation (Placement(transformation(extent={{0,260},{20,280}})));

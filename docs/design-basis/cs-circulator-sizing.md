@@ -3,10 +3,10 @@
 | | |
 |---|---|
 | **Title** | CS-coil cooling-loop circulator sizing — design basis |
-| **Date** | 2026-09-04 |
+| **Date** | 2026-09-04, updated 2026-09-06 (§8, §10, §11 — see NIGHT_SUMMARY.md) |
 | **Author** | _(placeholder — fill in)_ |
-| **Model file** | `dymola-thermal-systems/CoilLoopCompassU/CS/CSCircuit.mo`, component `fan2ndOrder` (`ThermalSystems.GasComponents.Fans.Fan2ndOrder`) |
-| **Applies to git commit** | `f48942d` — "CS: add CSTest.mo run harness and register classes in package.order" |
+| **Model file** | `dymola-thermal-systems/CoilLoopCompassU/CS/CSCircuit.mo`, component `fan2ndOrder` (`ThermalSystems.GasComponents.Fans.Fan2ndOrder`); coil-channel changes in `CoilAssembly.mo`/`CoilAssembly2ch.mo` |
+| **Applies to git commit** | `f48942d` — "CS: add CSTest.mo run harness and register classes in package.order" — plus this build's uncommitted working-tree changes (git commit was blocked in this session's sandbox, see NIGHT_SUMMARY.md) |
 | **Real-data source** | None — no Dymola access (see "Cannot run Dymola" below), no compiled `result.mat` exists for CS. |
 
 **Tagging convention (adapted from PF's design-basis doc for a model with no
@@ -196,12 +196,42 @@ structure only:
   which (matching PF's own unused 1-channel base model) has no external Kv
   input port, so they always run fully open. This is the lighter pair
   (349 kg/7.8 MJ vs. 714 kg/16 MJ) — a defensible but real scope reduction,
-  not a hidden gap.
+  not a hidden gap. `CoilAssembly` **did**, however, share a real structural
+  risk with TF's original `TFUL1`/`TFUL2` bug: CS2U and CS2L are two
+  parameter-identical `CoilAssembly` instances connected via a chain of
+  zero-resistance `VolumeJunction`s (`junctionS1`→`junctionS4` on the supply
+  side, `junctionR1`→`junctionR4` on the return side), the same
+  symmetric-parallel-branch degeneracy class TF's `acba24f` commit fixed
+  for `TFUL1`/`TFUL2` (a "22890 unknowns/22889 equations" structural
+  singularity). `CoilAssembly2ch` already carried PF's `assemblyIndex`/
+  `lengthAdjusted` anti-degeneracy fix (used for `CS1`/`CS3U`/`CS3L`); plain
+  `CoilAssembly` had no such mechanism at all. **[FIXED, this build]** —
+  `CoilAssembly.mo` now has the same `assemblyIndex`/`lengthAdjusted`
+  parameters, with `CS2U`/`CS2L` given distinct indices (4, 5) in
+  `CSCircuit.mo`. See gap 4 in NIGHT_SUMMARY.md.
 - Suction pressure control (`RV07`/`RV08`) as a **plain PID-proportional
-  trim**, not PF's 2026-09-01 pulse-then-trim rewrite. That rewrite fixed a
-  specific limit-cycle PF observed in its own (much smaller) loop volume;
-  whether CS's loop has the same failure mode is unknown, since nothing
-  here can be simulated. The compliant-buffer fix PF found necessary
+  trim**, not PF's 2026-09-01 pulse-then-trim rewrite. **Re-examined this
+  build (see NIGHT_SUMMARY.md gap 3), decision: kept as-is.** The wiring
+  initially thought to be the relevant TF/PF "more robust" precedent
+  (`bypassHysteresis`/`BypassLimiter`/`firstOrder2` in `TFCircuit.mo`,
+  wired up by TF's `acba24f` commit) turns out to govern a *different*
+  subsystem — TF's heater/cooling/bypass split-range triad (`valve5`/
+  `valve6`), not TF's own suction-pressure `RV07`/`RV08`. TF's actual
+  `RV07`/`RV08` (the real structural analog to CS's) use this identical
+  plain-proportional-trim architecture, per `TFCircuit.mo`'s own header
+  comment ("RV07/RV08 use a plain continuous proportional trim, simpler
+  than PF's pulse-then-trim scheme") — TF made the same simplification
+  versus PF that CS did. TF's suction-node compliance
+  (`junction22`+`makeupBuffer`+`reliefBuffer`, each 1e-2 m³) is also
+  numerically identical to CS's, and TF's model "translates and simulates
+  successfully" on that architecture (`tf-circulator-sizing.md` Status).
+  This is concrete, matched-parameter precedent, not blind analogy, that
+  the plain trim is workable at this loop scale — so the specific
+  limit-cycle PF observed and fixed for its own (much smaller) loop volume
+  is treated as unconfirmed-but-unlikely for CS, not ported speculatively.
+  Whether CS's loop has the same failure mode remains genuinely unknown
+  (nothing here can be simulated) — flagged in Open Items, not silently
+  closed. The compliant-buffer fix PF found necessary
   (`makeupBuffer`/`reliefBuffer` between the ideal reservoir boundary and
   the valve) is still included, since it is cheap and PF's own reasoning
   for it (a valve bridging directly to a zero-compliance boundary) applies
@@ -220,7 +250,97 @@ sized to no particular target — ATEKO gives no evaporator geometry, and
 PF's own model has the same gap (its design-basis doc's Open Items §11
 notes no filter/evaporator-sizing detail was checked either).
 
-## 10. Open Items
+## 10. Coil-channel geometry, thermal mass, and heat transfer — brought to TF's level (this build)
+
+Both gaps below were present in the CS build inherited at the start of this
+task and are fixed here in `CoilAssembly.mo`/`CoilAssembly2ch.mo`, using
+TF's `acba24f` commit (see `git show acba24f`) as the worked example, but
+recomputed from CS's own numbers throughout — none of TF's actual figures
+(6x10mm ellipse, 13900kg, alpha=1090, etc.) are reused directly.
+
+**Elliptical channel geometry.** The old `CoilAssembly`/`CoilAssembly2ch`
+used `crossSectionType=Circular` with ATEKO Tab.2's "equivalent diameter"
+(6.96025mm) — an approximation, like TF's pre-`acba24f` state. **[FIXED,
+this build]** — both classes now use `crossSectionType=NonCircular` with
+`crossSectionArea`/`wettedPerimeter` computed directly from the real
+8x6.2mm ellipse (semi-axes 4mm x 3.1mm) ATEKO Tab.2 actually describes:
+- `crossSectionArea` **[CALCULATED]** = π·a·b = π·4mm·3.1mm = **38.956
+  mm²**.
+- `wettedPerimeter` **[CALCULATED]** = Ramanujan's ellipse-perimeter
+  approximation, π·[3(a+b) − √((3a+b)(a+3b))] = **22.396 mm**.
+- Method cross-checked against TF's own documented 6x10mm-ellipse numbers
+  before use: the same formulas, with TF's a=5mm/b=3mm, reproduce TF's
+  documented 47.12 mm² area and 25.53 mm wetted perimeter exactly.
+- Resulting hydraulic diameter (4·A/P) = 6.9584mm, consistent with ATEKO
+  Tab.2's 6.96025mm "equivalent diameter" to ~0.03mm — a sanity check that
+  8x6.2mm is the right ellipse, not an independent confirmation of it.
+
+**Copper thermal mass.** The old `CoilAssembly` had no `wallThickness` set
+at all (library default, ~0.5mm) and `CoilAssembly2ch` used a guessed
+0.00488m — neither traced to ATEKO's real coil weights. Reconstructing the
+old `CoilAssembly2ch` mass from its 0.00488m circular wall: ~286kg total
+for both channels of a coil, versus the real 714kg (CS1/CS3U/CS3L) — about
+2.5x too little, the same class of thermal-mass shortfall (if smaller in
+magnitude) that caused TF's solver blow-up before `acba24f`. **[FIXED,
+this build]** — `outerCrossSectionalArea` on both classes is now sized so
+modeled copper mass matches ATEKO Tab.5's real coil weights (**[FROM
+SOURCE]** 349kg for CS2U/CS2L, 714kg total / 357kg per channel for
+CS1/CS3U/CS3L), using copper density 8960 kg/m³ (`Common/CopperOFHC_Tdep.mo`):
+copperArea = mass/(density·length); outerCrossSectionalArea =
+crossSectionArea + copperArea. **[CALCULATED]**, method verified by
+reproducing TF's own `TFCoilBusCoreLower`/`TFCoilBusUpper`
+`outerCrossSectionalArea` values from their documented masses/geometry to
+within rounding before applying it to CS.
+
+**Heat-transfer model.** Switching to `NonCircular` geometry required also
+switching off `GnielinskiDittusBoelter` (the previously-used heat-transfer
+model) — per TF's own `tf-circulator-sizing.md`, the library's
+geometry-based correlations only support circular tubes. **[FIXED, this
+build]**, mirroring TF's own resolution of the identical problem:
+`ConstantAlpha`/`ConstantR` now supply gas-side heat transfer and wall
+conduction.
+- `alphaConstant` **[CALCULATED]**: a Dittus-Boelter estimate obtained by
+  *scaling* TF's own reverse-engineered `TFCoilBusCoreLower` value
+  (1090 W/m²K at Dh=7.38mm, A=47.12mm², 2.90e-3 kg/s/channel) via
+  Nu=0.023·Re^0.8·Pr^0.4, using CS's own per-channel mass flow (0.17 kg/s
+  total design flow split evenly across the 5 coil branches, then across
+  each branch's channel count — 0.034 kg/s/channel for CS2U/CS2L, 0.017
+  kg/s/channel for CS1/CS3U/CS3L — the same even-split convention TF uses
+  for its own `m_flowStart=m_total/4`) and CS's own channel geometry.
+  Helium gas properties (μ, k, cp) are held fixed between TF's ~116K and
+  CS's ~137.5K design points — **[ASSUMED]**, the weakest link in this
+  estimate; the net T-exponent on the property terms is small (~0.14) so
+  this is a mild approximation, not independently checked against a real
+  helium property table. The scaling method itself was validated first
+  against TF's own two instances (`TFCoilBusCoreLower` vs
+  `TFCoilBusUpper`, same T/geometry, different mdot/channel): predicted
+  ratio 2.0^0.8=1.741 vs. TF's actual 1899/1090=1.742, a near-exact match,
+  giving confidence in the scaling relationship even though the absolute
+  CS values it produces (9197 W/m²K for CoilAssembly, 5284 W/m²K for
+  CoilAssembly2ch) are noticeably higher than TF's — expected, since CS's
+  design splits far less flow across far fewer, much longer channels than
+  TF's heavily-paralleled bus design (mass flux per channel roughly 14x
+  TF's), which is also independently consistent with CS's known high
+  channel-only pressure loss (~13.7 bar vs. TF's ~0.18 bar/channel).
+- `wallConductionR` **[CALCULATED, weaker than the numbers above]**:
+  reverse-engineering TF's own `wallConductionR` values via an
+  area-equivalent-circular-radii annular-conduction formula
+  (R=ln(r2/r1)/(2π·k·L·n)) gave inconsistent implied copper conductivities
+  between TF's two instances (142 vs. 116 W/(m·K)) — a ~20% spread,
+  meaning this reverse-engineering does not exactly reproduce TF's
+  internal method. k_Cu=130 W/(m·K) (the average) is used here for CS's
+  own values via the same formula. Convection resistance dominates
+  wall-gas coupling by roughly 20x over this conduction term in both TF's
+  and CS's numbers, so the practical impact of this imprecision is small.
+
+**Not changed:** `WallMaterial` stays `CopperOFHC_Tdep` (not TF's
+`CopperOFHC_RRR30_Tdep`) — switching material models was not asked for and
+is out of scope; `Common/CopperOFHC_Tdep.mo` itself is explicitly
+off-limits this build. `nCells`/`nCellsPerTube` settings are unchanged
+(see the nCells=10 lambda/NaN project history — not touched here, unrelated
+to this fix).
+
+## 11. Open Items
 
 - **`dp_nominal` provenance (weakest number in this document, §3/§6).**
   Only channel-only pressure loss is sourced; header/valve/HX loss is an
@@ -250,6 +370,28 @@ notes no filter/evaporator-sizing detail was checked either).
   relative to PF's most mature version, which itself only reached that
   maturity through iterative real-data debugging this document had no
   access to.
+- **RV07/RV08 limit-cycle risk, reasoned-not-simulated (§8, this build).**
+  Kept CS's plain PID trim rather than porting a more elaborate scheme,
+  backed by TF's matched-parameter precedent (identical suction-node
+  buffer volumes, TF's own RV07/RV08 use the same plain-trim
+  architecture) — but this is still an argument by analogy to a
+  real-but-different model, not a CS-specific simulation result. If a
+  real translate/simulate run later shows CS's suction pressure
+  oscillating, revisit this decision and consider porting PF's actual
+  2026-09-01 pulse-then-trim mechanism (hysteresis-gated feedforward
+  pulse + trim, in `PFCircuit.mo`), not TF's bypassHysteresis wiring
+  (confirmed this build to be an unrelated subsystem).
+- **`alphaConstant`/`wallConductionR` (§10, this build) carry real,
+  flagged uncertainty**, more than `crossSectionArea`/`wettedPerimeter`/
+  `outerCrossSectionalArea` in the same section: the per-branch mass-flow
+  split (0.17 kg/s ÷ 5 branches ÷ channel count) is a first-order,
+  unweighted estimate (real flow would split by branch resistance, which
+  differs with channel count/length); the Dittus-Boelter scaling holds
+  helium gas properties fixed between TF's ~116K and CS's ~137.5K design
+  points rather than computing them from a property table; and
+  `wallConductionR`'s reverse-engineered k_Cu has a ~20% spread between
+  TF's own two instances. None of these were checked against
+  `thesis_sis.pdf` or any CoolProp/NIST property lookup this pass.
 - **Nothing in this file has been translated or simulated.** No Dymola
   access exists in this environment (see `dymola-thermal-systems/
   CLAUDE_en.md`). Every number above should be re-checked once a real
