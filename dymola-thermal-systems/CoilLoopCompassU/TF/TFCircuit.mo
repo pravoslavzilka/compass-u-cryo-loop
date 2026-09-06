@@ -2,37 +2,48 @@ within CoilLoopCompassU.TF;
 model TFCircuit
   extends ThermalSystems.Internals.ClassTypes.ExampleModel;
   // ===========================================================================
-  // TF coil cooling loop, structural analog of PF/PFCircuit.mo, sized from
-  // ATEKO study 22172-Z-R1. See docs/design-basis/tf-circulator-sizing.md
-  // for parameter sourcing.
+  // TF coil cooling loop -- structural analog of PF/PFCircuit.mo, sized from
+  // ATEKO study 22172-Z-R1 (S3.3.3, S5.1.3, S5.2.3, S6.5.3, S7.3) instead of
+  // PF's own numbers. See docs/design-basis/tf-circulator-sizing.md for the
+  // full parameter-by-parameter sourcing (FROM SOURCE / CALCULATED /
+  // ASSUMED tags) and for what has been deliberately simplified relative to
+  // PFCircuit.mo -- summary here, detail there:
   //
-  // Circulator (fan2ndOrder) with speed ramp, electric heater with
-  // hysteresis-gated PID temperature control, LIN-side evaporator (tube1
-  // vs a fixed 77K coldSurface), 4 parallel coil branches (TFCL1, Structure,
-  // TFUL1, TFUL2) each behind its own isolation valve with a relative-margin
-  // close/reopen rule (coilOpen[nTF]), a bypass valve pair, RV07/RV08
+  // KEPT (same structure as PF): circulator (fan2ndOrder) with speed ramp,
+  // electric heater with hysteresis-gated PID temperature control, LIN-side
+  // evaporator (tube1 vs a fixed 77K coldSurface), 4 parallel coil-bus
+  // branches each behind its own isolation valve with a relative-margin
+  // close/reopen rule (coilOpen[nTF]), a basic bypass valve pair, RV07/RV08
   // make-up/relief valves to storage reservoirs holding suction pressure.
   //
-  // RV07/RV08 use a plain continuous proportional trim (simpler than PF's
-  // pulse-then-trim scheme). PF's valve4/overCoolRecovering bypass state
-  // machine and PID_circulatorPower/PF_RV01 shaft-power limiter are not
-  // used here.
+  // SIMPLIFIED (deliberately, not carried over from PF): PF's RV07/RV08
+  // "pulse-then-trim" mass-integral rewrite is replaced here with a plain
+  // continuous proportional trim -- the pulse rewrite was itself a fix for
+  // limit-cycling PF only discovered after real simulation runs (see
+  // PFCircuit.mo's own RV07/RV08 docstrings and docs/migration-notes.md);
+  // TF has had no such run, so porting the fix pre-emptively would be
+  // copying a solution without the problem that motivated it. PF's
+  // valve4/overCoolRecovering bypass state machine and its
+  // PID_circulatorPower/PF_RV01 shaft-power limiter are omitted entirely,
+  // same reasoning -- both were added to PF after specific solver failures
+  // TF has not encountered. If TF is ever actually simulated and shows the
+  // same failure modes, port the corresponding PF fix in at that point
+  // rather than before.
   // ===========================================================================
 
-  parameter Real m_total = 1.3 "Total design flow from the circulator, kg/s (ATEKO 22172-Z-R1 S6.5.3, minimal design flow 1.3 kg/s at coil temperature 116 K)";
+  parameter Real m_total = 1.3 "Total design flow from the circulator, kg/s -- FROM SOURCE, ATEKO 22172-Z-R1 S6.5.3 (minimal design flow 1.3 kg/s at coil temperature 116 K)";
   parameter Real u_dead = 1;
   parameter Real Kv_shut = 1e-4;
   parameter Real Kv_cool_max = 5000;
   parameter Real heater_gain = 100;
   parameter Real Kv_gain = 100;
   parameter Real bypass_limit = 10
-    "Threshold (on -PID.y) above which valve5's bypass leg is throttled back -- see BypassLimiter's docstring.";
+    "Threshold (on -PID.y) above which valve5's bypass leg is throttled back -- ASSUMED, carried unchanged from PFCircuit.mo's identical parameter/BypassLimiter mechanism (no TF-specific tuning data); structurally required, not optional -- see BypassLimiter's docstring.";
   parameter Real hysteresisHalfWidth = 0.3
-    "Half-width of the ON/OFF gap around each PID.y switching threshold, anti-chatter.";
+    "Half-width of the ON/OFF gap around each PID.y switching threshold -- same anti-chatter role as PFCircuit.mo's identical parameter.";
   parameter Modelica.Units.SI.TemperatureDifference tempMargin=40
-    "Margin below the hottest coil-bus gas outlet temperature (ATEKO 22172-Z-R1 S3.2/S6.4, 40K limit for the cooling system).";
-  parameter Integer nTF = 4
-    "Number of TF coil branches: TFCL1 (core+lower limb, 112 channels), Structure (coil case/support structure), TFUL1+TFUL2 (upper limb, 56 channels each).";
+    "Margin below the hottest coil-bus gas outlet temperature -- FROM SOURCE, ATEKO 22172-Z-R1 S3.2 (\"Limit (T_object-T_coolant)<=40K\", cooldown-after-discharge mode) and S6.4 (\"maximal temperature difference 40K (T inlet-T outlet)\") -- both directly state 40K for the whole cooling system, TF included, so this is a stronger sourcing than PF's own tempMargin=40 (which is a PF-model default, not independently cited in PF's own design-basis doc).";
+  parameter Integer nTF = 4 "Number of TF coil-bus branches -- CALCULATED: ATEKO 22172-Z-R1 S3.3.3 states 224 channels 'connected in parallel to 4 busses' (text, not the PFD image's visual branch count -- see tf-circulator-sizing.md S1 for the reconciliation). Modeled as 2 TFCoilBusCoreLower + 2 TFCoilBusUpper instances, an ASSUMED even split of each 112-channel group across 2 busses (not stated in the source) -- see Open Items.";
   parameter Boolean enableCoilIsolation = true
     "Master switch for the per-bus relative-margin isolation rule, same role as PFCircuit.mo's enableCoilIsolation.";
   parameter Modelica.Units.SI.TemperatureDifference coilIsolationCloseMargin = 40
@@ -45,15 +56,17 @@ model TFCircuit
   parameter Boolean enablePressureControl = true
     "Master switch for the RV07 (make-up)/RV08 (relief) pressure-control valve pair at the suction node.";
   parameter Modelica.Units.SI.AbsolutePressure pressureSetpoint=2500000
-    "Suction-node pressure setpoint, Pa (~24 barg abs, ATEKO 22172-Z-R1 S6.5.3). Held by RV07/RV08's continuous PID trim (see RV07Limiter/RV08Limiter); PID_pressure's own yMax/yMin plus KvMakeupMax/KvReliefMax bound the correction.";
+    "Suction-node pressure setpoint, Pa (~24 barg abs) -- CALCULATED from ATEKO 22172-Z-R1 S6.5.3's stated nominal working pressure (24 barg at the outlet of CC), barg->Pa(a) via +1 atm. Held by RV07/RV08's plain continuous PID trim (see RV07Limiter/RV08Limiter) -- no separate open/close hysteresis thresholds, unlike PFCircuit.mo's pulse-then-trim scheme (see the top-of-file note on why that rewrite was not ported over); PID_pressure's own yMax/yMin plus KvMakeupMax/KvReliefMax bound the correction instead.";
   parameter Real kPressurePID=0.05;
   parameter Modelica.Units.SI.Time TiPressurePID=30;
-  parameter Real KvGainMakeup = 5;
-  parameter Real KvMakeupMax = 30;
-  parameter Real KvGainRelief = 5;
-  parameter Real KvReliefMax = 30;
-  parameter Modelica.Units.SI.AbsolutePressure pMakeupReservoir=2700000 "Make-up storage reservoir pressure, above pressureSetpoint.";
-  parameter Modelica.Units.SI.AbsolutePressure pReliefReservoir=2300000 "Relief storage reservoir pressure, below pressureSetpoint.";
+  parameter Real KvGainMakeup = 5 "PLACEHOLDER, same status as PF's KvGainMakeup -- not sized against any TF-specific flow data, see Open Items.";
+  parameter Real KvMakeupMax = 30 "PLACEHOLDER -- scaled up from PF's KvMakeupMax=15 in rough proportion to TF's ~3.4x larger total design flow (1.3 vs 0.1 kg/s referenced by PFCircuit.mo's own m_total); not independently sized.";
+  parameter Real KvGainRelief = 5 "PLACEHOLDER, mirror of KvGainMakeup.";
+  parameter Real KvReliefMax = 30 "PLACEHOLDER, mirror of KvMakeupMax.";
+  parameter Modelica.Units.SI.AbsolutePressure pMakeupReservoir=2700000
+    "Make-up storage reservoir pressure, Pa -- CALCULATED, above pressureSetpoint by roughly the same margin PF uses proportionally.";
+  parameter Modelica.Units.SI.AbsolutePressure pReliefReservoir=2300000
+    "Relief storage reservoir pressure, Pa -- CALCULATED, below pressureSetpoint, mirror of pMakeupReservoir.";
   parameter Modelica.Units.SI.Temperature TStorageReservoirs=80;
   parameter Modelica.Units.SI.Time valveRampTime=3;
   parameter Real Kv_shut_pressureValves = 1e-2;
@@ -97,7 +110,7 @@ model TFCircuit
     eta_maxPhyd=0.6,
     dpInitial(displayUnit="bar") = 2500000,
     V_flow_Start=0.01)
-    "Circulator sizing: T_nominal/p_nominal from ATEKO worst-case coil temp (116K) and nominal working pressure (24barg); V_flow_nominal/V_flow0 from m_total at suction density; dp_nominal 2 bar working estimate covering header/heater/evaporator/coil/valve losses; remaining parameters carried from PFCircuit.mo's circulator."
+    "Sizing FROM SOURCE / CALCULATED / ASSUMED, see tf-circulator-sizing.md S2-S3: T_nominal/p_nominal FROM SOURCE (ATEKO worst-case coil temp 116K, nominal working pressure 24barg->~2.5MPa(a)); V_flow_nominal/V_flow0 CALCULATED (m_total/rho_suction via ideal-gas estimate, V_flow0 carrying PF's own 1.21x ratio); dp_nominal CALCULATED, a rough order-of-magnitude estimate -- ATEKO's own channel-only pressure-loss table (Tab.11) gives ~0.18 bar per channel at these conditions, but that excludes header/heater/evaporator/valve losses which ATEKO explicitly leaves to 'the cryogenic system supplier' to evaluate; 2 bar used here as a placeholder allowing headroom for those unmodeled losses, not a real hydraulic calculation -- see Open Items; n_nominal/eta_maxPhyd/V_flow0 ratio/deltaV_flow/bladeLossExponent/impactLossCoefficient ASSUMED, carried from PF (no TF-specific circulator data exists)."
     annotation (Placement(transformation(extent={{8,-8},{-8,8}},
         rotation=90,
         origin={-60,120})));
@@ -118,7 +131,7 @@ model TFCircuit
         origin={-60,131})));
   Modelica.Thermal.HeatTransfer.Sources.FixedTemperature coldSurface(T(
         displayUnit="K") = 77)
-    "LIN-side evaporator boundary, ATEKO 22172-Z-R1 S6.2 (LIN evaporates at 77K)."
+    "LIN-side evaporator boundary -- FROM SOURCE, ATEKO 22172-Z-R1 S6.2 (LIN evaporates at 77K, shared design across all 3 cooling circuits, same as PFCircuit.mo's coldSurface)."
     annotation (Placement(transformation(extent={{-10,-10},{10,10}},
         rotation=270,
         origin={-90,-30})));
@@ -143,7 +156,7 @@ model TFCircuit
     fixedInitialPressure=false,
     TInitial(displayUnit="K") = 80,
     TInitialWall(displayUnit="K") = 80)
-    "Evaporator geometry carried from PFCircuit.mo's tube1, sized to pass m_total without excessive pressure drop."
+    "Evaporator geometry ASSUMED, carried from PFCircuit.mo's tube1 unchanged -- not TF-specific, sized only to plausibly pass m_total without excessive pressure drop; see Open Items."
     annotation (Placement(transformation(extent={{-8,-2},{8,2}},
         rotation=0,
         origin={-90,-60})));
@@ -168,7 +181,7 @@ model TFCircuit
     fixedInitialPressure=false,
     TInitial(displayUnit="K") = 80,
     TInitialWall(displayUnit="K") = 80)
-    "Electric heater, required per ATEKO S6.1 (support structure has huge weight, design case based on 40C temperature difference). Bore widened vs PF's Heater to pass TF's larger m_total."
+    "Electric heater -- FROM SOURCE that TF requires one (ATEKO S6.1: 'electric heater for TF coils and support structure has to be used, because support structure has huge weight... design case based on 40C temperature difference'), unlike PF/CS where compression heat alone may suffice. Geometry itself ASSUMED (widened bore vs PF's Heater to pass TF's larger m_total without excessive dp -- not a real sizing calc)."
     annotation (Placement(transformation(
         extent={{8,-2},{-8,2}},
         rotation=90,
@@ -210,11 +223,11 @@ model TFCircuit
     annotation (Placement(transformation(extent={{-200,30},{-180,50}})));
   Modelica.Blocks.Logical.Hysteresis bypassHysteresis(uLow=bypass_limit -
         hysteresisHalfWidth, uHigh=bypass_limit + hysteresisHalfWidth)
-    "Third hysteresis gate (with heaterHysteresis/coolingHysteresis) on the split-range heater/cooling/bypass control triad, keyed off PID.y."
+    "Same role as PFCircuit.mo's identical block: a THIRD hysteresis gate on top of heaterHysteresis/coolingHysteresis, all keyed off the same PID.y (the split-range heater/cooling/bypass control triad) -- not to be confused with PF's separate valve4/overCoolRecovering state machine, which this file's top-of-file docstring correctly says was NOT ported to TF. valve5's BypassLimiter below is part of the base control triad, not that extra state machine, and was missing entirely (valve5.KvValue_in left unconnected, the actual root cause of the 'structurally singular, 22890 unknowns/22889 equations' translate error)."
     annotation (Placement(transformation(extent={{-340,-60},{-320,-40}})));
   Modelica.Blocks.Sources.RealExpression BypassLimiter(y=if bypassHysteresis.y
          then max(500 + (PID.y*10), Kv_shut) else 500)
-    "Drives valve5's bypass leg via bypassHysteresis/firstOrder2."
+    "ASSUMED, carried unchanged from PFCircuit.mo's identical block (including its literal *10 gain, not scaled by Kv_gain -- PF's own choice, not independently re-tuned for TF)."
     annotation (Placement(transformation(extent={{-272,0},{-252,20}})));
   Modelica.Blocks.Continuous.FirstOrder firstOrder2(T=1)
     annotation (Placement(transformation(extent={{-238,0},{-218,20}})));
@@ -224,7 +237,7 @@ model TFCircuit
     use_effectiveFlowAreaInput=false,
     use_KvValueInput=true,
     KvValueFixed=500)
-    "Cooling/bypass trim valve, driven by BypassLimiter/bypassHysteresis/firstOrder2; KvValueFixed=500 is the unused fallback while use_KvValueInput=true."
+    "Cooling/bypass trim valve, carried directly from PF's valve5 -- same role, not TF-specific. Driven by BypassLimiter/bypassHysteresis/firstOrder2 (see their docstrings), same as PF; KvValueFixed=500 is only the unused fallback while use_KvValueInput=true."
     annotation (Placement(transformation(extent={{-6,-3},{6,3}},
         rotation=0,
         origin={-92,1})));
@@ -294,6 +307,7 @@ model TFCircuit
     annotation (Placement(transformation(extent={{-220,-100},{-200,-80}})));
 
   ThermalSystems.GasComponents.Sensors.Sensor_p sensor_p_suction
+    "CLASS NAME ASSUMED by analogy with PFCircuit.mo's identical sensor and its own docstring caveat -- ThermalSystems isn't vendored in this repo, verify at translate-check."
     annotation (Placement(transformation(extent={{64,160},{72,168}})));
   Modelica.Blocks.Continuous.LimPID PID_pressure(
     controllerType=Modelica.Blocks.Types.SimpleController.PI,
@@ -309,7 +323,7 @@ model TFCircuit
   ThermalSystems.GasComponents.Volumes.Volume makeupBuffer(
     volume=1e-2, enableHeatPort=false, m_flowStart=0, pInitial=pMakeupReservoir,
     fixedInitialPressure=false, TInitial(displayUnit="K") = TStorageReservoirs, nPorts=2)
-    "Compliant buffer between the ideal makeupReservoir boundary and RV07."
+    "Compliant buffer between the ideal makeupReservoir boundary and RV07 -- same structural fix PF applies (see PFCircuit.mo's makeupBuffer docstring: a valve bridging a compliant network node directly to a rigid ideal boundary is a known solver-stiffness risk)."
     annotation (Placement(transformation(extent={{50,190},{58,198}})));
   ThermalSystems.GasComponents.Volumes.Volume reliefBuffer(
     volume=1e-2, enableHeatPort=false, m_flowStart=0, pInitial=pReliefReservoir,
@@ -327,7 +341,7 @@ model TFCircuit
     annotation (Placement(transformation(extent={{6,-3},{-6,3}}, rotation=0, origin={-8,204})));
   Modelica.Blocks.Sources.RealExpression RV07Limiter(y=if not enablePressureControl
          then Kv_shut_pressureValves else min(max(PID_pressure.y, 0)*KvGainMakeup, KvMakeupMax))
-    "Continuous proportional trim for RV07 make-up valve."
+    "Plain continuous proportional trim -- SIMPLIFIED vs PFCircuit.mo's RV07Limiter, see the top-of-file note on why the pulse-then-trim rewrite was not ported over."
     annotation (Placement(transformation(extent={{120,220},{100,240}})));
   Modelica.Blocks.Continuous.FirstOrder firstOrderRV07(T=valveRampTime)
     annotation (Placement(transformation(extent={{80,220},{60,240}})));
