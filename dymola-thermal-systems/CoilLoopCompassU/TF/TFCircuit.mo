@@ -58,6 +58,8 @@ model TFCircuit
   parameter Integer nTF = 4 "Number of TF coil-bus branches -- CALCULATED: ATEKO 22172-Z-R1 S3.3.3 states 224 channels 'connected in parallel to 4 busses' (text, not the PFD image's visual branch count -- see tf-circulator-sizing.md S1 for the reconciliation). Modeled as 2 TFCoilBusCoreLower + 2 TFCoilBusUpper instances, an ASSUMED even split of each 112-channel group across 2 busses (not stated in the source) -- see Open Items.";
   parameter Boolean enableCoilIsolation = true
     "Master switch for the per-bus relative-margin isolation rule, same role as PFCircuit.mo's enableCoilIsolation.";
+  parameter Boolean isolationAllowed_TF[nTF] = {true, false, true, true}
+    "Per-branch opt-in to the isolation rule, order TFCL1,Structure,TFUL1,TFUL2. Structure is excluded (always open): it starts at 80K vs the coils' 137K, so the close rule shut it at t~0.1s and it never reopened; the shut branch stayed open to the return header on its outlet side, and the resulting reversing outlet flow (-0.14..+0.05 kg/s) made simulation.nonlinear[8] fail repeatedly. ATEKO 22172-Z-R1 S5.2.3 also states the support structure is not heated by the shot, so there is no design reason to isolate it during post-shot cooldown.";
   parameter Modelica.Units.SI.TemperatureDifference coilIsolationCloseMargin = 40
     "Per-bus isolation valve closes once T_gas_out is this much colder than T_gas_out_max -- carried directly from PF (same class of relative-margin isolation rule, no TF-specific tuning data available).";
   parameter Modelica.Units.SI.TemperatureDifference coilIsolationReopenMargin = 35
@@ -181,6 +183,15 @@ model TFCircuit
     annotation (Placement(transformation(extent={{-8,-2},{8,2}},
         rotation=0,
         origin={-90,-60})));
+  ThermalSystems.GasComponents.Valves.Valve valve3(
+    valveFlowVariableType=ThermalSystems.Internals.ValveFlowVariableType.KvValue,
+    use_effectiveFlowAreaInput=false,
+    use_KvValueInput=false,
+    KvValueFixed=4000)
+    "Fixed valve between the evaporator outlet and the mixing node junction7 -- copied unchanged from PFCircuit.mo's valve3 (tube1 -> valve3 -> junction23 there). Without it the near-zero-flow evaporator tube was coupled straight into the supply junctions, and that combined algebraic system (simulation.nonlinear[2]: tube1, junction7/21, junctionSupply/CL/UL) failed repeatedly at t~9.72s."
+    annotation (Placement(transformation(extent={{-6,-3},{6,3}},
+        rotation=0,
+        origin={-66,-59})));
   ThermalSystems.GasComponents.Tubes.Tube Heater(
     tubeGeometry(
       innerDiameter=0.05,
@@ -460,11 +471,16 @@ algorithm
   end when;
 
   for i in 1:nTF loop
-    when (enableCoilIsolation and time >= controlActivationDelay
+    when (enableCoilIsolation and isolationAllowed_TF[i] and time >= controlActivationDelay
           and (T_gas_out_max - T_gas_out_compare_TF[i]) < coilIsolationReopenMargin
           and not pre(coilOpen[i])) then
       coilOpen[i] := true;
-    elsewhen (enableCoilIsolation and (T_gas_out_max - T_gas_out_TF[i]) > coilIsolationCloseMargin
+    // Close test uses T_gas_out_compare_TF (live while open, frozen while
+    // closed) rather than the raw T_gas_out_TF: once a branch is shut its
+    // near-zero outlet flow keeps reversing sign, so the raw outlet
+    // temperature flips between tube and junction values and kept crossing
+    // this threshold, firing ~1500 state events per 7 ms (Structure, t~38.9s).
+    elsewhen (enableCoilIsolation and isolationAllowed_TF[i] and (T_gas_out_max - T_gas_out_compare_TF[i]) > coilIsolationCloseMargin
           and pre(coilOpen[i])) then
       coilOpen[i] := false;
       T_gas_out_frozen[i] := T_gas_out_TF[i];
@@ -534,8 +550,12 @@ equation
       points={{-98,1},{-152,1},{-152,0},{-156,0}},
       color={255,153,0},
       thickness=0.5));
-  connect(tube1.portB, junction7.portB) annotation (Line(
-      points={{-82,-60},{-50,-60},{-50,-4}},
+  connect(tube1.portB, valve3.portA) annotation (Line(
+      points={{-82,-60},{-82,-59},{-72,-59}},
+      color={255,153,0},
+      thickness=0.5));
+  connect(valve3.portB, junction7.portB) annotation (Line(
+      points={{-60,-59},{-50,-59},{-50,-4}},
       color={255,153,0},
       thickness=0.5));
   connect(valve5.portB, junction7.portC) annotation (Line(
