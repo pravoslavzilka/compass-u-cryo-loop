@@ -23,12 +23,12 @@ model TFCircuit
   // PFCircuit.mo's own RV07/RV08 docstrings and docs/migration-notes.md);
   // TF has had no such run, so porting the fix pre-emptively would be
   // copying a solution without the problem that motivated it. PF's
-  // valve4/overCoolRecovering bypass state machine and its
-  // PID_circulatorPower/PF_RV01 shaft-power limiter are omitted entirely,
-  // same reasoning -- both were added to PF after specific solver failures
-  // TF has not encountered. If TF is ever actually simulated and shows the
-  // same failure modes, port the corresponding PF fix in at that point
-  // rather than before.
+  // PID_circulatorPower/PF_RV01 shaft-power limiter is omitted entirely,
+  // same reasoning. PF's valve4 overcool bypass branch (supply tee
+  // junction21 -> valve4 -> return tee junction20 -> circulator suction)
+  // and its overCoolRecovering state machine ARE ported, copied unchanged
+  // from PFCircuit.mo including its defaults (enableOverCoolPrevention=
+  // enableOverCoolRecovery=false, i.e. valve4 stays shut until enabled).
   // ===========================================================================
 
   parameter Real m_total = 1.3 "Total design flow from the circulator, kg/s -- FROM SOURCE, ATEKO 22172-Z-R1 S6.5.3 (minimal design flow 1.3 kg/s at coil temperature 116 K)";
@@ -42,7 +42,19 @@ model TFCircuit
   parameter Real hysteresisHalfWidth = 0.3
     "Half-width of the ON/OFF gap around each PID.y switching threshold -- same anti-chatter role as PFCircuit.mo's identical parameter.";
   parameter Modelica.Units.SI.TemperatureDifference tempMargin=40
-    "Margin below the hottest coil-bus gas outlet temperature -- FROM SOURCE, ATEKO 22172-Z-R1 S3.2 (\"Limit (T_object-T_coolant)<=40K\", cooldown-after-discharge mode) and S6.4 (\"maximal temperature difference 40K (T inlet-T outlet)\") -- both directly state 40K for the whole cooling system, TF included, so this is a stronger sourcing than PF's own tempMargin=40 (which is a PF-model default, not independently cited in PF's own design-basis doc).";
+    "Margin below the hottest coil-bus gas outlet temperature -- FROM SOURCE, ATEKO 22172-Z-R1 S3.2 (\"Limit (T_object-T_coolant)<=40K\", cooldown-after-discharge mode) and S3.4 (\"maximal temperature difference 40K (T inlet-T outlet)\") -- both directly state 40K for the whole cooling system, TF included, so this is a stronger sourcing than PF's own tempMargin=40 (which is a PF-model default, not independently cited in PF's own design-basis doc).";
+  parameter Boolean enableOverCoolPrevention=false
+    "Master switch for valve4's overcool-prevention trigger (the first when-branch below, gated on overCoolReopenMargin). When false, valve4 never opens in response to overcooling risk -- it stays permanently shut, and enableOverCoolRecovery's hold logic never has anything to act on. Copied unchanged from PFCircuit.mo.";
+  parameter Boolean enableOverCoolRecovery=false
+    "Master switch for valve4's stabilize-and-reclose logic (the three elsewhen-branches below, gated on overCoolShutMargin/overCoolStabilityBand/overCoolStabilizeDelay). When false, valve4 -- once opened by enableOverCoolPrevention -- never automatically recloses; the bypass stays open indefinitely. No effect if enableOverCoolPrevention is false. Copied unchanged from PFCircuit.mo.";
+  parameter Modelica.Units.SI.TemperatureDifference overCoolShutMargin=40
+    "Lower bound of valve4's settle band: T_ref - overCoolShutMargin (T_ref = T_gas_out_max snapshot recorded at the moment valve4 last reopened). sensor_T.sensorValue must sit at or above this (and at or below T_ref - overCoolShutMargin + overCoolStabilityBand, i.e. within the band) for overCoolStabilizeDelay seconds continuously before valve4 actually shuts. Copied unchanged from PFCircuit.mo.";
+  parameter Modelica.Units.SI.TemperatureDifference overCoolReopenMargin=45
+    "valve4 reopens (and re-records T_ref = current T_gas_out_max) once T_gas_out_max - sensor_T.sensorValue exceeds this, while shut. Copied unchanged from PFCircuit.mo.";
+  parameter Modelica.Units.SI.TemperatureDifference overCoolStabilityBand=20
+    "Width of valve4's settle band above the lower bound (T_ref - overCoolShutMargin): sensor_T.sensorValue must stay within [T_ref - overCoolShutMargin, T_ref - overCoolShutMargin + overCoolStabilityBand] continuously. Copied unchanged from PFCircuit.mo.";
+  parameter Modelica.Units.SI.Time overCoolStabilizeDelay=30
+    "sensor_T.sensorValue must stay continuously within valve4's settle band (see overCoolShutMargin/overCoolStabilityBand) for this long before valve4 actually closes. Any excursion out of the band (either side) before the delay elapses restarts the wait. Copied unchanged from PFCircuit.mo.";
   parameter Integer nTF = 4 "Number of TF coil-bus branches -- CALCULATED: ATEKO 22172-Z-R1 S3.3.3 states 224 channels 'connected in parallel to 4 busses' (text, not the PFD image's visual branch count -- see tf-circulator-sizing.md S1 for the reconciliation). Modeled as 2 TFCoilBusCoreLower + 2 TFCoilBusUpper instances, an ASSUMED even split of each 112-channel group across 2 busses (not stated in the source) -- see Open Items.";
   parameter Boolean enableCoilIsolation = true
     "Master switch for the per-bus relative-margin isolation rule, same role as PFCircuit.mo's enableCoilIsolation.";
@@ -51,7 +63,7 @@ model TFCircuit
   parameter Modelica.Units.SI.TemperatureDifference coilIsolationReopenMargin = 35
     "Per-bus isolation valve reopens once within this much of T_gas_out_max -- carried from PF, see coilIsolationCloseMargin.";
   parameter Modelica.Units.SI.Time controlActivationDelay = 5
-    "Reopen logic stays disabled until this much simulated time has passed, so it doesn't react to the unsettled startup transient -- same role as PFCircuit.mo's identical parameter.";
+    "Reopen logic (valve4 and per-bus isolation) stays disabled until this much simulated time has passed, so it doesn't react to the unsettled startup transient -- same role as PFCircuit.mo's identical parameter.";
 
   parameter Boolean enablePressureControl = true
     "Master switch for the RV07 (make-up)/RV08 (relief) pressure-control valve pair at the suction node.";
@@ -70,6 +82,15 @@ model TFCircuit
   parameter Modelica.Units.SI.Temperature TStorageReservoirs=80;
   parameter Modelica.Units.SI.Time valveRampTime=3;
   parameter Real Kv_shut_pressureValves = 1e-2;
+
+  Real T_ref(start=0, fixed=true)
+    "T_gas_out_max snapshot for valve4's own control logic only (PID/wanted_temp are unaffected) -- re-recorded every time valve4 reopens, held constant otherwise";
+  Boolean valve4Open(start=false, fixed=true)
+    "true -> valve4 Kv=5000 (open), false -> valve4 Kv=0.001 (shut)";
+  Boolean overCoolRecovering(start=false, fixed=true)
+    "True while sensor_T is inside valve4's settle band ([T_ref - overCoolShutMargin, T_ref - overCoolShutMargin + overCoolStabilityBand]) but hasn't stayed there continuously for overCoolStabilizeDelay yet -- valve4 stays open (bypass still flowing) during this hold. Reset to false the instant sensor_T leaves the band on either side, so the wait restarts on the next continuous stay.";
+  Real overCoolRecoveredAt(start=0, fixed=true)
+    "Time sensor_T most recently entered valve4's settle band during the current valve4-open episode -- gates the overCoolStabilizeDelay hold before valve4 actually closes.";
 
   Real T_gas_out_TF[nTF] = {TFCL1.T_gas_out, Structure.T_gas_out, TFUL1.T_gas_out, TFUL2.T_gas_out}
     "Same order as coilOpen: TFCL1, Structure, TFUL1, TFUL2";
@@ -296,6 +317,44 @@ model TFCircuit
     "Suction-node tee: portA to the return header, portB to RV07 (make-up), portC to RV08 (relief) -- same role as PFCircuit.mo's junction22."
     annotation (Placement(transformation(extent={{-4,4},{4,-4}}, rotation=90, origin={-2,156})));
 
+  // --- valve4 overcool bypass branch, copied from PFCircuit.mo: supply tee
+  // junction21 (after the heater/evaporator mixing node) -> valve4 ->
+  // return tee junction20 -> circulator suction, bypassing all coil busses.
+  ThermalSystems.GasComponents.JunctionElements.VolumeJunction junction21(
+    volume(displayUnit="l") = 0.2,
+    m_flowStart=1e-5,
+    pInitial=2500000,
+    fixedInitialPressure=false,
+    TInitial(displayUnit="K") = 80)
+    "Supply tee: portA from junction7 (mixed heater/evaporator outlet), portC to the coil supply header (junctionSupply), portB to valve4 -- same role and volume as PFCircuit.mo's junction21."
+    annotation (Placement(transformation(extent={{-4,-4},{4,4}},
+        rotation=0,
+        origin={-20,20})));
+  ThermalSystems.GasComponents.Valves.Valve valve4(
+    valveFlowVariableType=ThermalSystems.Internals.ValveFlowVariableType.KvValue,
+    use_effectiveFlowAreaInput=false,
+    use_KvValueInput=true,
+    KvValueFixed=0.0001)
+    "Overcool bypass valve, supply -> return around all coil busses. Driven by bypassRegulatorOverCool/firstOrder3 (valve4Open state machine in the algorithm section) -- copied unchanged from PFCircuit.mo's valve4."
+    annotation (Placement(transformation(extent={{-6,-3},{6,3}},
+        rotation=90,
+        origin={-20,65})));
+  ThermalSystems.GasComponents.JunctionElements.VolumeJunction junction20(
+    volume=1e-1,
+    m_flowStart=1e-5,
+    pInitial=2500000,
+    fixedInitialPressure=false,
+    TInitial(displayUnit="K") = 80)
+    "Return tee: portA from the coil return header (junctionReturn), portB from valve4, portC to the circulator suction -- same role and volume as PFCircuit.mo's junction20."
+    annotation (Placement(transformation(extent={{-4,-4},{4,4}},
+        rotation=180,
+        origin={-20,120})));
+  Modelica.Blocks.Sources.RealExpression bypassRegulatorOverCool(y=if
+        valve4Open then 5000 else 0.001)
+    annotation (Placement(transformation(extent={{-86,60},{-66,80}})));
+  Modelica.Blocks.Continuous.FirstOrder firstOrder3(T=3)
+    annotation (Placement(transformation(extent={{-56,60},{-36,80}})));
+
   TFCoilBusCoreLower TFCL1(TInitial(displayUnit="K") = 137, assemblyIndex=1)
     annotation (Placement(transformation(extent={{100,60},{120,80}})));
   TFCoilBusUpper TFUL1(TInitial(displayUnit="K") = 137, assemblyIndex=3)
@@ -371,6 +430,35 @@ equation
   TFUL2.KvValue_in1 = firstOrderCoilKv[4].y;
 
 algorithm
+  // valve4 overcool bypass state machine -- copied unchanged from PFCircuit.mo.
+  when enableOverCoolPrevention and time >= controlActivationDelay and T_gas_out_max - sensor_T.sensorValue > overCoolReopenMargin
+      and not pre(valve4Open) then
+    T_ref := T_gas_out_max;
+    valve4Open := true;
+    overCoolRecovering := false;
+  elsewhen enableOverCoolRecovery and pre(valve4Open) and not pre(overCoolRecovering)
+      and sensor_T.sensorValue >= T_ref - overCoolShutMargin
+      and sensor_T.sensorValue <= T_ref - overCoolShutMargin + overCoolStabilityBand then
+    // sensor_T just entered the settle band -- don't close yet, start the
+    // overCoolStabilizeDelay hold (valve4 keeps flowing through the bypass
+    // branch).
+    overCoolRecoveredAt := time;
+    overCoolRecovering := true;
+  elsewhen enableOverCoolRecovery and pre(valve4Open) and pre(overCoolRecovering)
+      and (sensor_T.sensorValue < T_ref - overCoolShutMargin
+        or sensor_T.sensorValue > T_ref - overCoolShutMargin + overCoolStabilityBand) then
+    // sensor_T left the settle band (either side) before stabilizing --
+    // cancel the hold; the branch above restarts it on the next continuous
+    // entry into the band.
+    overCoolRecovering := false;
+  elsewhen enableOverCoolRecovery and pre(overCoolRecovering)
+      and sensor_T.sensorValue >= T_ref - overCoolShutMargin
+      and sensor_T.sensorValue <= T_ref - overCoolShutMargin + overCoolStabilityBand
+      and time >= overCoolRecoveredAt + overCoolStabilizeDelay then
+    valve4Open := false;
+    overCoolRecovering := false;
+  end when;
+
   for i in 1:nTF loop
     when (enableCoilIsolation and time >= controlActivationDelay
           and (T_gas_out_max - T_gas_out_compare_TF[i]) < coilIsolationReopenMargin
@@ -462,10 +550,26 @@ equation
       points={{-46,30},{-46,8},{-42,8},{-42,0},{-46,0}},
       color={255,153,0},
       thickness=0.5));
-  connect(junction7.portA, junctionSupply.portB) annotation (Line(
-      points={{-46,0},{-42,0},{-42,26},{-10,26},{-10,40},{-4,40}},
+  connect(junction7.portA, junction21.portA) annotation (Line(
+      points={{-46,0},{-30,0},{-30,20},{-24,20}},
       color={255,153,0},
       thickness=0.5));
+  connect(junction21.portC, junctionSupply.portB) annotation (Line(
+      points={{-16,20},{-10,20},{-10,40},{-4,40}},
+      color={255,153,0},
+      thickness=0.5));
+  connect(junction21.portB, valve4.portA) annotation (Line(
+      points={{-20,24},{-20,59}},
+      color={255,153,0},
+      thickness=0.5));
+  connect(valve4.portB, junction20.portB) annotation (Line(
+      points={{-20,71},{-20,116}},
+      color={255,153,0},
+      thickness=0.5));
+  connect(bypassRegulatorOverCool.y, firstOrder3.u)
+    annotation (Line(points={{-65,70},{-58,70}}, color={0,0,127}));
+  connect(firstOrder3.y, valve4.KvValue_in) annotation (Line(points={{-35,70},
+          {-28,70},{-28,65},{-23.75,65}}, color={0,0,127}));
   connect(junctionSupply.portA, junctionUL.portB) annotation (Line(
       points={{0,36},{0,0},{16,0}},
       color={255,153,0},
@@ -496,8 +600,12 @@ equation
       points={{120.4,89.8},{140,89.8},{140,84}},
       color={255,153,0},
       thickness=0.5));
-  connect(junctionReturn.portB, fan2ndOrder.portA) annotation (Line(
-      points={{164,40},{180,40},{180,120},{-52,120}},
+  connect(junctionReturn.portB, junction20.portA) annotation (Line(
+      points={{164,40},{180,40},{180,120},{-16,120}},
+      color={255,153,0},
+      thickness=0.5));
+  connect(junction20.portC, fan2ndOrder.portA) annotation (Line(
+      points={{-24,120},{-52,120}},
       color={255,153,0},
       thickness=0.5));
   connect(sensor_p_suction.port, junction22.portA) annotation (Line(

@@ -421,13 +421,8 @@ equation
   CS3L.KvValue_in1 = firstOrderCoilKv[3].y;
 
   // suction pressure control
-  connect(sensor_p_suction.port, junction22.portC);
   PID_pressure.u_s = pressureSetpoint;
   PID_pressure.u_m = sensor_p_suction.sensorValue;
-  RV07.KvValue_in = firstOrderRV07.y;
-  firstOrderRV07.u = RV07Command.y;
-  RV08.KvValue_in = firstOrderRV08.y;
-  firstOrderRV08.u = RV08Command.y;
   connect(makeupReservoir.port, makeupBuffer.portArray[1]) annotation (Line(
       points={{78,204},{62,204},{62,217.975}},
                                            color={255,153,0}, thickness=0.5));

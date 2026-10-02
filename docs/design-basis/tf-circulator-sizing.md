@@ -17,6 +17,13 @@ Four coil branches, each behind its own isolation valve:
 Upper and lower support structure are modeled together as one lumped
 `TFStructure` instance.
 
+An overcool bypass branch (`junction21` -> `valve4` -> `junction20`) routes
+supply gas straight from the heater/evaporator mixing node to the circulator
+suction, around all coil branches. It is copied unchanged from
+`PFCircuit.mo` (same volumes, Kv 5000 open / 0.001 shut, same
+`valve4Open`/`overCoolRecovering` state machine and margins) and is disabled
+by default (`enableOverCoolPrevention`/`enableOverCoolRecovery` = false).
+
 Coil channels (core+lower and upper limb) are 6x10mm elliptical, flow area
 47.12 mm², wetted perimeter 25.53 mm², hydraulic diameter 7.38 mm.
 `TFStructure`'s channels are circular, 20 mm bore.
