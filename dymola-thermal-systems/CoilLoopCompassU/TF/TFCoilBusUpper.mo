@@ -45,6 +45,16 @@ model TFCoilBusUpper
   output Modelica.Units.SI.Temperature T_gas_in = tube2.summary.T_gas_A "Helium inlet temperature";
   output Modelica.Units.SI.MassFlowRate m_flow = tube2.summary.m_flow_gas_B "Bus mass flow (all 56 lumped channels)";
 
+  parameter Real outletKvRatio = 50
+    "Outlet valve Kv = KvValue_in1*outletKvRatio. Open (Kv_in=45): Kv~2250, negligible dp vs the inlet valve; shut (Kv_in=1e-4): Kv=5e-3. Lets TFCircuit.mo close the bus at BOTH ends with one command, so a shut bus holds trapped, stagnant gas instead of breathing through its open outlet (the reversing-flow failure seen on the valve-only-isolated Structure branch).";
+
+  ThermalSystems.GasComponents.Valves.Valve valve2(
+    valveFlowVariableType=ThermalSystems.Internals.ValveFlowVariableType.KvValue,
+    use_effectiveFlowAreaInput=false,
+    use_KvValueInput=true,
+    KvValueFixed=valveOpening*valveKvNominal*outletKvRatio)
+    "Outlet shut-off valve, driven by the same KvValue_in1 as valve1 (scaled by outletKvRatio)."
+    annotation (Placement(transformation(extent={{56,51},{66,57}})));
   Modelica.Thermal.HeatTransfer.Sources.PrescribedHeatFlow prescribedHeatFlow
     annotation (Placement(transformation(extent={{16,62},{36,82}})));
   ThermalSystems.OtherComponents.Sources.StepSource stepSource(
@@ -123,10 +133,15 @@ equation
       points={{8,55},{-4,55},{-4,36},{-100,36},{-100,0},{-128,0}},
       color={255,153,0},
       thickness=0.5));
-  connect(tube2.portB, portB1) annotation (Line(
-      points={{48,54},{66,54},{66,38},{74,38},{74,0},{104,0},{104,-2}},
+  connect(tube2.portB, valve2.portA) annotation (Line(
+      points={{48,54},{56,54}},
       color={255,153,0},
       thickness=0.5));
+  connect(valve2.portB, portB1) annotation (Line(
+      points={{66,54},{74,54},{74,0},{104,0},{104,-2}},
+      color={255,153,0},
+      thickness=0.5));
+  valve2.KvValue_in = KvValue_in1*outletKvRatio;
   connect(valve1.KvValue_in, KvValue_in1) annotation (Line(points={{13,57.25},
           {13,-66},{104,-66}}, color={0,0,127}));
   annotation (Icon(coordinateSystem(preserveAspectRatio=false)), Diagram(
