@@ -37,8 +37,10 @@ model TFCircuit
   parameter Real Kv_cool_max = 5000;
   parameter Real heater_gain = 100;
   parameter Real Kv_gain = 100;
-  parameter Real bypass_limit = 10
-    "Threshold (on -PID.y) above which valve5's bypass leg is throttled back -- ASSUMED, carried unchanged from PFCircuit.mo's identical parameter/BypassLimiter mechanism (no TF-specific tuning data); structurally required, not optional -- see BypassLimiter's docstring.";
+  parameter Real bypass_limit = 2
+    "Threshold (on -PID.y) above which valve5's bypass leg is throttled back. Lowered from PF's 10 to 2 (just past the cooling threshold u_dead+hysteresisHalfWidth=1.3): with 10, the 2026-10-02 run kept valve5 at its full Kv=500 for the first ~300s, sending 1.1-1.4 kg/s around the evaporator vs 0.2-0.5 kg/s through it, so the supply sat 7-14K above wanted_temp.";
+  parameter Real bypassKvGain = 50
+    "valve5 Kv reduction per unit of PID.y once bypassHysteresis is on (Kv = 500 + PID.y*bypassKvGain, floored at Kv_shut) -- raised from PF's literal 10 so the bypass is fully shut by PID.y=-10 instead of -50, for the same reason as bypass_limit.";
   parameter Real hysteresisHalfWidth = 0.3
     "Half-width of the ON/OFF gap around each PID.y switching threshold -- same anti-chatter role as PFCircuit.mo's identical parameter.";
   parameter Modelica.Units.SI.TemperatureDifference tempMargin=40
@@ -58,6 +60,16 @@ model TFCircuit
   parameter Integer nTF = 4 "Number of TF coil-bus branches -- CALCULATED: ATEKO 22172-Z-R1 S3.3.3 states 224 channels 'connected in parallel to 4 busses' (text, not the PFD image's visual branch count -- see tf-circulator-sizing.md S1 for the reconciliation). Modeled as 2 TFCoilBusCoreLower + 2 TFCoilBusUpper instances, an ASSUMED even split of each 112-channel group across 2 busses (not stated in the source) -- see Open Items.";
   parameter Boolean enableCoilIsolation = true
     "Master switch for the per-bus relative-margin isolation rule, same role as PFCircuit.mo's enableCoilIsolation.";
+  parameter Boolean connectStructure = false
+    "true: support-structure branch connected between junctionCL and junctionReturnCL (throttled by Structure.valveKvNominal=12, ~11% of circulator flow in the 2026-10-02 run). false: Structure is disconnected from both headers -- fully closed, zero flow, its gas trapped at its initial 80K -- so all circulator flow goes to the coil busses. Disconnecting both ends (rather than shutting only the inlet valve) avoids the reversing outlet flow that broke simulation.nonlinear[8] when Structure was isolated by valve alone.";
+  parameter Modelica.Units.SI.Temperature T_supplyFloor(displayUnit="K") = 80
+    "Lower bound on wanted_temp -- ATEKO 22172-Z-R1 S3.4 target temperature 80K. Without it wanted_temp = T_gas_out_max - 40 fell to ~46-49K late in the run, below what the 77K LIN evaporator can deliver: PID sat saturated at yMin=-60 from ~1350s on and the supply undershot to 78.5K.";
+  parameter Real KvUpperLimb = 45
+    "Fully-open Kv of the TFUL1/TFUL2 bus valves (TFCoilBusUpper default 100). Throttled so the faster-cooling upper limb (shorter 7.7m channels, 7.5 vs 5.9 g/s/channel at Kv=100 in the 2026-10-03 run, done at ~79K by 1800s) gives flow to the slower core + lower limb.";
+  parameter Boolean shutWhenCold_TF[nTF] = {false, false, true, true}
+    "Per-branch opt-in to the permanent 'cooled down' shut-off below, order TFCL1,Structure,TFUL1,TFUL2 -- upper limb only.";
+  parameter Modelica.Units.SI.Temperature T_coldShut(displayUnit="K") = 80
+    "A shutWhenCold_TF branch closes permanently (both ends, see TFCoilBusUpper.outletKvRatio) once its gas outlet temperature -- the hottest end of the bus -- reaches this. 80K = ATEKO 22172-Z-R1 S3.4 target temperature.";
   parameter Boolean isolationAllowed_TF[nTF] = {true, false, true, true}
     "Per-branch opt-in to the isolation rule, order TFCL1,Structure,TFUL1,TFUL2. Structure is excluded (always open): it starts at 80K vs the coils' 137K, so the close rule shut it at t~0.1s and it never reopened; the shut branch stayed open to the return header on its outlet side, and the resulting reversing outlet flow (-0.14..+0.05 kg/s) made simulation.nonlinear[8] fail repeatedly. ATEKO 22172-Z-R1 S5.2.3 also states the support structure is not heated by the shot, so there is no design reason to isolate it during post-shot cooldown.";
   parameter Modelica.Units.SI.TemperatureDifference coilIsolationCloseMargin = 40
@@ -101,13 +113,15 @@ model TFCircuit
   Real T_gas_out_compare_TF[nTF] "T_gas_out_TF[i] while open (live), T_gas_out_frozen[i] while closed";
   Boolean coilOpen[nTF](start=fill(true, nTF), fixed=fill(true, nTF))
     "Per-bus isolation valve latch, order: TFCL1,Structure,TFUL1,TFUL2";
+  Boolean coldShut[nTF](start=fill(false, nTF), fixed=fill(true, nTF))
+    "Latched true (never reset) once a shutWhenCold_TF branch reaches T_coldShut -- that branch then stays at Kv_shut for the rest of the run, overriding coilOpen.";
   Real T_gas_out_frozen[nTF](each start=0, each fixed=true)
     "Snapshot of T_gas_out_TF[i] taken the instant coilOpen[i] closes -- held constant while closed.";
 
   output Modelica.Units.SI.Temperature T_gas_out_max = max(T_gas_out_compare_TF)
     "Hottest coil-bus gas outlet temperature.";
-  output Modelica.Units.SI.Temperature wanted_temp = T_gas_out_max - tempMargin
-    "PID setpoint: hottest bus outlet minus margin.";
+  output Modelica.Units.SI.Temperature wanted_temp = max(T_gas_out_max - tempMargin, T_supplyFloor)
+    "PID setpoint: hottest bus outlet minus margin, floored at T_supplyFloor.";
 
   inner ThermalSystems.SystemInformationManager sim(
       generateEventsAtFlowReversalGas=false,
@@ -125,15 +139,15 @@ model TFCircuit
     use_mechanicalPort=true,
     maxDeltaT=20,
     n_nominal=200,
-    dp_nominal(displayUnit="bar") = 200000,
-    V_flow_nominal=0.125,
-    V_flow0=0.151,
+    dp_nominal(displayUnit="bar") = 70000,
+    V_flow_nominal=0.145,
+    V_flow0=0.175,
     T_nominal(displayUnit="K") = 116,
     p_nominal=2500000,
     eta_maxPhyd=0.6,
     dpInitial(displayUnit="bar") = 2500000,
     V_flow_Start=0.01)
-    "Sizing FROM SOURCE / CALCULATED / ASSUMED, see tf-circulator-sizing.md S2-S3: T_nominal/p_nominal FROM SOURCE (ATEKO worst-case coil temp 116K, nominal working pressure 24barg->~2.5MPa(a)); V_flow_nominal/V_flow0 CALCULATED (m_total/rho_suction via ideal-gas estimate, V_flow0 carrying PF's own 1.21x ratio); dp_nominal CALCULATED, a rough order-of-magnitude estimate -- ATEKO's own channel-only pressure-loss table (Tab.11) gives ~0.18 bar per channel at these conditions, but that excludes header/heater/evaporator/valve losses which ATEKO explicitly leaves to 'the cryogenic system supplier' to evaluate; 2 bar used here as a placeholder allowing headroom for those unmodeled losses, not a real hydraulic calculation -- see Open Items; n_nominal/eta_maxPhyd/V_flow0 ratio/deltaV_flow/bladeLossExponent/impactLossCoefficient ASSUMED, carried from PF (no TF-specific circulator data exists)."
+    "Re-sized 2026-10-05 to the loop's simulated operating point, same method as PF (design point placed where the machine actually runs): V_flow_nominal=0.145 m3/s = delivered volume flow in the 2026-10-04 run (m_flow/rho ~0.145 throughout); dp_nominal=0.7 bar = middle of the 0.47-0.94 bar the loop actually needed; V_flow0=1.21*V_flow_nominal (PF's ratio). The previous placeholder (dp_nominal=2 bar, V_flow_nominal=0.125, V_flow0=0.151) left the machine at ~96% of its zero-head flow, eta=0.25-0.30 vs PF's 0.63-0.66, P_shaft 28-55 kW for 7-14 kW hydraulic -- ~21 kW of loss dumped into the helium. Expected now: eta ~0.6, P_shaft ~17 kW (ATEKO S7.3 budget 25 kW electrical). T_nominal/p_nominal FROM SOURCE (ATEKO 116K, 24barg); n_nominal/eta_maxPhyd ASSUMED, carried from PF.";
     annotation (Placement(transformation(extent={{8,-8},{-8,8}},
         rotation=90,
         origin={-60,120})));
@@ -226,7 +240,8 @@ model TFCircuit
     yMax=60,
     yMin=-60,
     initType=Modelica.Blocks.Types.Init.InitialOutput,
-    y_start=5)
+    y_start=0)
+    "y_start=0 (was 5, carried from PF): a positive start value switched the heater on for the first ~40s of a cooldown run, heating the supply to ~117K before the PI integrator could swing negative."
     annotation (Placement(transformation(extent={{-10,10},{10,-10}},
         rotation=-90,
         origin={-90,70})));
@@ -255,11 +270,11 @@ model TFCircuit
     annotation (Placement(transformation(extent={{-200,30},{-180,50}})));
   Modelica.Blocks.Logical.Hysteresis bypassHysteresis(uLow=bypass_limit -
         hysteresisHalfWidth, uHigh=bypass_limit + hysteresisHalfWidth)
-    "Same role as PFCircuit.mo's identical block: a THIRD hysteresis gate on top of heaterHysteresis/coolingHysteresis, all keyed off the same PID.y (the split-range heater/cooling/bypass control triad) -- not to be confused with PF's separate valve4/overCoolRecovering state machine, which this file's top-of-file docstring correctly says was NOT ported to TF. valve5's BypassLimiter below is part of the base control triad, not that extra state machine, and was missing entirely (valve5.KvValue_in left unconnected, the actual root cause of the 'structurally singular, 22890 unknowns/22889 equations' translate error)."
+    "Same role as PFCircuit.mo's identical block: a THIRD hysteresis gate on top of heaterHysteresis/coolingHysteresis, all keyed off the same PID.y (the split-range heater/cooling/bypass control triad) -- not to be confused with the separate valve4/overCoolRecovering state machine (valve4 bypasses the coils, valve5 bypasses the evaporator). Missing valve5 wiring was the root cause of the earlier 'structurally singular, 22890 unknowns/22889 equations' translate error."
     annotation (Placement(transformation(extent={{-340,-60},{-320,-40}})));
   Modelica.Blocks.Sources.RealExpression BypassLimiter(y=if bypassHysteresis.y
-         then max(500 + (PID.y*10), Kv_shut) else 500)
-    "ASSUMED, carried unchanged from PFCircuit.mo's identical block (including its literal *10 gain, not scaled by Kv_gain -- PF's own choice, not independently re-tuned for TF)."
+         then max(500 + (PID.y*bypassKvGain), Kv_shut) else 500)
+    "Structure carried from PFCircuit.mo's identical block; gain and threshold re-tuned for TF, see bypass_limit/bypassKvGain."
     annotation (Placement(transformation(extent={{-272,0},{-252,20}})));
   Modelica.Blocks.Continuous.FirstOrder firstOrder2(T=1)
     annotation (Placement(transformation(extent={{-238,0},{-218,20}})));
@@ -368,9 +383,11 @@ model TFCircuit
 
   TFCoilBusCoreLower TFCL1(TInitial(displayUnit="K") = 137, assemblyIndex=1)
     annotation (Placement(transformation(extent={{100,60},{120,80}})));
-  TFCoilBusUpper TFUL1(TInitial(displayUnit="K") = 137, assemblyIndex=3)
+  TFCoilBusUpper TFUL1(TInitial(displayUnit="K") = 137, assemblyIndex=3,
+    valveKvNominal=KvUpperLimb)
     annotation (Placement(transformation(extent={{100,-20},{120,0}})));
-  TFCoilBusUpper TFUL2(TInitial(displayUnit="K") = 137, assemblyIndex=4)
+  TFCoilBusUpper TFUL2(TInitial(displayUnit="K") = 137, assemblyIndex=4,
+    valveKvNominal=KvUpperLimb)
     annotation (Placement(transformation(extent={{100,0},{120,20}})));
   Modelica.Blocks.Continuous.FirstOrder firstOrderCoilKv[nTF](each T=3)
     "Smooths each per-bus Kv step -- same anti-chatter role as PFCircuit.mo's identical block."
@@ -421,7 +438,9 @@ model TFCircuit
   Modelica.Blocks.Continuous.FirstOrder firstOrderRV08(T=valveRampTime)
     annotation (Placement(transformation(extent={{-60,240},{-40,260}})));
 
-  TFStructure Structure(TInitial(displayUnit="K") = 80,  assemblyIndex=2)
+  TFStructure Structure(TInitial(displayUnit="K") = 80,  assemblyIndex=2,
+    valveKvNominal=12)
+    "valveKvNominal=12 (default 100) throttles the always-open Structure branch to ~0.14 kg/s -- the share ATEKO's 1.3 kg/s total leaves after the 224 coil channels x 5.17 g/s (Tab.6). At Kv=100 it took 51% of circulator flow (0.86 kg/s), starving the coils to 3.4-4.2 g/s/channel. Sized from the 2026-10-02 run: the branch is valve-dominated (7.9 kPa valve vs 70 Pa tube), so flow ~ Kv*sqrt(dp); 100*(0.14/0.86)*sqrt(7.9/15) ~ 12 at the ~15 kPa header dp expected once the coils carry ~1.15 kg/s."
     annotation (Placement(transformation(extent={{100,80},{120,100}})));
 equation
   heaterHysteresis.u = PID.y;
@@ -431,9 +450,9 @@ equation
   PID_pressure.u_m = sensor_p_suction.sensorValue;
 
   for i in 1:nTF loop
-    kvTarget_TF[i] = if coilOpen[i] then valveKvNominal_TF[i] else Kv_shut;
+    kvTarget_TF[i] = if coilOpen[i] and not coldShut[i] then valveKvNominal_TF[i] else Kv_shut;
     firstOrderCoilKv[i].u = kvTarget_TF[i];
-    T_gas_out_compare_TF[i] = if coilOpen[i] then T_gas_out_TF[i] else T_gas_out_frozen[i];
+    T_gas_out_compare_TF[i] = if coilOpen[i] and not coldShut[i] then T_gas_out_TF[i] else T_gas_out_frozen[i];
   end for;
   TFCL1.KvValue_in1 = firstOrderCoilKv[1].y;
   Structure.KvValue_in1 = firstOrderCoilKv[2].y;
@@ -483,6 +502,17 @@ algorithm
     elsewhen (enableCoilIsolation and isolationAllowed_TF[i] and (T_gas_out_max - T_gas_out_compare_TF[i]) > coilIsolationCloseMargin
           and pre(coilOpen[i])) then
       coilOpen[i] := false;
+      T_gas_out_frozen[i] := T_gas_out_TF[i];
+    end when;
+
+    // Permanent "cooled down" shut-off (upper limb only, see shutWhenCold_TF).
+    // Tested on T_gas_out_compare_TF, which freezes at the latch instant, so
+    // the shut bus's stagnant outlet temperature can't re-cross the threshold
+    // and fire events afterwards. Gated by controlActivationDelay because the
+    // gas starts at 80K (= T_coldShut) before the 137K coils heat it.
+    when shutWhenCold_TF[i] and time >= controlActivationDelay
+        and T_gas_out_compare_TF[i] <= T_coldShut and not pre(coldShut[i]) then
+      coldShut[i] := true;
       T_gas_out_frozen[i] := T_gas_out_TF[i];
     end when;
   end for;
@@ -612,14 +642,16 @@ equation
     annotation (Line(points={{-119,90},{-90,90},{-90,82}}, color={0,0,127}));
   connect(sensor_T.sensorValue, PID.u_m)
     annotation (Line(points={{-46,36},{-46,70},{-78,70}}, color={0,0,127}));
-  connect(junctionCL.portC, Structure.portA1) annotation (Line(
-      points={{20,84},{20,90},{97.2,90}},
-      color={255,153,0},
-      thickness=0.5));
-  connect(Structure.portB1, junctionReturnCL.portC) annotation (Line(
-      points={{120.4,89.8},{140,89.8},{140,84}},
-      color={255,153,0},
-      thickness=0.5));
+  if connectStructure then
+    connect(junctionCL.portC, Structure.portA1) annotation (Line(
+        points={{20,84},{20,90},{97.2,90}},
+        color={255,153,0},
+        thickness=0.5));
+    connect(Structure.portB1, junctionReturnCL.portC) annotation (Line(
+        points={{120.4,89.8},{140,89.8},{140,84}},
+        color={255,153,0},
+        thickness=0.5));
+  end if;
   connect(junctionReturn.portB, junction20.portA) annotation (Line(
       points={{164,40},{180,40},{180,120},{-16,120}},
       color={255,153,0},

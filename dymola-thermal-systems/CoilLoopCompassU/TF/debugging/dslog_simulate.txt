@@ -1,72 +1,52 @@
 Log-file of program ./dymosim
-(generated: Fri Oct  2 18:31:32 2026)
+(generated: Mon Oct  5 21:30:55 2026)
 
 dymosim started
 ... "CoilLoopCompassU.TF.TFCircuit" simulating
 ... "dsin.txt" loading (dymosim input file)
+
+Warning: Failed to solve nonlinear system using Newton solver.
+  During initialization at time: 0
+  Tag: simulation.nonlinear[20]
+  For debugging information enable
+  Simulation/Setup/Debug/Nonlinear solver diagnostics/Detailed logging of failed nonlinear solutions.
+Trying homotopy
+
+Warning: Failed to solve nonlinear system using Newton solver.
+  During initialization at time: 0
+  Tag: simulation.nonlinear[20]
+Homotopy reducing
+
+Warning: Failed to solve nonlinear system using Newton solver.
+  During initialization at time: 0
+  Tag: simulation.nonlinear[20]
+Homotopy reducing
+
+Warning: Failed to solve nonlinear system using Newton solver.
+  During initialization at time: 0
+  Tag: simulation.nonlinear[20]
+Homotopy reducing
 ... "Z:/compass-u-cryo-loop/dymola-thermal-systems/CoilLoopCompassU/TF/debugging/result.mat" creating (simulation result file)
 
 Integration started at T = 0 using integration method DASSL
 (DAE multi-step solver (dassl/dasslrt of Petzold modified by Dassault Systemes))
 
-Warning: Failed to solve nonlinear system using Newton solver.
-  Time: 123.9674603678053
-  Tag: simulation.nonlinear[14]
-  For debugging information enable
-  Simulation/Setup/Debug/Nonlinear solver diagnostics/Detailed logging of failed nonlinear solutions.
-Solver will attempt to handle this problem.
-
-
-Warning: Failed to solve nonlinear system using Newton solver.
-  Time: 123.9674603678053
-  Tag: simulation.nonlinear[14]
-Solver will attempt to handle this problem.
-
-Failed to evaluate model for ODE-Jacobian
-
-Warning: Failed to solve nonlinear system using Newton solver.
-  Time: 123.9674603678053
-  Tag: simulation.nonlinear[14]
-Solver will attempt to handle this problem.
-
-Failed to evaluate model for ODE-Jacobian
-
-Warning: Failed to solve nonlinear system using Newton solver.
-  Time: 123.9674603678053
-  Tag: simulation.nonlinear[14]
-Solver will attempt to handle this problem.
-
-Failed to evaluate model for ODE-Jacobian
-
-Warning: Failed to solve nonlinear system using Newton solver.
-  Time: 124.0026454102582
-  Tag: simulation.nonlinear[14]
-Solver will attempt to handle this problem.
-
-
-Warning: Failed to solve nonlinear system using Newton solver.
-  Time: 124.0026454102582
-  Tag: simulation.nonlinear[14]
-Solver will attempt to handle this problem.
-
-Failed to evaluate model for ODE-Jacobian
-
 Integration terminated successfully at T = 1800
-   CPU-time for integration                : 17.2 seconds
-   CPU-time for one grid interval          : 34.4 milliseconds
-   CPU-time for initialization             : 0.036 seconds
-   Number of result points                 : 657
+   CPU-time for integration                : 5.62 seconds
+   CPU-time for one grid interval          : 11.2 milliseconds
+   CPU-time for initialization             : 0.049 seconds
+   Number of result points                 : 639
    Number of grid points                   : 501
-   Number of accepted steps                : 1973
-   Number of f-evaluations (dynamics)      : 4391
-   Number of crossing function evaluations : 3105
-   Number of Jacobian-evaluations          : 1262
+   Number of accepted steps                : 1325
+   Number of f-evaluations (dynamics)      : 2758
+   Number of crossing function evaluations : 2350
+   Number of Jacobian-evaluations          : 768
    Number of model time events             : 1
    Number of input time events             : 0
-   Number of state events                  : 77
+   Number of state events                  : 68
    Number of step events                   : 0
-   Minimum integration stepsize            : 7.67e-07
-   Maximum integration stepsize            : 42.2
+   Minimum integration stepsize            : 1.1e-06
+   Maximum integration stepsize            : 32.6
    Maximum integration order               : 5
 Calling terminal section
 ... "dsfinal.txt" creating (final states)

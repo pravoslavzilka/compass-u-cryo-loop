@@ -52,12 +52,17 @@ correlation.
 
 ## Circulator
 
-`fan2ndOrder`: `T_nominal`=116 K, `p_nominal`=2.5 MPa(a), sized from
-`m_total` at suction density; `dp_nominal`=2 bar as a working estimate
-covering header/heater/evaporator/coil/valve losses (ATEKO's own
-channel-only table gives ~0.18 bar/channel, excluding those other losses).
-Remaining circulator parameters (`n_nominal`, `eta_maxPhyd`, fan-curve
-shape) carried from PFCircuit.mo's circulator.
+`fan2ndOrder`: `T_nominal`=116 K, `p_nominal`=2.5 MPa(a) (from ATEKO).
+Re-sized on 2026-10-05 to the operating point the loop actually reaches in
+simulation: `V_flow_nominal`=0.145 m³/s, `dp_nominal`=0.7 bar,
+`V_flow0`=0.175 m³/s (1.21×, PF's ratio). The earlier placeholder
+(`dp_nominal`=2 bar, `V_flow_nominal`=0.125 m³/s) left the circulator at
+~96% of its zero-head flow with efficiency 0.25–0.30 (PF: 0.63–0.66) and
+28–55 kW shaft power for 7–14 kW hydraulic. The loop itself only needs
+0.47–0.94 bar at ~1.3–2 kg/s. Target after re-sizing: efficiency ~0.6 and
+~17 kW shaft power, within ATEKO §7.3's 25 kW electrical budget.
+`n_nominal`, `eta_maxPhyd` and the fan-curve shape are carried from
+PFCircuit.mo's circulator.
 
 ## Status
 
