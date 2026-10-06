@@ -68,13 +68,14 @@ end if;
 
 // --- 6. (Optional) simulate right away, if translate passed -------------
 // stopTime/tolerance match TFCircuit.mo's own experiment annotation
-// (StopTime=1800). TF has had no real simulation run yet (unlike PF/CS),
-// so no TF-specific tolerance tuning history exists -- start at 1e-4
+// (StopTime=2100 -- raised from 1800 so the release-all logic, which fires once
+// the last cooling coil bus is below 80K at ~1810s, is visible in the result).
+// No TF-specific tolerance tuning history exists -- start at 1e-4
 // (PF's own settled value after testing 1e-6/1e-5/1e-4) rather than
 // re-deriving it from scratch; loosen/tighten from here based on what
 // this run's own dslog.txt shows.
 if ok then
-  simOk := simulateModel(modelName, stopTime=1800, tolerance=1e-4,
+  simOk := simulateModel(modelName, stopTime=2100, tolerance=1e-4,
                           resultFile=debugPath + "/result");
 
   // Preserve THIS run's own dslog.txt (integrator/media warnings) before a

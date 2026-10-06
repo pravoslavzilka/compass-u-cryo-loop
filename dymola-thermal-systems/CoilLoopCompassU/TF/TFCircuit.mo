@@ -62,14 +62,18 @@ model TFCircuit
     "Master switch for the per-bus relative-margin isolation rule, same role as PFCircuit.mo's enableCoilIsolation.";
   parameter Boolean connectStructure = false
     "true: support-structure branch connected between junctionCL and junctionReturnCL (throttled by Structure.valveKvNominal=12, ~11% of circulator flow in the 2026-10-02 run). false: Structure is disconnected from both headers -- fully closed, zero flow, its gas trapped at its initial 80K -- so all circulator flow goes to the coil busses. Disconnecting both ends (rather than shutting only the inlet valve) avoids the reversing outlet flow that broke simulation.nonlinear[8] when Structure was isolated by valve alone.";
-  parameter Modelica.Units.SI.Temperature T_supplyFloor(displayUnit="K") = 80
-    "Lower bound on wanted_temp -- ATEKO 22172-Z-R1 S3.4 target temperature 80K. Without it wanted_temp = T_gas_out_max - 40 fell to ~46-49K late in the run, below what the 77K LIN evaporator can deliver: PID sat saturated at yMin=-60 from ~1350s on and the supply undershot to 78.5K.";
+  parameter Modelica.Units.SI.Temperature T_supplyFloor(displayUnit="K") = 77
+    "Lower bound on wanted_temp -- 77K = LIN evaporation temperature, ATEKO 22172-Z-R1 S3.4 minimum design target. The floor acts as the supply setpoint: at 80K the PID re-opened the valve5 bypass to hold the supply at 80K, so the coil walls could only approach 80K asymptotically (2026-10-05: core hottest cell 83.4K at 1800s); 78K was tried next. At 77K the setpoint equals the evaporator's own wall temperature, so it is approached but never quite reached: once wanted_temp hits the floor, expect PID to wind down towards yMin=-60 with the cooling valve fully open and the bypass shut (maximum cooling). Without any floor wanted_temp = T_gas_out_max - 40 fell to ~46-49K late in the run, below what the 77K LIN evaporator can deliver: PID sat saturated at yMin=-60 from ~1350s on and the supply undershot to 78.5K.";
   parameter Real KvUpperLimb = 45
     "Fully-open Kv of the TFUL1/TFUL2 bus valves (TFCoilBusUpper default 100). Throttled so the faster-cooling upper limb (shorter 7.7m channels, 7.5 vs 5.9 g/s/channel at Kv=100 in the 2026-10-03 run, done at ~79K by 1800s) gives flow to the slower core + lower limb.";
   parameter Boolean shutWhenCold_TF[nTF] = {false, false, true, true}
     "Per-branch opt-in to the permanent 'cooled down' shut-off below, order TFCL1,Structure,TFUL1,TFUL2 -- upper limb only.";
   parameter Modelica.Units.SI.Temperature T_coldShut(displayUnit="K") = 80
     "A shutWhenCold_TF branch closes permanently (both ends, see TFCoilBusUpper.outletKvRatio) once its gas outlet temperature -- the hottest end of the bus -- reaches this. 80K = ATEKO 22172-Z-R1 S3.4 target temperature.";
+  parameter Modelica.Units.SI.Temperature T_releaseAll(displayUnit="K") = 80
+    "Release-all threshold: once the hottest wall cell of every coil bus still being cooled is below this (T_wallHotLive), all shut-offs are lifted and every coil bus reopens (allReleased).";
+  parameter Boolean isCoil_TF[nTF] = {true, false, true, true}
+    "Branches counted by T_wallHotLive / reopened by allReleased, order TFCL1,Structure,TFUL1,TFUL2. Structure excluded: its wall sits at ~80-80.4K by itself (not a coil, not heated by the shot), so it would hold T_wallHotLive above 80K and block the release.";
   parameter Boolean isolationAllowed_TF[nTF] = {true, false, true, true}
     "Per-branch opt-in to the isolation rule, order TFCL1,Structure,TFUL1,TFUL2. Structure is excluded (always open): it starts at 80K vs the coils' 137K, so the close rule shut it at t~0.1s and it never reopened; the shut branch stayed open to the return header on its outlet side, and the resulting reversing outlet flow (-0.14..+0.05 kg/s) made simulation.nonlinear[8] fail repeatedly. ATEKO 22172-Z-R1 S5.2.3 also states the support structure is not heated by the shot, so there is no design reason to isolate it during post-shot cooldown.";
   parameter Modelica.Units.SI.TemperatureDifference coilIsolationCloseMargin = 40
@@ -118,10 +122,25 @@ model TFCircuit
   Real T_gas_out_frozen[nTF](each start=0, each fixed=true)
     "Snapshot of T_gas_out_TF[i] taken the instant coilOpen[i] closes -- held constant while closed.";
 
-  output Modelica.Units.SI.Temperature T_gas_out_max = max(T_gas_out_compare_TF)
-    "Hottest coil-bus gas outlet temperature.";
-  output Modelica.Units.SI.Temperature wanted_temp = max(T_gas_out_max - tempMargin, T_supplyFloor)
-    "PID setpoint: hottest bus outlet minus margin, floored at T_supplyFloor.";
+  Real T_wall_max_TF[nTF] = {TFCL1.T_wall_max, Structure.T_wall, TFUL1.T_wall_max, TFUL2.T_wall_max}
+    "Hottest wall cell per branch, same order as coilOpen.";
+  Modelica.Units.SI.Temperature T_wallHotLive = max({if isCoil_TF[i] and coilOpen[i] and not coldShut[i]
+      then T_wall_max_TF[i] else 0 for i in 1:nTF})
+    "Hottest wall cell among the coil busses still being cooled (open and not cold-shut); 0 if none is.";
+  Boolean allReleased(start=false, fixed=true)
+    "Latched true (never reset) once T_wallHotLive < T_releaseAll: from then on every shut-off (coilOpen isolation and coldShut) is overridden and all coil busses run at their nominal Kv.";
+
+  output Modelica.Units.SI.Temperature T_gas_out_max = max({if inGasOutMax_TF[i]
+      then T_gas_out_compare_TF[i] else 0 for i in 1:nTF})
+    "Hottest gas outlet temperature over the branches in inGasOutMax_TF.";
+  final parameter Boolean inGasOutMax_TF[nTF] = {true, connectStructure, true, true}
+    "Branches counted in T_gas_out_max, order TFCL1,Structure,TFUL1,TFUL2. Structure only when connected: disconnected, its trapped gas sits at its initial 80K with zero flow and pinned T_gas_out_max at 80K while the live coils were at 77.3-77.8K (2026-10-05 2100s run).";
+  Modelica.Units.SI.Temperature T_wallHotCooled = max({if inGasOutMax_TF[i] and
+      ((allReleased and isCoil_TF[i]) or (coilOpen[i] and not coldShut[i]))
+      then T_wall_max_TF[i] else 0 for i in 1:nTF})
+    "Hottest wall cell over the branches currently receiving coolant (open and not cold-shut, or released; Structure only when connected) -- the 'T_object' of ATEKO's 40K rule. Shut branches are left out: they get no coolant, so the rule does not apply to them.";
+  output Modelica.Units.SI.Temperature wanted_temp = max(T_wallHotCooled - tempMargin, T_supplyFloor)
+    "PID setpoint = hottest cooled wall cell minus tempMargin, floored at T_supplyFloor. ATEKO 22172-Z-R1 S3.2 limits T_object - T_coolant <= 40K; this was previously applied to T_gas_out_max, which runs a few K below the hottest wall, so the wall-to-supply difference reached 45K (917s above 40K in the 2026-10-06 run).";
 
   inner ThermalSystems.SystemInformationManager sim(
       generateEventsAtFlowReversalGas=false,
@@ -175,11 +194,12 @@ model TFCircuit
   ThermalSystems.GasComponents.Tubes.Tube tube1(
     tubeGeometry(
       innerDiameter=0.012,
-      length=10,
+      length=4.5,
       nParallelTubes=60,
       wallThickness=0.001,
       crossSectionType=ThermalSystems.Internals.CrossSectionType.Circular),
     pressureDropPosition=ThermalSystems.Internals.PressureDropPosition.center,
+    nCells=5,
     enableHeatPorts=true,
     redeclare model HeatTransferModel =
         ThermalSystems.GasComponents.Tubes.TransportPhenomena.HeatTransfer.GnielinskiDittusBoelter,
@@ -193,7 +213,7 @@ model TFCircuit
     fixedInitialPressure=false,
     TInitial(displayUnit="K") = 80,
     TInitialWall(displayUnit="K") = 80)
-    "Evaporator geometry ASSUMED, carried from PFCircuit.mo's tube1 unchanged -- not TF-specific, sized only to plausibly pass m_total without excessive pressure drop; see Open Items."
+    "Evaporator (LIN HE01 stand-in, wall held at 77K on all cells), nCells=5 so the exponential approach to 77K is resolved. Sized 2026-10-06 to ~1.5x the UA implied by ATEKO 22172-Z-R1 S6.5.3/S7.2 (138.8 kW, 1.3 kg/s He 100.6->80K vs 77K LIN -> NTU 2.06, UA ~13.9 kW/K): 60 x 12mm x 4.5 m = 10.2 m2 x U~2200 W/m2K (~3300 W/m2K He-side + 1 mm stainless wall, k~8 W/mK at 80K, both observed in runs) -> UA ~22 kW/K, i.e. ~78-79K helium at design flow. The previous 13 m / 5-cell version (~60 kW/K, ~4x the study) held the helium at 77.03-77.28K, more cold capability than the study's equipment provides. History: with nCells=1 a single well-mixed cell capped effectiveness at UA/(m*cp+UA), which had hidden the oversizing of the PF-copied 10-13 m tube. Still optimistic vs a real HE01: no LIN-side boiling resistance (S6.2 warns nucleate boiling is weak at ~3K dT) and no cap at the 1.3 kg/s LIN supply (~285 kW incl. vapour sensible heat)."
     annotation (Placement(transformation(extent={{-8,-2},{8,2}},
         rotation=0,
         origin={-90,-60})));
@@ -450,9 +470,11 @@ equation
   PID_pressure.u_m = sensor_p_suction.sensorValue;
 
   for i in 1:nTF loop
-    kvTarget_TF[i] = if coilOpen[i] and not coldShut[i] then valveKvNominal_TF[i] else Kv_shut;
+    kvTarget_TF[i] = if (allReleased and isCoil_TF[i]) or (coilOpen[i] and not coldShut[i])
+      then valveKvNominal_TF[i] else Kv_shut;
     firstOrderCoilKv[i].u = kvTarget_TF[i];
-    T_gas_out_compare_TF[i] = if coilOpen[i] and not coldShut[i] then T_gas_out_TF[i] else T_gas_out_frozen[i];
+    T_gas_out_compare_TF[i] = if (allReleased and isCoil_TF[i]) or (coilOpen[i] and not coldShut[i])
+      then T_gas_out_TF[i] else T_gas_out_frozen[i];
   end for;
   TFCL1.KvValue_in1 = firstOrderCoilKv[1].y;
   Structure.KvValue_in1 = firstOrderCoilKv[2].y;
@@ -517,13 +539,25 @@ algorithm
     end when;
   end for;
 
+  // Release-all: once the last coil bus still being cooled has its hottest
+  // wall cell below T_releaseAll, lift every shut-off and reopen all coil
+  // busses (see allReleased / kvTarget_TF). Gated by controlActivationDelay
+  // like the other rules, so the startup transient can't trigger it.
+  when time >= controlActivationDelay and T_wallHotLive < T_releaseAll
+      and not pre(allReleased) then
+    allReleased := true;
+  end when;
+
 equation
   connect(smoothStep.y, rotatoryBoundary.n_in)
     annotation (Line(points={{-179.4,156},{-60,156},{-60,135}}, color={0,0,127}));
   connect(rotatoryBoundary.rotatoryFlange, fan2ndOrder.rotatoryFlange)
     annotation (Line(points={{-60,131},{-60,128}}, color={135,135,135}, thickness=0.5));
-  connect(coldSurface.port, tube1.heatPort[1]) annotation (Line(points={{-90,-40},
-          {-90,-58}},                                                                         color={191,0,0}));
+  for i in 1:5 loop
+    // One 77K LIN boundary on every evaporator cell (tube1.nCells=5).
+    connect(coldSurface.port, tube1.heatPort[i]) annotation (Line(points={{-90,-40},
+            {-90,-58}},                                                                         color={191,0,0}));
+  end for;
   connect(prescribedHeatFlow1.port, Heater.heatPort[1]) annotation (Line(points={{-180,40},
           {-162,40}},                                                                                  color={191,0,0}));
 
@@ -674,7 +708,7 @@ equation
       thickness=0.5));
   annotation (Diagram(coordinateSystem(preserveAspectRatio=false, extent={{-360,-100},{220,300}})),
     experiment(
-      StopTime=1800,
+      StopTime=2100,
       __Dymola_NumberOfIntervals=50,
       __Dymola_Algorithm="Dassl"),
     __Dymola_experimentSetupOutput,

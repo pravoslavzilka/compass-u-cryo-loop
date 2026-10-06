@@ -41,6 +41,8 @@ model TFCoilBusUpper
     "length with a tiny per-instance offset -- see assemblyIndex.";
 
   output Modelica.Units.SI.Temperature T_wall = tube2.heatPort[1].T "Coil wall temperature";
+  output Modelica.Units.SI.Temperature T_wall_max = max(tube2.heatPort.T)
+    "Hottest wall cell of the bus (T_wall above is cell 1, the cold inlet end).";
   output Modelica.Units.SI.Temperature T_gas_out = tube2.summary.T_gas_B "Helium outlet temperature";
   output Modelica.Units.SI.Temperature T_gas_in = tube2.summary.T_gas_A "Helium inlet temperature";
   output Modelica.Units.SI.MassFlowRate m_flow = tube2.summary.m_flow_gas_B "Bus mass flow (all 56 lumped channels)";
