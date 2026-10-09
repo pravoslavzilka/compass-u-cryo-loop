@@ -81,8 +81,8 @@ model CSTest
     TInitial(displayUnit="K") = 80)
     annotation (Placement(transformation(extent={{-4,-4},{4,4}},
         rotation=90, origin={2,8})));
-  CoilAssembly2ch cs1Assembly
-    "Smoke-test the CS1/CS3U/CS3L (2-channel) coil-assembly class standalone -- mirrors PF/Test.mo's role for CoilAssembly, using the 2-channel variant since it's the one covered by isolation-valve control in CSCircuit.mo."
+  CoilAssembly2ch cs1Assembly(KvValue_in1=100, TInitial(displayUnit="K") = 137.5)
+    "Valves held fully open (KvValue_in1=100). Smoke-test the CS1/CS3U/CS3L (2-channel) coil-assembly class standalone -- mirrors PF/Test.mo's role for CoilAssembly, using the 2-channel variant since it's the one covered by isolation-valve control in CSCircuit.mo."
     annotation (Placement(transformation(extent={{28,34},{48,54}})));
 equation
   connect(statePoint1.port, fan2ndOrder.portA) annotation (Line(

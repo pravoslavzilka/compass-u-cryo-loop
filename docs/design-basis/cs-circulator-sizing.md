@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **Title** | CS-coil cooling-loop circulator sizing — design basis |
-| **Date** | 2026-09-04, updated 2026-09-06 (§8, §10, §11 — see NIGHT_SUMMARY.md) |
+| **Date** | 2026-09-04, updated 2026-09-06 (§8, §10, §11 — see NIGHT_SUMMARY.md), 2026-10-07 (§10a — rebuilt on TF's structure after the first real run), 2026-10-08 (§10b — speed control, LIN limit, startup preparation, friction) |
 | **Author** | _(placeholder — fill in)_ |
 | **Model file** | `dymola-thermal-systems/CoilLoopCompassU/CS/CSCircuit.mo`, component `fan2ndOrder` (`ThermalSystems.GasComponents.Fans.Fan2ndOrder`); coil-channel changes in `CoilAssembly.mo`/`CoilAssembly2ch.mo` |
 | **Applies to git commit** | `f48942d` — "CS: add CSTest.mo run harness and register classes in package.order" — plus this build's uncommitted working-tree changes (git commit was blocked in this session's sandbox, see NIGHT_SUMMARY.md) |
@@ -339,6 +339,51 @@ is out of scope; `Common/CopperOFHC_Tdep.mo` itself is explicitly
 off-limits this build. `nCells`/`nCellsPerTube` settings are unchanged
 (see the nCells=10 lambda/NaN project history — not touched here, unrelated
 to this fix).
+
+## 10a. 2026-10-07 revision — aligned with TF and the ATEKO study
+
+The first real run (`CS/debugging/result.mat`, 2026-09-16) showed the
+model did not cool at all, so the circuit was rebuilt on `TFCircuit.mo`'s
+structure. Where this section disagrees with §3–§10, this section wins.
+
+| Change | Why |
+|---|---|
+| Removed the zero-resistance link `junctionS6 → junctionS1` around the evaporator; added TF's evaporator branch `valve6 → tube1 → valve3` with a controlled bypass `valve5` (CS_RV02 on PFD 22178-3-R0) | The link carried essentially all flow: `tube1` saw < 2 g/s, removed 0.06 MJ after t=5 s, and the coils warmed from 137.5 K to ~240 K |
+| Added TF's heater/cooling/bypass split-range control (`PID`, three hysteresis gates, first-order smoothing) with Kv values scaled by `kvScale`=0.05 | Same control as TF/PF; CS moves ~1/19 of TF's volume flow, so scaled Kv keeps TF's valve pressure drops |
+| Added the coil bypass `junction21 → valve4 → junction20` and its state machine (off by default, as in TF) | "Bypass on the whole cooled objects as in PF and TF" |
+| No discharge heat pulse; coil walls start at 137.5 K, gas at 80 K | ATEKO Tab.5's 137.5 K is already the post-shot temperature. The pulse counted the shot twice and, applied to cell 1 only, pushed walls to 580–1097 K and discharge pressure to 113.9 bara (> 95 barg design) |
+| `alphaConstant` = 6350 W/m²K for all coils (was 9197 single-channel / 5284 two-channel) | ATEKO's design is 0.0214 kg/s in every channel (8 × 0.0214 = 0.17 kg/s), and the run showed equal per-channel flow |
+| Isolation valves on all 5 coils, closing both ends (`valve2` outlet valve, `outletKvRatio`=50); `T_wall_max` output | PFD shows CS_V01–V05 on every coil; both-end closure and frozen outlet temperatures are TF's anti-chatter fix |
+| 40 K rule on the hottest cooled wall cell, floored at 77 K; cold shut-off at 80 K and release-all (`allReleased`) | Same as TF; ATEKO S3.2 limits T_object − T_coolant |
+| Pressure control moved to `junction1` (circulator discharge side) at **82 bara = 81 barg** | ATEKO S6.5.2: 81 barg nominal working pressure *at the CC outlet*; same node as TF |
+| Evaporator 25 × 12 mm × **4.5 m**, 5 cells, 77 K on every cell (was 10 m, 1 cell) | Study UA ≈ 2.35 kW/K (35.3 kW, 0.17 kg/s, He 120 → 80 K vs 77 K); now ~3.7 kW/K ≈ 1.6×, same margin policy as TF |
+| 10 cells per coil channel (was 8 / 20), `fixedTInitialWall=false` everywhere, `controlActivationDelay`=10 s | Consistency with TF; 88 m channels hold ~5 s of gas at design flow |
+
+Still open: no LIN supply cap (0.27 kg/s, ~55–60 kW, ATEKO S7.2); fixed
+circulator speed (shaft power will rise as the gas densifies — check
+against the 20 kW budget, S7.3); CS3U/CS3L length 88 m (Tab.2) vs 86 m
+(PFD); HE02, VE01, filter, RV01 and FM01 not modeled.
+
+## 10b. 2026-10-08 revision — circulator, LIN limit, startup, friction
+
+The 2026-10-07 run cooled all coils to 80 K in ~20 min with the pressure on
+target, but the fixed-speed circulator ran at 92% of its zero-head flow
+(eta 0.47–0.51, 25–40 kW shaft vs the 20 kW budget, 0.22–0.36 kg/s vs
+0.17), the evaporator duty peaked at 75 kW (LIN supply ~55–60 kW), and the
+coil gas inlet–outlet difference exceeded 40 K for 31 s at startup. Where
+this section disagrees with §3–§10a, this section wins.
+
+| Change | Why |
+|---|---|
+| Circulator speed-controlled on mass flow (`PID_speed`, flow meter `sensor_m_flow` = FM01): 0.0214 kg/s per open channel, 0.17 kg/s with all 8 | ATEKO S6.1: CC "controllable at all regimes"; S6.5.2: 0.17 kg/s. Holds flow and shaft power down as the gas densifies |
+| `dp_nominal` 17.5 → **11.5 bar**, `V_flow_nominal` 0.0075 → **0.0074 m³/s**, `p_nominal` **70.5 bara** | Loop loss at 0.17 kg/s just after the coils open (15.1 bar at 0.0274 kg/s in the 2026-10-07 run, ×1.22 friction, scaled by (0.0214/0.0274)^1.8 → 11.8 bar; 10.7 bar by t=300 s). Puts the design point where the machine runs, as for TF |
+| Evaporator LIN side: boiling resistance `alpha_LIN` = 3000 W/m²K on the tube outside, duty capped at `Q_LINmax` = **60 kW**; tube 4.5 → **5 m** | S6.2, S7.2 (0.27 kg/s LIN). He side ~2.8 kW/K in series with ~16.5 kW/K → UA ≈ 2.4 kW/K, the study's 2.35 kW/K |
+| Startup preparation through the coil bypass `valve4` (throttled to Kv 1 ≈ the coils' own loss): coils shut until the supply holds within 2 K of T_wall_max − 40 K for 10 s (fallback 300 s), then the coils open and `valve4` closes (`coolantReady`) | Prepare the coolant before it reaches the coils, using PF's coil-bypass branch |
+| Loop gas starts at **97.5 K** (137.5 − 40), coil gas at the coil temperature (137.5 K) | S3.4: inlet–outlet ≤ 40 K from the first second |
+| Channel friction ×1.22 via `KvFrictionTrim` (0.34 per channel), combined into each coil's outlet valve | Konakov (smooth tube) gave 0.77–0.88 of Tab. 9 (13.89 bar at 137 K, 7.89 bar at 80 K) |
+| Circulator bypass `CS_RV01` (PFD) with PF_RV01's power-limit logic, shut by default | PF structure; the speed control already keeps power under 20 kW |
+| All connections drawn on PF's diagram coordinates; every Kv command starts from its own initial value | Diagram readability; removes the 2 s reverse flow through `valve5`/`tube1` at t=0 |
+| `StopTime` 2100 → 2700 s | At design flow the cooldown should take ~30 min (S5.2.2) instead of ~20 |
 
 ## 11. Open Items
 
