@@ -385,6 +385,22 @@ this section disagrees with §3–§10a, this section wins.
 | All connections drawn on PF's diagram coordinates; every Kv command starts from its own initial value | Diagram readability; removes the 2 s reverse flow through `valve5`/`tube1` at t=0 |
 | `StopTime` 2100 → 2700 s | At design flow the cooldown should take ~30 min (S5.2.2) instead of ~20 |
 
+## 10c. 2026-10-09 — enlarged evaporator (trial)
+
+The 2026-10-08 run (5 m HE01, the study's UA ~2.35 kW/K) cooled at 33.6 kW
+in the 40K-limited phase against the 35.3 kW the rule allows, and spent
+~940 s of a ~1900 s cooldown in the tail after the supply floor (77K) was
+reached. Over that tail the evaporator was at full capacity (bypass shut)
+with its outlet 1.4-4.5K above the LIN, so the supply sat 1.7-2.6K above
+wanted_temp, and the walls had to close the last few kelvin to 80K with
+less driving temperature difference.
+
+Trial: `evapLength` 5 -> 8 m (`nEvapCells` 5 -> 8), i.e. UA x1.6, NTU
+~2.8 -> ~4.5, approach ~4.5K -> ~1K. The LIN duty stays under `Q_LINmax`
+(peak ~52 kW expected vs 60 kW). This departs from the study's HE01 size;
+keep it only if the cooldown gain is worth a ~9 m2 instead of ~5.5 m2
+exchanger.
+
 ## 11. Open Items
 
 - **`dp_nominal` provenance (weakest number in this document, §3/§6).**

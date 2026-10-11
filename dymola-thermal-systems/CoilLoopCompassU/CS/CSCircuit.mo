@@ -117,11 +117,11 @@ model CSCircuit
   // --- evaporator HE01, LIN side ---
   parameter Modelica.Units.SI.Temperature T_LIN(displayUnit="K") = 77 "LIN evaporation at ~1 bar (ATEKO S6.2).";
   parameter Integer evapTubes = 25;
-  parameter Modelica.Units.SI.Length evapLength = 5.0
-    "Was 4.5 m with a 77K wall; 5 m keeps UA at the study's ~2.35 kW/K once the LIN-side resistance is added.";
-  parameter Integer nEvapCells = 5;
+  parameter Modelica.Units.SI.Length evapLength = 8.0
+    "Enlarged HE01 (2026-10-09), was 5 m = the study's UA ~2.35 kW/K. At 5 m the 2026-10-08 run left the He outlet 4.5K above the 77K LIN at full duty (NTU ~2.8, effective UA ~2.0 kW/K at 0.13 kg/s), the evaporator bypass shut by ~900s and the supply could not follow wanted_temp (1.7-2.6K above it), which stretched the tail to 80K. 8 m: area and both film conductances x1.6 -> NTU ~4.5, approach ~1K. Length rather than more tubes: more tubes lower the He velocity and gain only ~n^0.2.";
+  parameter Integer nEvapCells = 8 "One per metre, so per-cell NTU stays ~0.6 (5 cells at 8 m would understate the approach).";
   parameter Modelica.Units.SI.CoefficientOfHeatTransfer alpha_LIN = 3000
-    "LIN nucleate boiling on the tube outside at ~7 kW/m2 (35 kW / 5.5 m2) -- ASSUMED, typical 2000-5000 W/m2K. He side ~2.8 kW/K + LIN side 16.5 kW/K in series -> UA ~2.4 kW/K at 0.17 kg/s.";
+    "LIN nucleate boiling on the tube outside at ~7 kW/m2 (35 kW / 5.5 m2) -- ASSUMED, typical 2000-5000 W/m2K. At 5 m: He side ~2.8 kW/K + LIN side 16.5 kW/K in series -> UA ~2.4 kW/K at 0.17 kg/s; x1.6 at 8 m.";
   final parameter Modelica.Units.SI.ThermalConductance G_LINcell =
     alpha_LIN*evapTubes*Modelica.Constants.pi*0.014*evapLength/nEvapCells
     "LIN-side conductance per evaporator cell (14 mm tube OD).";
@@ -353,7 +353,7 @@ model CSCircuit
     fixedInitialPressure=false,
     TInitial(displayUnit="K") = 80,
     TInitialWall(displayUnit="K") = 80)
-    "Evaporator HE01, 25 x 12mm x 5m. ATEKO S6.5.2: 35.3 kW, 0.17 kg/s, He 120 -> 80K vs 77K LIN -> UA ~2.35 kW/K. He side (Dittus-Boelter) ~2.8 kW/K in series with the LIN side (alpha_LIN) ~16.5 kW/K -> ~2.4 kW/K. Duty capped at Q_LINmax (S7.2)."
+    "Evaporator HE01, 25 x 12mm x evapLength (8 m; 5 m in the study). ATEKO S6.5.2: 35.3 kW, 0.17 kg/s, He 120 -> 80K vs 77K LIN -> UA ~2.35 kW/K. He side (Dittus-Boelter) ~2.8 kW/K in series with the LIN side (alpha_LIN) ~16.5 kW/K -> ~2.4 kW/K. Duty capped at Q_LINmax (S7.2)."
     annotation (Placement(transformation(extent={{-8,-2},{8,2}}, rotation=0,
         origin={-50,-60})));
   Modelica.Thermal.HeatTransfer.Sources.PrescribedHeatFlow linHeatFlow[nEvapCells]
@@ -860,7 +860,7 @@ equation
   annotation (Diagram(coordinateSystem(preserveAspectRatio=false, extent={{-360,
             -160},{260,300}})),
     experiment(
-      StopTime=1500,
+      StopTime=1800,
       __Dymola_NumberOfIntervals=50,
       __Dymola_Algorithm="Dassl"),
     __Dymola_experimentSetupOutput,

@@ -33,7 +33,9 @@ Modelica.Utilities.Streams.print("run_start: see this file's own mtime", timingF
 // package tree (Common, CS, PF, TF) via its root package.mo, so edits made
 // outside Dymola (e.g. by Claude Code) to CSCircuit.mo are actually picked up.
 modelFile := packagePath + "/package.mo";
+Declaring variable: String modelFile ;
 loaded := openModel(modelFile, mustRead=true);
+Declaring variable: Boolean loaded ;
 
 // openModel(..., mustRead=true) resets Dymola's working directory to the
 // opened file's folder as a side effect -- cd() has to come AFTER
@@ -45,6 +47,7 @@ Z:/compass-u-cryo-loop/dymola-thermal-systems/CoilLoopCompassU/CS/debugging
  = true
 
 ok := translateModel(modelName);
+Declaring variable: Boolean ok ;
 
 // Translate+compile checkpoint: use statusFile's own mtime (written right
 // below) rather than a scripted timestamp -- see note above.
@@ -68,13 +71,17 @@ end if;
 
 // --- 6. (Optional) simulate right away, if translate passed -------------
 // stopTime/tolerance match CSCircuit.mo's own experiment annotation
-// (StopTime=1500). CS has had no real simulation run yet (unlike PF), so
+// (StopTime=1800). CS has had no real simulation run yet (unlike PF), so
 // no CS-specific tolerance tuning history exists -- start at 1e-4 (PF's own
 // settled value after testing 1e-6/1e-5/1e-4) rather than re-deriving it
 // from scratch; loosen/tighten from here based on what this run's own
 // dslog.txt shows.
+// OutputCPUtime adds CPUtime and EventCounter to result.mat, so the time
+// windows where the integrator spends its steps can be read off afterwards.
+OutputCPUtime := true;
+
 if ok then
-  simOk := simulateModel(modelName, stopTime=1500, tolerance=1e-4,
+  simOk := simulateModel(modelName, stopTime=1800, tolerance=1e-4,
                           resultFile=debugPath + "/result");
 
   // Preserve THIS run's own dslog.txt (integrator/media warnings) before a
@@ -98,3 +105,4 @@ if ok then
     Modelica.Utilities.Streams.print(errMsg, errFile);
   end if;
 end if;
+Declaring variable: Boolean simOk ;
