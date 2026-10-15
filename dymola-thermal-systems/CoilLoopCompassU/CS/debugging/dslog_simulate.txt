@@ -1,5 +1,5 @@
 Log-file of program ./dymosim
-(generated: Sun Oct 11 12:12:55 2026)
+(generated: Thu Oct 15 21:21:08 2026)
 
 dymosim started
 ... "CoilLoopCompassU.CS.CSCircuit" simulating
@@ -59,9 +59,9 @@ Solver will attempt to handle this problem.
 
 
 Integration terminated successfully at T = 1800
-   CPU-time for integration                : 1.31e+03 seconds
-   CPU-time for one grid interval          : 2.63e+03 milliseconds
-   CPU-time for initialization             : 0.035 seconds
+   CPU-time for integration                : 1.3e+03 seconds
+   CPU-time for one grid interval          : 2.6e+03 milliseconds
+   CPU-time for initialization             : 0.093 seconds
    Number of result points                 : 558
    Number of grid points                   : 501
    Number of accepted steps                : 54611
