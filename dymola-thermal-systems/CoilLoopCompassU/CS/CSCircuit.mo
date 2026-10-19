@@ -7,8 +7,8 @@ model CSCircuit
   // study 22172-Z-R1 (S3.3.2, S5.1.2, S5.2.2, S5.3.2, S6.5.2, S7) and PFD
   // 22178-3-R0. Full sourcing in docs/design-basis/cs-circulator-sizing.md.
   //
-  // Flow path: circulator CC01 (fan2ndOrder, speed-controlled) -> flow meter
-  // -> junction5 (circulator bypass CS_RV01 back to suction, as PF_RV01) ->
+  // Flow path: circulator CC01 (fan2ndOrder, fixed speed) -> flow meter FM01
+  // -> junction5 (circulator bypass CS_RV01 back to suction, sets the loop flow) ->
   // heater EH01 -> split: cooling valve valve6 -> evaporator tube1 (HE01, LIN
   // side with boiling resistance and a 0.27 kg/s supply cap) -> valve3 |
   // evaporator bypass valve5 (CS_RV02) -> mixing node junction7 -> coil
@@ -51,7 +51,7 @@ model CSCircuit
 
   // --- startup coolant preparation through the coil bypass valve4 ---
   parameter Real Kv_prepBypass = 1
-    "valve4 Kv during preparation: ~10 bar at 0.17 kg/s of 97.5K/82 bar helium, about the coils' own loss, so the circulator runs near its design point and its speed hardly moves at the hand-over.";
+    "valve4 Kv during preparation: ~10 bar at 0.17 kg/s of 97.5K/82 bar helium, about the coils' own loss, so the circulator runs near its design point and RV01 hardly moves at the hand-over.";
   parameter Modelica.Units.SI.TemperatureDifference prepTempBand = 2
     "Preparation is done once the supply temperature is within this band of wanted_temp (T_wall_max - 40K) ...";
   parameter Real prepFlowFraction = 0.9 "... with at least this fraction of m_flow_design circulating ...";
@@ -82,37 +82,39 @@ model CSCircuit
   parameter Modelica.Units.SI.Temperature TInitialCoil(displayUnit="K") = 137.5
     "Coil wall and trapped gas initial temperature -- ATEKO Tab.5: 137.5K coil temperature after a shot (energy balance, 16 MJ into 714 kg).";
 
-  // --- circulator CC01: speed control on mass flow -- design-basis doc S10b ---
-  parameter Modelica.Units.SI.Frequency n_nominal_Hz = 200 "ASSUMED, carried from PF (12,000 rpm).";
-  parameter Modelica.Units.SI.PressureDifference dp_nominal_Pa = 1150000
-    "Loop loss at 0.17 kg/s just after the coils open (supply 97.5K, coils ~125K mean): 2026-10-07 channel loss 15.1 bar at 0.0274 kg/s, x1.22 friction correction (Tab.9), scaled by (0.0214/0.0274)^1.8 -> 11.8 bar; ~10.7 bar by t=300s. Was 17.5 bar, which put the fixed-speed machine at 92% of zero-head flow and eta 0.47-0.51.";
-  parameter Modelica.Units.SI.VolumeFlowRate V_flow_nominal_val = 0.0074
-    "0.17 kg/s (ATEKO S6.5.2) / 23.0 kg/m3 (He at 70.5 bara suction, 137.5K).";
+  // --- circulator CC01: fixed speed, coil flow set by the bypass CS_RV01 -- design-basis doc S10d ---
+  // Sized 2026-10-16 for fixed-speed duty (design-basis doc S10e): the design point is the
+  // hardest duty point at n_fixed_Hz. The 2026-10-16 run (11.5 bar/0.0074 m3/s machine at
+  // 220 Hz) ran at 86-96% of zero-head flow, eta 0.27-0.53 and 22-28 kW shaft power.
+  parameter Modelica.Units.SI.Frequency n_nominal_Hz = 200 "ASSUMED, carried from PF (12,000 rpm); also the fixed running speed.";
+  parameter Modelica.Units.SI.PressureDifference dp_nominal_Pa = 1375000
+    "Hardest duty point: 13.8 bar loop loss at 0.17 kg/s and 25.4 kg/m3 suction (t~300s, 2026-10-16 run), at the reference density of p/T_nominal (24.7 kg/m3). Fan2ndOrder losses scale with density x speed^3 and (V/V_maxPhyd)^2.3, so a machine sized exactly for this point at its own nominal speed gives the lowest fixed-speed power: ~16-18 kW over the cooldown (Python replica of Fan2ndOrder validated against the run to 0.1%).";
+  parameter Modelica.Units.SI.VolumeFlowRate V_flow_nominal_val = 0.0070
+    "Hardest duty point: 0.17 kg/s / 25.4 kg/m3 = 0.0067 m3/s, +5% so RV01 still passes ~0.013 kg/s there.";
+  parameter Real V_flow0_ratio = 1.10
+    "Zero-head flow / V_flow_nominal_val (was 1.21, PF's ratio). Steep curve: as the gas densifies the fan's flow rises only ~7% (0.0071 -> 0.0076 m3/s) while RV01 takes the surplus mass. Peak shaft power vs this ratio: 1.05 -> 16.8, 1.10 -> 18.0, 1.21 -> 20.1, 1.5 -> 24.6 kW.";
   parameter Modelica.Units.SI.AbsolutePressure p_nominal_Pa = 7050000
-    "Circulator suction at design: 82 bara discharge - 11.5 bar.";
+    "Reference state for the fan's density scaling (with T_nominal 137.5K: 24.7 kg/m3 real gas). Kept at 70.5 bara so dp_nominal_Pa above stays referred to that density.";
   parameter Modelica.Units.SI.MassFlowRate m_flow_design = 0.17
     "ATEKO S6.5.2 total minimal flow, 8 channels x 0.0214 kg/s (Tab.5).";
-  parameter Real k_speedPID = 300
-    "Hz per kg/s: static loop gain ~0.4 (dn->dp->dm through the loop resistance at ~150 Hz). Was 600 with Ti=4 and no drive lag: the P path tied the speed algebraically to the fan's flow state, Dymola differentiated the PID (der(n) solved with der(volumeFlowRate)) and the 2026-10-08 run needed 505k steps.";
-  parameter Modelica.Units.SI.Time Ti_speedPID = 10;
-  parameter Modelica.Units.SI.Time T_speedDrive = 2
-    "Frequency-converter speed ramp (first order) between PID_speed and the shaft. Makes the speed a state, so the controller is not differentiated.";
+  parameter Modelica.Units.SI.Frequency n_fixed_Hz = n_nominal_Hz
+    "Fixed circulator speed (no speed control, as PF/TF) -- the machine's own nominal speed. As the gas densifies the fan pushes more mass at almost the same volume flow and RV01 returns the surplus to suction (~0.12 kg/s at the cold end).";
+  parameter Modelica.Units.SI.Time T_softStart = 10
+    "Motor soft start (first order) from n_start_Hz to n_fixed_Hz -- a start-up ramp only, no feedback.";
   parameter Modelica.Units.SI.Frequency n_start_Hz = 155
     "Speed at t=0: the 2026-10-08 run settled at 152-157 Hz for 0.17 kg/s through valve4 at 97.5K. Starting at n_nominal_Hz (200) gave 21 bar, 26 kW and 0.34 kg/s at t=0, a pressure spike that opened RV07 and RV08 together.";
   parameter Modelica.Units.SI.VolumeFlowRate V_flow_start = 0.0045
     "Circulator volume flow at t=0: 0.17 kg/s / ~38 kg/m3 (97.5K, 82 bar). V_flow_nominal_val is at 137.5K (23 kg/m3) and doubled the initial mass flow.";
-  parameter Modelica.Units.SI.Frequency n_min_Hz = 20;
-  parameter Modelica.Units.SI.Frequency n_max_Hz = 250 "1.25 x n_nominal_Hz.";
 
-  // --- circulator bypass CS_RV01, PF_RV01's power-limit logic ---
-  parameter Boolean enableCirculatorPowerOptimization = false
-    "PF_RV01's power-limit trim on CS_RV01. Off: the speed control already keeps the shaft power well under P_shaftLimit, and both acting together would fight (bleeding flow makes the speed control speed up)."
-    annotation (Evaluate=true);
-  parameter Modelica.Units.SI.Power P_shaftLimit = 20000 "ATEKO S7.3: CS CC01 electrical budget 20 kW.";
-  parameter Modelica.Units.SI.Temperature RV01PowerLimitTriggerTemp(displayUnit="K") = 140 "Same as PF.";
-  parameter Real kPowerLimitPID = 0.0005 "Same as PF.";
-  parameter Modelica.Units.SI.Time TiPowerLimitPID = 60 "Same as PF.";
-  parameter Real KvGainPowerLimit = 50*kvScale "PF 50, scaled.";
+  // --- circulator bypass CS_RV01: coil-loop flow control (replaces the speed control) ---
+  parameter Real k_RV01PID = 3
+    "Kv per kg/s of loop-flow error. Plant gain d(m_flow_loop)/d(Kv) ~ -0.1 (cold end, RV01 passing ~0.15 kg/s at 8 bar) to -0.17 kg/s (RV01 nearly shut at 14 bar) -> loop gain 0.3-0.5.";
+  parameter Modelica.Units.SI.Time Ti_RV01PID = 10;
+  parameter Real Kv_RV01Max = 5
+    "RV01 full-open Kv: 0.3 kg/s at 8 bar/47 kg/m3 (one coil channel left open at the cold end) needs Kv ~1.8.";
+  parameter Real Kv_RV01Start = 0.5
+    "RV01 Kv at t=0: ~0.1 kg/s of the circulator's ~0.28 kg/s (97.5K gas) back to suction during preparation.";
+  parameter Modelica.Units.SI.Time T_RV01 = 2 "RV01 actuator lag (first order).";
 
   // --- evaporator HE01, LIN side ---
   parameter Modelica.Units.SI.Temperature T_LIN(displayUnit="K") = 77 "LIN evaporation at ~1 bar (ATEKO S6.2).";
@@ -156,7 +158,7 @@ model CSCircuit
     "Supply target during preparation = wanted_temp with all coils counted, but without reading the isolation latches (that formed a Boolean algebraic loop with the algorithm).";
   Boolean prepInBand = time >= controlActivationDelay
     and abs(sensor_T.sensorValue - T_prepTarget) < prepTempBand
-    and sensor_m_flow.sensorValue > prepFlowFraction*m_flow_design
+    and m_flow_loop > prepFlowFraction*m_flow_design
     "Supply prepared: at the target temperature and with design flow circulating.";
   Boolean controlsActive = pre(coolantReady) and time >= pre(coolantReadySince) + controlActivationDelay
     "Isolation, shut-off, release and valve4 logic run only after the coils have been open for controlActivationDelay. pre(): read by the algorithm that sets coolantReady.";
@@ -198,7 +200,9 @@ model CSCircuit
     "Share of the 8 channels commanded open.";
   output Modelica.Units.SI.MassFlowRate m_flow_set = m_flow_design*(if coolantReady
       then max(openChannelFraction, 1/sum(nChannels_CS)) else 1)
-    "Circulator flow setpoint: 0.0214 kg/s per open channel (ATEKO Tab.5), full design flow through valve4 during preparation.";
+    "Coil-loop flow setpoint: 0.0214 kg/s per open channel (ATEKO Tab.5), full design flow through valve4 during preparation.";
+  Modelica.Units.SI.MassFlowRate m_flow_loop = Heater.portA.m_flow
+    "Flow to the loop, downstream of the CS_RV01 tee -- what RV01 controls. FM01 sits upstream of the tee (PFD) and reads the circulator flow, loop + bypass; the plant needs a meter here or FM01 minus an RV01 flow estimate.";
 
   Modelica.Units.SI.HeatFlowRate Q_LIN_uncapped = sum(G_LINcell*(tube1.heatPort[i].T - T_LIN) for i in 1:nEvapCells)
     "Heat the LIN bath would take from the evaporator wall without a supply limit.";
@@ -217,7 +221,7 @@ model CSCircuit
       condensingIndex=0)) annotation (Placement(transformation(extent={{180,160},
             {200,180}}, rotation=0)));
 
-  // --- circulator CC01 and its speed control ---
+  // --- circulator CC01, fixed speed ---
   ThermalSystems.GasComponents.Fans.Fan2ndOrder fan2ndOrder(
     orientation="symmetric",
     use_mechanicalPort=true,
@@ -225,7 +229,7 @@ model CSCircuit
     n_nominal=n_nominal_Hz,
     dp_nominal(displayUnit="bar") = dp_nominal_Pa,
     V_flow_nominal=V_flow_nominal_val,
-    V_flow0=1.21*V_flow_nominal_val,
+    V_flow0=V_flow0_ratio*V_flow_nominal_val,
     T_nominal(displayUnit="K") = 137.5,
     p_nominal=p_nominal_Pa,
     eta_maxPhyd=0.6,
@@ -240,28 +244,13 @@ model CSCircuit
     annotation (Placement(transformation(extent={{-4,9},{4,-9}}, rotation=270,
         origin={-60,131})));
   ThermalSystems.GasComponents.Sensors.Sensor_m_flow sensor_m_flow
-    "Circulator mass flow (FM01 on PFD 22178-3-R0), same place as PF."
+    "Circulator mass flow (FM01 on PFD 22178-3-R0), same place as PF -- loop + RV01 bypass, monitoring only."
     annotation (Placement(transformation(extent={{-72,116},{-80,124}})));
-  Modelica.Blocks.Sources.RealExpression massFlowSetpoint(y=m_flow_set)
-    annotation (Placement(transformation(extent={{-200,126},{-180,146}})));
-  Modelica.Blocks.Continuous.FirstOrder firstOrderMflowSet(T=5,
-    initType=Modelica.Blocks.Types.Init.InitialOutput, y_start=m_flow_design)
-    "Smooths the setpoint steps when coils shut or reopen."
-    annotation (Placement(transformation(extent={{-172,126},{-152,146}})));
-  Modelica.Blocks.Continuous.LimPID PID_speed(
-    controllerType=Modelica.Blocks.Types.SimpleController.PI,
-    k=k_speedPID,
-    Ti=Ti_speedPID,
-    yMax=n_max_Hz,
-    yMin=n_min_Hz,
-    initType=Modelica.Blocks.Types.Init.InitialOutput,
-    y_start=n_start_Hz)
-    "Circulator speed on mass flow. ATEKO S6.1 asks for a CC 'controllable at all regimes'; at fixed speed the 2026-10-07 run pushed 0.22-0.36 kg/s and 25-40 kW shaft power (20 kW budget, S7.3)."
+  Modelica.Blocks.Sources.RealExpression speedSetpoint(y=n_fixed_Hz) "Fixed circulator speed."
     annotation (Placement(transformation(extent={{-144,126},{-124,146}})));
-
-  Modelica.Blocks.Continuous.FirstOrder firstOrderSpeed(T=T_speedDrive,
+  Modelica.Blocks.Continuous.FirstOrder firstOrderSpeed(T=T_softStart,
     initType=Modelica.Blocks.Types.Init.InitialOutput, y_start=n_start_Hz)
-    "Frequency-converter speed ramp, see T_speedDrive."
+    "Motor soft start, see T_softStart."
     annotation (Placement(transformation(extent={{-112,126},{-92,146}})));
 
   // --- circulator bypass CS_RV01 (PFD 22178-3-R0), as PF_RV01 ---
@@ -275,31 +264,34 @@ model CSCircuit
     use_effectiveFlowAreaInput=false,
     use_KvValueInput=true,
     KvValueFixed=0.0001)
-    "Circulator bypass, discharge -> suction. Shut unless enableCirculatorPowerOptimization."
+    "Circulator bypass, discharge -> suction. Sets the coil-loop flow: the fixed-speed circulator's surplus goes back to suction."
     annotation (Placement(transformation(extent={{-6,-3},{6,3}}, rotation=0, origin={-42,99})));
   ThermalSystems.GasComponents.JunctionElements.VolumeJunction junction4(
     volume=1e-2, m_flowStart=1e-5, pInitial=8200000,
     fixedInitialPressure=false, TInitial(displayUnit="K") = T_loopInitial)
     "Circulator suction tee: portA from junction20, portC to the circulator, portB from CS_RV01."
     annotation (Placement(transformation(extent={{-4,-4},{4,4}}, rotation=180, origin={-20,120})));
-  Modelica.Blocks.Continuous.LimPID PID_circulatorPower(
+  Modelica.Blocks.Sources.RealExpression massFlowSetpoint(y=m_flow_set)
+    annotation (Placement(transformation(extent={{-230,174},{-210,194}})));
+  Modelica.Blocks.Continuous.FirstOrder firstOrderMflowSet(T=5,
+    initType=Modelica.Blocks.Types.Init.InitialOutput, y_start=m_flow_design)
+    "Smooths the setpoint steps when coils shut or reopen."
+    annotation (Placement(transformation(extent={{-204,174},{-184,194}})));
+  Modelica.Blocks.Continuous.LimPID PID_RV01(
     controllerType=Modelica.Blocks.Types.SimpleController.PI,
-    k=kPowerLimitPID,
-    Ti=TiPowerLimitPID,
-    yMax=2,
-    yMin=-10,
+    k=k_RV01PID,
+    Ti=Ti_RV01PID,
+    yMax=0,
+    yMin=-Kv_RV01Max,
     initType=Modelica.Blocks.Types.Init.InitialOutput,
-    y_start=0)
-    "Same as PF: u_s=P_shaftLimit, u_m=fan2ndOrder.P_shaft."
+    y_start=-Kv_RV01Start)
+    "Coil-loop flow on CS_RV01: u_s=m_flow_set, u_m=m_flow_loop. Too much loop flow -> negative y -> RV01 opens (PF's max(-y,0) convention)."
     annotation (Placement(transformation(extent={{-178,174},{-158,194}})));
-  Modelica.Blocks.Sources.RealExpression CS_RV01Command(y=if not
-        enableCirculatorPowerOptimization then Kv_shut else if not (controlsActive
-         and T_gas_out_max <= RV01PowerLimitTriggerTemp) then Kv_shut else max(-
-        PID_circulatorPower.y, 0)*KvGainPowerLimit)
-    "Same as PF_RV01Command."
+  Modelica.Blocks.Sources.RealExpression CS_RV01Command(y=Kv_shut + max(-PID_RV01.y, 0))
+    "RV01 Kv from the loop-flow PI."
     annotation (Placement(transformation(extent={{-154,174},{-134,194}})));
-  Modelica.Blocks.Continuous.FirstOrder firstOrderRV01(T=valveRampTime,
-    initType=Modelica.Blocks.Types.Init.InitialOutput, y_start=Kv_shut)
+  Modelica.Blocks.Continuous.FirstOrder firstOrderRV01(T=T_RV01,
+    initType=Modelica.Blocks.Types.Init.InitialOutput, y_start=Kv_shut + Kv_RV01Start)
     annotation (Placement(transformation(extent={{-118,174},{-98,194}})));
 
   // --- heater EH01 ---
@@ -606,8 +598,7 @@ equation
   heaterHysteresis.u = PID.y;
   coolingHysteresis.u = -PID.y;
   bypassHysteresis.u = -PID.y;
-  PID_circulatorPower.u_s = P_shaftLimit;
-  PID_circulatorPower.u_m = fan2ndOrder.P_shaft;
+  PID_RV01.u_m = m_flow_loop;
 
   for i in 1:nCS loop
     kvTarget_CS[i] = if coilFlowing[i] then valveKvNominal_CS[i] else Kv_shut;
@@ -683,16 +674,10 @@ algorithm
   end when;
 
 equation
-  // --- circulator and its speed control ---
+  // --- circulator, fixed speed with soft start ---
   connect(rotatoryBoundary.rotatoryFlange, fan2ndOrder.rotatoryFlange)
     annotation (Line(points={{-60,131},{-60,128}}, color={135,135,135}, thickness=0.5));
-  connect(massFlowSetpoint.y, firstOrderMflowSet.u)
-    annotation (Line(points={{-179,136},{-174,136}}, color={0,0,127}));
-  connect(firstOrderMflowSet.y, PID_speed.u_s)
-    annotation (Line(points={{-151,136},{-146,136}}, color={0,0,127}));
-  connect(sensor_m_flow.sensorValue, PID_speed.u_m)
-    annotation (Line(points={{-76,124},{-76,126},{-104,126},{-104,116},{-134,116},{-134,124}}, color={0,0,127}));
-  connect(PID_speed.y, firstOrderSpeed.u)
+  connect(speedSetpoint.y, firstOrderSpeed.u)
     annotation (Line(points={{-123,136},{-114,136}}, color={0,0,127}));
   connect(firstOrderSpeed.y, rotatoryBoundary.n_in)
     annotation (Line(points={{-91,136},{-90,136},{-90,142},{-60,142},{-60,135}}, color={0,0,127}));
@@ -701,7 +686,11 @@ equation
   connect(sensor_m_flow.portB, junction5.portA)
     annotation (Line(points={{-79,120},{-112,120},{-112,104}}, color={255,153,0}, thickness=0.5));
 
-  // --- circulator bypass CS_RV01 ---
+  // --- circulator bypass CS_RV01 and the coil-loop flow control ---
+  connect(massFlowSetpoint.y, firstOrderMflowSet.u)
+    annotation (Line(points={{-209,184},{-206,184}}, color={0,0,127}));
+  connect(firstOrderMflowSet.y, PID_RV01.u_s)
+    annotation (Line(points={{-183,184},{-180,184}}, color={0,0,127}));
   connect(junction5.portB, CS_RV01.portA)
     annotation (Line(points={{-108,100},{-50,100},{-50,99},{-48,99}}, color={255,153,0}, thickness=0.5));
   connect(CS_RV01.portB, junction4.portB)
