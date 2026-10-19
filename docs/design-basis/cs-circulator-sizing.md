@@ -3,10 +3,10 @@
 | | |
 |---|---|
 | **Title** | CS-coil cooling-loop circulator sizing — design basis |
-| **Date** | 2026-09-04, updated 2026-09-06 (§8, §10, §11 — see NIGHT_SUMMARY.md), 2026-10-07 (§10a — rebuilt on TF's structure after the first real run), 2026-10-08 (§10b — speed control, LIN limit, startup preparation, friction) |
+| **Date** | 2026-09-04, updated 2026-09-06 (§8, §10, §11 — robustness pass), 2026-10-07 (§10a — rebuilt on TF's structure after the first real run), 2026-10-08 (§10b — speed control, LIN limit, startup preparation, friction) |
 | **Author** | _(placeholder — fill in)_ |
 | **Model file** | `dymola-thermal-systems/CoilLoopCompassU/CS/CSCircuit.mo`, component `fan2ndOrder` (`ThermalSystems.GasComponents.Fans.Fan2ndOrder`); coil-channel changes in `CoilAssembly.mo`/`CoilAssembly2ch.mo` |
-| **Applies to git commit** | `f48942d` — "CS: add CSTest.mo run harness and register classes in package.order" — plus this build's uncommitted working-tree changes (git commit was blocked in this session's sandbox, see NIGHT_SUMMARY.md) |
+| **Applies to git commit** | `f48942d` — "CS: add CSTest.mo run harness and register classes in package.order"; later revisions §10a–§10c merged to `development` via PR #24 |
 | **Real-data source** | None — no Dymola access (see "Cannot run Dymola" below), no compiled `result.mat` exists for CS. |
 
 **Tagging convention (adapted from PF's design-basis doc for a model with no
@@ -38,7 +38,7 @@ a make-up/relief valve pair (`RV07`/`RV08`) against two ideal storage-
 reservoir boundaries, discharge floats to suction plus loop head — same
 architecture as PF's stabilizer, simplified (see §8).
 
-**Topology note, corrected during this build (see NIGHT_SUMMARY.md):** the
+**Topology note, corrected during the original CS build:** the
 CS PFD (`22178-3-R0-S1 - PFD CS COILS.pdf`) shows 5 valve branches, and a
 first read of that diagram (small print, elliptical channel cross-section
 labeled "8x6.2mm") could be misread as "8 channels per coil." **[FROM
@@ -208,10 +208,10 @@ structure only:
   `CoilAssembly` had no such mechanism at all. **[FIXED, this build]** —
   `CoilAssembly.mo` now has the same `assemblyIndex`/`lengthAdjusted`
   parameters, with `CS2U`/`CS2L` given distinct indices (4, 5) in
-  `CSCircuit.mo`. See gap 4 in NIGHT_SUMMARY.md.
+  `CSCircuit.mo`. See also `CLAUDE_en.md`, "Modelling lessons".
 - Suction pressure control (`RV07`/`RV08`) as a **plain PID-proportional
   trim**, not PF's 2026-09-01 pulse-then-trim rewrite. **Re-examined this
-  build (see NIGHT_SUMMARY.md gap 3), decision: kept as-is.** The wiring
+  build, decision: kept as-is.** The wiring
   initially thought to be the relevant TF/PF "more robust" precedent
   (`bypassHysteresis`/`BypassLimiter`/`firstOrder2` in `TFCircuit.mo`,
   wired up by TF's `acba24f` commit) turns out to govern a *different*
@@ -400,6 +400,65 @@ Trial: `evapLength` 5 -> 8 m (`nEvapCells` 5 -> 8), i.e. UA x1.6, NTU
 (peak ~52 kW expected vs 60 kW). This departs from the study's HE01 size;
 keep it only if the cooldown gain is worth a ~9 m2 instead of ~5.5 m2
 exchanger.
+
+## 10d. 2026-10-16 — circulator at fixed speed, coil flow set by CS_RV01
+
+The speed control of §10b is removed; CC01 runs at a fixed speed like PF
+and TF, and the circulator bypass `CS_RV01` (PFD 22178-3-R0) sets the coil
+flow instead. Where this section disagrees with §10b, this section wins.
+
+| Change | Why |
+|---|---|
+| `PID_speed` removed; CC01 at `n_fixed_Hz` = **220 Hz** after a 10 s soft start from 155 Hz | Speed-controlled run (2026-10-15) needed at most 213 Hz for 0.17 kg/s at the hardest point (t≈300 s, 14 bar, 26 kg/m³ suction) |
+| `PID_RV01` (PI, k=3 Kv per kg/s, Ti=10 s, Kv 0–5, 2 s actuator lag) holds the flow to the loop at `m_flow_set` (0.0214 kg/s per open channel) | At fixed speed the circulator's volume flow stays roughly constant (PF, `algorithms.md`), so its mass flow grows as the helium densifies; RV01 returns the surplus to suction at low resistance instead of forcing it through the coils, which lowers the pressure rise and the shaft power (PF_RV01's mechanism) |
+| Loop flow measured at the heater inlet (`m_flow_loop`), downstream of the RV01 tee; FM01 keeps its PFD position and reads loop + bypass flow; `prepInBand` now uses `m_flow_loop` | FM01 upstream of the tee no longer equals the coil flow once RV01 is open |
+| PF's power-limit logic on RV01 (`enableCirculatorPowerOptimization`, `PID_circulatorPower`) removed | It was off, and two controllers on one valve would fight |
+
+Expected at the cold end (estimate, to be checked against the next run):
+circulator ~0.32 kg/s, of which ~0.15 kg/s through RV01, ~8 bar head,
+~8 kW shaft power — higher than the speed-controlled run's 2.3 kW, but
+under the 20 kW budget (§7.3).
+
+## 10e. 2026-10-16 — CC01 resized for fixed-speed duty
+
+The first fixed-speed run (§10d: the §10b machine, 11.5 bar / 0.0074 m³/s
+at 200 Hz, driven at 220 Hz) held the coil flow on target, but ran at
+86–96 % of its zero-head flow with eta 0.27–0.53: 22–28 kW shaft power
+(> 20 kW, §7.3), 25.6 MJ of losses into the helium, evaporator energy
+86 MJ (60 MJ before), supply stuck 0.6–0.9 K above 77 K and the last coil
+at 80 K only at ~1824 s.
+
+**Fan model (read from the `Fan2ndOrder` source in `dsmodel.c`).** Curve:
+quadratic through (`V_flow_nominal`, `dp_nominal`), zero head at `V_flow0`
+and `V_flow0 + deltaV_flow`, scaled by r = n/n_nom (flow), r² (head) and
+d = ρ/ρ_nom. Losses: `P_ref = d·r³·(1/eta_maxPhyd − 1)·P_hyd_max`,
+blade `P_ref·(V/V_maxPhyd)^2.3`, impact `P_ref·0.4·(1 − V/V_maxPhyd)²`
+(`V_maxPhyd` is not speed-scaled). A Python replica with ρ_nom = 24.7 kg/m³
+reproduces the run's flow and shaft power to 0.1 %.
+
+**Sizing.** Duty from the run (loop dp at the controlled flow, suction
+density over time); fan dp = loop dp, RV01 takes the rest; minimise the
+peak shaft power subject to ≥ 1.05 × the loop flow with RV01 shut.
+
+| Parameter | Was | Now |
+|---|---|---|
+| Fixed speed | 220 Hz | **200 Hz** = `n_nominal_Hz` |
+| `dp_nominal` | 11.5 bar | **13.75 bar** (hardest point: 13.8 bar at 0.17 kg/s, 25.4 kg/m³, t≈300 s) |
+| `V_flow_nominal` | 0.0074 m³/s | **0.0070 m³/s** (0.0067 needed + 5 %) |
+| `V_flow0` | 1.21 × nominal | **1.10 ×** (`V_flow0_ratio`) |
+
+Peak shaft power vs. the zero-head ratio (each with its best dp/V):
+1.05 → 16.8 kW, **1.10 → 18.0 kW**, 1.21 → 20.1 kW, 1.5 → 24.6 kW — a
+steeper curve keeps the fan's volume flow nearly constant as the gas
+densifies, so less of the surplus turns into blade loss.
+
+Predicted (to be checked against the next run): 15–18 kW shaft power over
+the whole cooldown, fan 0.18–0.29 kg/s, RV01 0.013 kg/s at t≈300 s rising
+to 0.12 kg/s at the cold end (Kv 0.08–0.8), eta 0.59 → 0.34. That is
+~7 kW less heat into the helium than §10d, but still more than the
+speed-controlled machine (§10b, 2–14 kW): at fixed speed the losses scale
+with gas density, so they grow while the duty falls. `eta_maxPhyd` = 0.6
+remains [ASSUMED]; every +0.05 lowers the losses by ~12 %.
 
 ## 11. Open Items
 
