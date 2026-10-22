@@ -78,7 +78,7 @@ which is the value for an 8×6.0 ellipse).
 ## Modelling lessons (PF/TF/CS) — apply to any new coil circuit
 
 Learned while building the PF, TF and CS loops; per-circuit numbers and
-derivations live in `docs/design-basis/*-circulator-sizing.md`.
+derivations live in `docs/{cs,pf,tf}/circulator-sizing.md`.
 
 - **Identical parallel branches → structural singularity.** Two
   parameter-identical coil branches between the same pair of junctions

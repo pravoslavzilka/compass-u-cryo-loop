@@ -5,7 +5,7 @@ model CSCircuit
   // CS coil cooling loop -- same structure as TF/TFCircuit.mo and
   // PF/PFCircuit.mo (diagram laid out on PF's coordinates), sized from ATEKO
   // study 22172-Z-R1 (S3.3.2, S5.1.2, S5.2.2, S5.3.2, S6.5.2, S7) and PFD
-  // 22178-3-R0. Full sourcing in docs/design-basis/cs-circulator-sizing.md.
+  // 22178-3-R0. Full sourcing in docs/cs/circulator-sizing.md.
   //
   // Flow path: circulator CC01 (fan2ndOrder, fixed speed) -> flow meter FM01
   // -> junction5 (circulator bypass CS_RV01 back to suction, sets the loop flow) ->
@@ -49,7 +49,7 @@ model CSCircuit
   parameter Modelica.Units.SI.Temperature T_supplyFloor(displayUnit="K") = 77
     "Lower bound on wanted_temp -- 77K LIN evaporation temperature (ATEKO S3.4 minimum target), same as TF.";
 
-  // --- startup coolant preparation through the coil bypass valve4 ---
+  // --- startup coolant preparation through the coil bypass valve4 [CS-PREP] ---
   parameter Real Kv_prepBypass = 1
     "valve4 Kv during preparation: ~10 bar at 0.17 kg/s of 97.5K/82 bar helium, about the coils' own loss, so the circulator runs near its design point and RV01 hardly moves at the hand-over.";
   parameter Modelica.Units.SI.TemperatureDifference prepTempBand = 2
@@ -106,7 +106,7 @@ model CSCircuit
   parameter Modelica.Units.SI.VolumeFlowRate V_flow_start = 0.0045
     "Circulator volume flow at t=0: 0.17 kg/s / ~38 kg/m3 (97.5K, 82 bar). V_flow_nominal_val is at 137.5K (23 kg/m3) and doubled the initial mass flow.";
 
-  // --- circulator bypass CS_RV01: coil-loop flow control (replaces the speed control) ---
+  // --- circulator bypass CS_RV01: coil-loop flow control (replaces the speed control) [C-RV01] ---
   parameter Real k_RV01PID = 3
     "Kv per kg/s of loop-flow error. Plant gain d(m_flow_loop)/d(Kv) ~ -0.1 (cold end, RV01 passing ~0.15 kg/s at 8 bar) to -0.17 kg/s (RV01 nearly shut at 14 bar) -> loop gain 0.3-0.5.";
   parameter Modelica.Units.SI.Time Ti_RV01PID = 10;
@@ -115,6 +115,22 @@ model CSCircuit
   parameter Real Kv_RV01Start = 0.5
     "RV01 Kv at t=0: ~0.1 kg/s of the circulator's ~0.28 kg/s (97.5K gas) back to suction during preparation.";
   parameter Modelica.Units.SI.Time T_RV01 = 2 "RV01 actuator lag (first order).";
+
+  // --- C-RV01 goal: flow (m_flow_set) or power (P_shaftLimit with m_flow_set as floor) -- docs/control-common.md ---
+  type RV01Goal = enumeration(
+      Flow "Hold the coil-loop flow at m_flow_set",
+      Power "Spend the shaft-power budget P_shaftLimit on extra coil flow, never below m_flow_set")
+    "C-RV01 control goal.";
+  parameter RV01Goal rv01Goal = RV01Goal.Flow
+    "Flow: RV01 holds m_flow_set. Power: PID_power adds 0..dm_flowPowerMax to the flow target while P_shaft is below P_shaftLimit, and takes it back above; the flow PI and the m_flow_set floor are the same in both modes.";
+  parameter Modelica.Units.SI.Power P_shaftLimit = 20000
+    "ASSUMED placeholder: shaft-power budget in power mode. Flow mode runs at ~16-18 kW over the cooldown (2026-10-16 sizing), so 20 kW leaves a few kW for extra flow.";
+  parameter Modelica.Units.SI.MassFlowRate dm_flowPowerMax = 0.1
+    "ASSUMED placeholder: most extra coil-loop flow power mode may add above m_flow_set (the circulator delivers ~0.29 kg/s at the cold end).";
+  parameter Real k_powerPID = 6e-6
+    "kg/s of extra flow per W of power error. ASSUMED: ~5 kW per 0.1 kg/s of loop flow at fixed speed -> outer loop gain ~0.3; to be checked against a power-mode run.";
+  parameter Modelica.Units.SI.Time Ti_powerPID = 60
+    "Slow outer loop: 6x the flow PI's Ti_RV01PID, so the cascade doesn't fight the inner flow loop.";
 
   // --- evaporator HE01, LIN side ---
   parameter Modelica.Units.SI.Temperature T_LIN(displayUnit="K") = 77 "LIN evaporation at ~1 bar (ATEKO S6.2).";
@@ -130,7 +146,7 @@ model CSCircuit
   parameter Modelica.Units.SI.HeatFlowRate Q_LINmax = 60000
     "ATEKO S7.2: 0.27 kg/s LIN supply -> 53.7 kW latent + vapour superheat -> ~55-60 kW. The evaporator can never remove more.";
 
-  // --- pressure control (RV07 make-up / RV08 relief), same node as TF ---
+  // --- pressure control (RV07 make-up / RV08 relief), same node as TF [C-PRES-a] ---
   parameter Boolean enablePressureControl = true "Master switch for RV07/RV08.";
   parameter Modelica.Units.SI.AbsolutePressure pressureSetpoint = 8200000
     "81 barg nominal working pressure at the CC outlet (ATEKO S6.5.2), +1 bar to absolute. Held at junction1 after the heater, i.e. at circulator discharge pressure -- same node as TF.";
@@ -194,13 +210,13 @@ model CSCircuit
       then T_wall_max_CS[i] else 0 for i in 1:nCS})
     "Hottest wall cell over the coils receiving coolant -- T_object of ATEKO's 40K rule.";
   output Modelica.Units.SI.Temperature wanted_temp = max(T_wallHotCooled - tempMargin, T_supplyFloor)
-    "Supply temperature setpoint: hottest cooled wall cell - 40K, floored at 77K (same as TF).";
+    "[C-TEMP-SP-b] Supply temperature setpoint: hottest cooled wall cell - 40K, floored at 77K (same as TF).";
 
   Real openChannelFraction = sum({if coilFlowing[i] then nChannels_CS[i] else 0 for i in 1:nCS})/sum(nChannels_CS)
     "Share of the 8 channels commanded open.";
   output Modelica.Units.SI.MassFlowRate m_flow_set = m_flow_design*(if coolantReady
       then max(openChannelFraction, 1/sum(nChannels_CS)) else 1)
-    "Coil-loop flow setpoint: 0.0214 kg/s per open channel (ATEKO Tab.5), full design flow through valve4 during preparation.";
+    "[CS-FLOW-SP] Coil-loop flow setpoint: 0.0214 kg/s per open channel (ATEKO Tab.5), full design flow through valve4 during preparation.";
   Modelica.Units.SI.MassFlowRate m_flow_loop = Heater.portA.m_flow
     "Flow to the loop, downstream of the CS_RV01 tee -- what RV01 controls. FM01 sits upstream of the tee (PFD) and reads the circulator flow, loop + bypass; the plant needs a meter here or FM01 minus an RV01 flow estimate.";
 
@@ -221,7 +237,7 @@ model CSCircuit
       condensingIndex=0)) annotation (Placement(transformation(extent={{180,160},
             {200,180}}, rotation=0)));
 
-  // --- circulator CC01, fixed speed ---
+  // --- circulator CC01, fixed speed [C-SPEED-b] ---
   ThermalSystems.GasComponents.Fans.Fan2ndOrder fan2ndOrder(
     orientation="symmetric",
     use_mechanicalPort=true,
@@ -271,7 +287,9 @@ model CSCircuit
     fixedInitialPressure=false, TInitial(displayUnit="K") = T_loopInitial)
     "Circulator suction tee: portA from junction20, portC to the circulator, portB from CS_RV01."
     annotation (Placement(transformation(extent={{-4,-4},{4,4}}, rotation=180, origin={-20,120})));
-  Modelica.Blocks.Sources.RealExpression massFlowSetpoint(y=m_flow_set)
+  Modelica.Blocks.Sources.RealExpression massFlowSetpoint(y=m_flow_set +
+        (if rv01Goal == RV01Goal.Power then PID_power.y else 0))
+    "Flow target for PID_RV01: m_flow_set, plus the power-mode surplus (>= 0, so m_flow_set stays the floor)."
     annotation (Placement(transformation(extent={{-230,174},{-210,194}})));
   Modelica.Blocks.Continuous.FirstOrder firstOrderMflowSet(T=5,
     initType=Modelica.Blocks.Types.Init.InitialOutput, y_start=m_flow_design)
@@ -293,6 +311,16 @@ model CSCircuit
   Modelica.Blocks.Continuous.FirstOrder firstOrderRV01(T=T_RV01,
     initType=Modelica.Blocks.Types.Init.InitialOutput, y_start=Kv_shut + Kv_RV01Start)
     annotation (Placement(transformation(extent={{-118,174},{-98,194}})));
+  Modelica.Blocks.Continuous.LimPID PID_power(
+    controllerType=Modelica.Blocks.Types.SimpleController.PI,
+    k=k_powerPID,
+    Ti=Ti_powerPID,
+    yMax=dm_flowPowerMax,
+    yMin=0,
+    initType=Modelica.Blocks.Types.Init.InitialOutput,
+    y_start=0)
+    "C-RV01 power mode: u_s=P_shaftLimit, u_m=fan2ndOrder.P_shaft. Power below the limit -> y>0 -> extra flow target -> RV01 closes. Only read when rv01Goal=Power; yMin=0 keeps m_flow_set as the floor."
+    annotation (Placement(transformation(extent={{-230,206},{-210,226}})));
 
   // --- heater EH01 ---
   ThermalSystems.GasComponents.Tubes.Tube Heater(
@@ -381,7 +409,7 @@ model CSCircuit
     annotation (Placement(transformation(extent={{-6,3},{6,-3}}, rotation=-90,
         origin={-112,-43})));
 
-  // --- heater/cooling/bypass split-range temperature control, from TF ---
+  // --- heater/cooling/bypass split-range temperature control, from TF [C-TEMP-SR] ---
   Modelica.Blocks.Continuous.LimPID PID(
     controllerType=Modelica.Blocks.Types.SimpleController.PI,
     k=0.12,
@@ -599,6 +627,8 @@ equation
   coolingHysteresis.u = -PID.y;
   bypassHysteresis.u = -PID.y;
   PID_RV01.u_m = m_flow_loop;
+  PID_power.u_s = P_shaftLimit;
+  PID_power.u_m = fan2ndOrder.P_shaft;
 
   for i in 1:nCS loop
     kvTarget_CS[i] = if coilFlowing[i] then valveKvNominal_CS[i] else Kv_shut;
@@ -608,7 +638,7 @@ equation
   end for;
 
 algorithm
-  // Startup coolant preparation: the coils stay shut and the whole flow runs
+  // [CS-PREP] Startup coolant preparation: the coils stay shut and the whole flow runs
   // through valve4 until the supply has held within prepTempBand of
   // wanted_temp for prepHoldTime (or prepMaxTime has passed).
   when prepInBand and not pre(coolantReady) then
@@ -620,7 +650,7 @@ algorithm
     coolantReadySince := time;
   end when;
 
-  // valve4 overcool state machine -- copied unchanged from TF/PF, active
+  // [C-OVERCOOL, archived] valve4 overcool state machine -- copied unchanged from TF/PF, active
   // only after the startup preparation.
   when enableOverCoolPrevention and controlsActive and T_gas_out_max - sensor_T.sensorValue > overCoolReopenMargin
       and not pre(valve4Open) then
@@ -645,7 +675,7 @@ algorithm
   end when;
 
   for i in 1:nCS loop
-    // Both tests use T_gas_out_compare_CS (live while flowing, frozen while
+    // [C-ISO] Both tests use T_gas_out_compare_CS (live while flowing, frozen while
     // shut): a shut coil's raw outlet temperature flips with its near-zero,
     // sign-changing flow and fired ~1500 events per 7 ms in TF.
     when enableCoilIsolation and controlsActive
@@ -659,7 +689,7 @@ algorithm
       T_gas_out_frozen[i] := T_gas_out_CS[i];
     end when;
 
-    // Permanent "cooled down" shut-off, same as TF's upper limb.
+    // [C-COLDSHUT] Permanent "cooled down" shut-off, same as TF's upper limb.
     when shutWhenCold_CS[i] and controlsActive
         and T_gas_out_compare_CS[i] <= T_coldShut and not pre(coldShut[i]) then
       coldShut[i] := true;
@@ -667,7 +697,7 @@ algorithm
     end when;
   end for;
 
-  // Release-all once the last coil still being cooled is below T_releaseAll.
+  // [C-COLDSHUT] Release-all once the last coil still being cooled is below T_releaseAll.
   when controlsActive and T_wallHotLive < T_releaseAll
       and not pre(allReleased) then
     allReleased := true;

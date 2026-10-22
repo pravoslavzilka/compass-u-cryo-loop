@@ -129,7 +129,7 @@ for it (see below); the fix itself needs a fresh VM run to confirm.
 
 **Symptom:** after rewriting RV07/RV08's suction-pressure control from a
 plain hysteresis band to a feedforward-pulse-then-PID-trim design (see
-`docs/algorithms.md` for the full design), a run came back looking
+`docs/control-common.md`, C-PRES-b, for the full design), a run came back looking
 dramatically better: state events dropped to 51 (vs. 731–1007 in prior
 hysteresis-only runs) and `sensor_p_suction` sat dead flat at exactly
 `3,650,000` Pa for hundreds of seconds at a stretch, from t≈400s to the
