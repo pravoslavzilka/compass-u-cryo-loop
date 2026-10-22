@@ -11,6 +11,7 @@
 | `docs/{cs,pf,tf}/circulator-sizing.md` | Circulator sizing derivations (design basis), numbers tagged [FROM SOURCE] / [CALCULATED] / [ASSUMED]. |
 | `docs/pf/pf_circulator_sizing.py` | Reproduces the PF sizing numbers from a result file. |
 | `docs/pf/pid-sensitivity-report.md` | One-off PF investigation report (mass-flow/pressure sensitivity to PID and isolation tuning). |
+| `docs/to-fix.md` | Open problems found in reviews, all circuits, with IDs (`FIX-…`) and status. Close an item by marking it done with the commit, not by deleting it. |
 | `docs/migration-notes.md` | Chronological troubleshooting log (bugs, root causes), all circuits. |
 
 Requirement references (`ATEKO S3.4`, `Tab.5`, …) point to the ATEKO study

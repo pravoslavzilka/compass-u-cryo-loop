@@ -39,8 +39,7 @@ startup preparation.
 reservoirs 27 / 23 bar. `kPressurePID` = 0.05, `TiPressurePID` = 30 s,
 `KvGain` 5 / `KvMax` 30 (placeholders, scaled from PF), y ±7.5,
 `valveRampTime` = 3 s. Node: discharge side (`junction22` off the
-evaporator inlet tee `junction1`); the `junction22` docstring still
-calls it the suction node.
+evaporator inlet tee `junction1`), despite the name `sensor_p_suction`.
 
 ### C-TEMP-SR
 | Parameter | TF |
@@ -91,3 +90,5 @@ Not used: R-KVFLOOR.
 
 **Revision history:** 2026-10-22 created from `TFCircuit.mo` at commit
 2ecd589.
+2026-10-22: `TFCircuit.mo` tagged with algorithm IDs, stale comments
+fixed (no code change). Open problems: [to-fix.md](../to-fix.md).

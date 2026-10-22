@@ -48,7 +48,7 @@ model TFCoilBusUpper
   output Modelica.Units.SI.MassFlowRate m_flow = tube2.summary.m_flow_gas_B "Bus mass flow (all 56 lumped channels)";
 
   parameter Real outletKvRatio = 50
-    "Outlet valve Kv = KvValue_in1*outletKvRatio. Open (Kv_in=45): Kv~2250, negligible dp vs the inlet valve; shut (Kv_in=1e-4): Kv=5e-3. Lets TFCircuit.mo close the bus at BOTH ends with one command, so a shut bus holds trapped, stagnant gas instead of breathing through its open outlet (the reversing-flow failure seen on the valve-only-isolated Structure branch).";
+    "[R-BOTHENDS] Outlet valve Kv = KvValue_in1*outletKvRatio. Open (Kv_in=45): Kv~2250, negligible dp vs the inlet valve; shut (Kv_in=1e-4): Kv=5e-3. Lets TFCircuit.mo close the bus at BOTH ends with one command, so a shut bus holds trapped, stagnant gas instead of breathing through its open outlet (the reversing-flow failure seen on the valve-only-isolated Structure branch).";
 
   ThermalSystems.GasComponents.Valves.Valve valve2(
     valveFlowVariableType=ThermalSystems.Internals.ValveFlowVariableType.KvValue,
