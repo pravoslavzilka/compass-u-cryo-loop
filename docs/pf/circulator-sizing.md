@@ -372,7 +372,7 @@ the circulator parameters" — describes exactly this mechanism.
 ## 12. Reproducibility (Step 5)
 
 `pf_circulator_sizing.py`, in this same folder
-(`docs/design-basis/pf_circulator_sizing.py`), reproduces every number in
+(`docs/pf/pf_circulator_sizing.py`), reproduces every number in
 §3–§5, §7 and §9 of this document from a `result.mat` path: `fan2ndOrder`'s
 compiled parameters, the hot-start/cold-end operating table, the
 cooldown-vs-requirement check, the CoolProp-corrected true suction
@@ -382,7 +382,7 @@ condition, the tip-speed/diameter buildability check, and the cold-end
 against this document to see what moved:
 
 ```
-python docs/design-basis/pf_circulator_sizing.py \
+python docs/pf/pf_circulator_sizing.py \
     dymola-thermal-systems/CoilLoopCompassU/PF/debugging/result.mat
 ```
 

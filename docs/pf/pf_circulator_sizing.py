@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Reproduce the numbers in pf-circulator-sizing.md (this same folder) from a
+Reproduce the numbers in circulator-sizing.md (this same folder) from a
 PFCircuit result.mat: fan2ndOrder's actual compiled parameters, the
 hot-start/cold-end operating table, the true (CoolProp-corrected) suction
 temperature and density, the impeller tip-speed/diameter buildability
@@ -9,7 +9,7 @@ check, and the cold-end shaft power vs. P_shaftLimit.
 This script only reads and reports -- it does not modify the model or
 draw conclusions beyond what's printed. Re-run it after any change to
 fan2ndOrder's parameters or a fresh simulation, and diff the output
-against pf-circulator-sizing.md to see what moved.
+against circulator-sizing.md to see what moved.
 
 Requirements: numpy, DyMat, CoolProp
     pip install numpy DyMat CoolProp
@@ -31,7 +31,7 @@ DEFAULT_RESULT = os.path.join(
 )
 
 # Loading coefficient assumed for the tip-speed buildability check -- not a
-# model parameter, see pf-circulator-sizing.md section 7 for the rationale.
+# model parameter, see circulator-sizing.md section 7 for the rationale.
 PSI = 0.55
 TIP_SPEED_CEILING_M_S = 450.0
 R_HELIUM = 8.314          # J/(mol.K)
@@ -83,7 +83,7 @@ def enthalpy_datum_offset(get, t):
 def true_suction_T(get, offset_h, idx):
     """Suction enthalpy comes from the upstream neighbor's outflow
     (junction4.portC), not fan2ndOrder.portA.h_outflow -- see the
-    Modelica stream-connector note in pf-circulator-sizing.md / the
+    Modelica stream-connector note in circulator-sizing.md / the
     conservation-law audit."""
     h = get("junction4.portC.h_outflow")[idx]
     p = get("junction4.portC.p")[idx]
@@ -190,7 +190,7 @@ def main():
               f"{', OVER LIMIT' if pct_end > 100 else ''})")
         print("  If over limit: enableCirculatorPowerOptimization (PID_circulatorPower ->")
         print("  PF_RV01) exists specifically to trim this back to P_shaftLimit and can be")
-        print("  switched on at any time -- see pf-circulator-sizing.md section 9.")
+        print("  switched on at any time -- see circulator-sizing.md section 9.")
     else:
         print("  P_shaftLimit not found in this result file")
 

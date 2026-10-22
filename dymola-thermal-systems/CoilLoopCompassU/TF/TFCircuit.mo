@@ -4,7 +4,7 @@ model TFCircuit
   // ===========================================================================
   // TF coil cooling loop -- structural analog of PF/PFCircuit.mo, sized from
   // ATEKO study 22172-Z-R1 (S3.3.3, S5.1.3, S5.2.3, S6.5.3, S7.3) instead of
-  // PF's own numbers. See docs/design-basis/tf-circulator-sizing.md for the
+  // PF's own numbers. See docs/tf/circulator-sizing.md for the
   // full parameter-by-parameter sourcing (FROM SOURCE / CALCULATED /
   // ASSUMED tags) and for what has been deliberately simplified relative to
   // PFCircuit.mo -- summary here, detail there:
@@ -57,7 +57,7 @@ model TFCircuit
     "Width of valve4's settle band above the lower bound (T_ref - overCoolShutMargin): sensor_T.sensorValue must stay within [T_ref - overCoolShutMargin, T_ref - overCoolShutMargin + overCoolStabilityBand] continuously. Copied unchanged from PFCircuit.mo.";
   parameter Modelica.Units.SI.Time overCoolStabilizeDelay=30
     "sensor_T.sensorValue must stay continuously within valve4's settle band (see overCoolShutMargin/overCoolStabilityBand) for this long before valve4 actually closes. Any excursion out of the band (either side) before the delay elapses restarts the wait. Copied unchanged from PFCircuit.mo.";
-  parameter Integer nTF = 4 "Number of TF coil-bus branches -- CALCULATED: ATEKO 22172-Z-R1 S3.3.3 states 224 channels 'connected in parallel to 4 busses' (text, not the PFD image's visual branch count -- see tf-circulator-sizing.md S1 for the reconciliation). Modeled as 2 TFCoilBusCoreLower + 2 TFCoilBusUpper instances, an ASSUMED even split of each 112-channel group across 2 busses (not stated in the source) -- see Open Items.";
+  parameter Integer nTF = 4 "Number of TF coil-bus branches -- CALCULATED: ATEKO 22172-Z-R1 S3.3.3 states 224 channels 'connected in parallel to 4 busses' (text, not the PFD image's visual branch count -- see docs/tf/circulator-sizing.md S1 for the reconciliation). Modeled as 2 TFCoilBusCoreLower + 2 TFCoilBusUpper instances, an ASSUMED even split of each 112-channel group across 2 busses (not stated in the source) -- see Open Items.";
   parameter Boolean enableCoilIsolation = true
     "Master switch for the per-bus relative-margin isolation rule, same role as PFCircuit.mo's enableCoilIsolation.";
   parameter Boolean connectStructure = false

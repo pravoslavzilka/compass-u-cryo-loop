@@ -224,7 +224,7 @@ structure only:
   versus PF that CS did. TF's suction-node compliance
   (`junction22`+`makeupBuffer`+`reliefBuffer`, each 1e-2 m³) is also
   numerically identical to CS's, and TF's model "translates and simulates
-  successfully" on that architecture (`tf-circulator-sizing.md` Status).
+  successfully" on that architecture (`docs/tf/circulator-sizing.md` Status).
   This is concrete, matched-parameter precedent, not blind analogy, that
   the plain trim is workable at this loop scale — so the specific
   limit-cycle PF observed and fixed for its own (much smaller) loop volume
@@ -294,7 +294,7 @@ within rounding before applying it to CS.
 
 **Heat-transfer model.** Switching to `NonCircular` geometry required also
 switching off `GnielinskiDittusBoelter` (the previously-used heat-transfer
-model) — per TF's own `tf-circulator-sizing.md`, the library's
+model) — per TF's own `docs/tf/circulator-sizing.md`, the library's
 geometry-based correlations only support circular tubes. **[FIXED, this
 build]**, mirroring TF's own resolution of the identical problem:
 `ConstantAlpha`/`ConstantR` now supply gas-side heat transfer and wall
@@ -410,7 +410,7 @@ flow instead. Where this section disagrees with §10b, this section wins.
 | Change | Why |
 |---|---|
 | `PID_speed` removed; CC01 at `n_fixed_Hz` = **220 Hz** after a 10 s soft start from 155 Hz | Speed-controlled run (2026-10-15) needed at most 213 Hz for 0.17 kg/s at the hardest point (t≈300 s, 14 bar, 26 kg/m³ suction) |
-| `PID_RV01` (PI, k=3 Kv per kg/s, Ti=10 s, Kv 0–5, 2 s actuator lag) holds the flow to the loop at `m_flow_set` (0.0214 kg/s per open channel) | At fixed speed the circulator's volume flow stays roughly constant (PF, `algorithms.md`), so its mass flow grows as the helium densifies; RV01 returns the surplus to suction at low resistance instead of forcing it through the coils, which lowers the pressure rise and the shaft power (PF_RV01's mechanism) |
+| `PID_RV01` (PI, k=3 Kv per kg/s, Ti=10 s, Kv 0–5, 2 s actuator lag) holds the flow to the loop at `m_flow_set` (0.0214 kg/s per open channel) | At fixed speed the circulator's volume flow stays roughly constant (PF, `docs/control-common.md` C-RV01), so its mass flow grows as the helium densifies; RV01 returns the surplus to suction at low resistance instead of forcing it through the coils, which lowers the pressure rise and the shaft power (PF_RV01's mechanism) |
 | Loop flow measured at the heater inlet (`m_flow_loop`), downstream of the RV01 tee; FM01 keeps its PFD position and reads loop + bypass flow; `prepInBand` now uses `m_flow_loop` | FM01 upstream of the tee no longer equals the coil flow once RV01 is open |
 | PF's power-limit logic on RV01 (`enableCirculatorPowerOptimization`, `PID_circulatorPower`) removed | It was off, and two controllers on one valve would fight |
 

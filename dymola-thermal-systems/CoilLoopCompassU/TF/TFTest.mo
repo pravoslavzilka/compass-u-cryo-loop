@@ -27,7 +27,7 @@ model TFTest
     p_nominal=2500000,
     dpInitial(displayUnit="bar") = 2500000,
     V_flow_Start=0.01)
-    "T_nominal/p_nominal match TFCircuit.mo's fan2ndOrder -- see tf-circulator-sizing.md."
+    "T_nominal/p_nominal match TFCircuit.mo's fan2ndOrder -- see docs/tf/circulator-sizing.md."
     annotation (Placement(transformation(extent={{-36,12},{-20,28}})));
   ThermalSystems.OtherComponents.Sources.SmoothStep smoothStep(
     initialValue=50,
