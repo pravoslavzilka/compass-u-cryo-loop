@@ -50,8 +50,8 @@ model CSCircuit
     "Lower bound on wanted_temp -- 77K LIN evaporation temperature (ATEKO S3.4 minimum target), same as TF.";
 
   // --- startup coolant preparation through the coil bypass valve4 [CS-PREP] ---
-  parameter Boolean enableCSPrep = true
-    "Master switch for CS-PREP. On by default (baseline): coils stay shut and the loop circulates through valve4 until the supply settles, avoiding the 40K first-contact violation (FIX-01). Off: coolantReady starts true, so the coils open at t=0 as if no preparation had run -- for Run_6's ablation (docs/cs/run_simulation.md), which asks whether CS-PREP is needed to meet the 40K rule at first coolant contact.";
+  parameter Boolean enableCSPrep = false
+    "Master switch for CS-PREP. On by default (baseline): coils stay shut and the loop circulates through valve4 until the supply settles, avoiding the 40K first-contact violation (FIX-01). Off: coolantReady starts true, so the coils open at t=0 as if no preparation had run -- currently set for Run_6's ablation (docs/cs/run_simulation.md), which asks whether CS-PREP is needed to meet the 40K rule at first coolant contact; set to true for every other run.";
   parameter Real Kv_prepBypass = 1
     "valve4 Kv during preparation: ~10 bar at 0.17 kg/s of 97.5K/82 bar helium, about the coils' own loss, so the circulator runs near its design point and RV01 hardly moves at the hand-over.";
   parameter Modelica.Units.SI.TemperatureDifference prepTempBand = 2
@@ -70,8 +70,8 @@ model CSCircuit
   parameter Modelica.Units.SI.Time overCoolStabilizeDelay = 30 "Copied from TF/PF.";
   parameter Real Kv_coilBypassOpen = 5000*kvScale "valve4 Kv when opened by the overcool logic (TF 5000, scaled).";
 
-  parameter Boolean enableCoilIsolation = false
-    "Per-coil relative-margin isolation (ATEKO S6.1: 'ON/OFF valve switch ON/OFF flow rate through coils according to their temperature') -- all 5 coils, CS_V01..V05. Currently set for Run_5 (docs/cs/run_simulation.md), C-ISO off; set to true for Run_1/Run_2/Run_3/Run_4/Run_6.";
+  parameter Boolean enableCoilIsolation = true
+    "Per-coil relative-margin isolation (ATEKO S6.1: 'ON/OFF valve switch ON/OFF flow rate through coils according to their temperature') -- all 5 coils, CS_V01..V05. Currently set for Run_6 (docs/cs/run_simulation.md); set to false for Run_5.";
   parameter Modelica.Units.SI.TemperatureDifference coilIsolationCloseMargin = 40 "Same as TF/PF.";
   parameter Modelica.Units.SI.TemperatureDifference coilIsolationReopenMargin = 35 "Same as TF/PF.";
   parameter Boolean shutWhenCold_CS[nCS] = fill(false, nCS)
