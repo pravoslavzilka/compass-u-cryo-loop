@@ -2,13 +2,13 @@
 
 **Date:** 2026-10-29
 **Model:** `CoilLoopCompassU.CS.CSCircuit`
-**Git commit (HEAD):** `c0bf7686b154cde6d2ed0ac1aad09c056177f3a7` (2026-10-22) — **working tree was dirty**, see below. Commit before the next run if an exact-reproduction hash is needed.
+**Git commit:** `e3b55c3` — "CS: add enableCSPrep switch, fix Run_1 shutWhenCold_CS default, add run plan + Run_1 result" (merged into `development`). `CSCircuit.mo` at this commit is exactly what was translated and simulated for this run.
 
-**Uncommitted changes present at simulation time** (`dymola-thermal-systems/CoilLoopCompassU/CS/CSCircuit.mo`):
+**Settings changed by this commit, relative to the prior CS baseline** (`dymola-thermal-systems/CoilLoopCompassU/CS/CSCircuit.mo`):
 - Added `enableCSPrep` (new master switch for CS-PREP, default `true`).
 - `shutWhenCold_CS` default changed from `fill(true, nCS)` to `fill(false, nCS)`.
 - `coolantReady` start value and `firstOrder3.y_start` updated to respect `enableCSPrep`.
-- Also uncommitted: `docs/cs/control-logic.md` (documents `enableCSPrep`), new `docs/cs/run_simulation.md`.
+- Also added: `docs/cs/control-logic.md` update (documents `enableCSPrep`), new `docs/cs/run_simulation.md`.
 
 **Translation/simulation:** `OK: translation successful` → `SUCCESSFUL simulation of CoilLoopCompassU.CS.CSCircuit`, `T = 1800` reached (`dslog.txt`), CPU 393 s, 6551 accepted steps, 6 state events, 3 model time events.
 
