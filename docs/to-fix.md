@@ -355,7 +355,7 @@ the common power mode with a flow floor.
 `Ti_powerPID` 60 s are all ASSUMED.
 **Fix:** run power mode; check `P_shaft` settles near the limit and loop
 flow stays ≥ `m_flow_set`; retune.
-**2026-10-29 (commit e0fe3ad):** the first power-mode run (Run_3,
+**2026-10-29 (commit 13c9717):** the first power-mode run (Run_3,
 `docs/cs/run_simulation.md`) stalled DASSL at the T≈3.6 s startup
 transient instead of completing. Cause: `PID_power.u_s = P_shaftLimit`
 was unconditional, so at t=0 (circulator still on its soft-start ramp,
