@@ -2,7 +2,7 @@
 
 **Date:** 2026-10-29
 **Model:** `CoilLoopCompassU.CS.CSCircuit`
-**Git commit:** HEAD is `b9b82c9` (development), but the working tree was dirty at simulation time — `CSCircuit.mo`'s `shutWhenCold_CS` default was changed in the working copy (not yet committed) from `fill(false, nCS)` (Run_1) to `fill(true, nCS)` for this run. Commit before the next run if an exact-reproduction hash is needed.
+**Git commit:** `4cd3dc7` — "CS: set shutWhenCold_CS for Run_2, add Run_2 result" (development). `CSCircuit.mo` at this commit is exactly what was translated and simulated for this run.
 
 **Translation/simulation:** `OK: translation successful` → `SUCCESSFUL simulation of CoilLoopCompassU.CS.CSCircuit`, `T = 1800` reached (`dslog.txt`), CPU 393 s, 6598 accepted steps, 9 state events, 3 model time events.
 
