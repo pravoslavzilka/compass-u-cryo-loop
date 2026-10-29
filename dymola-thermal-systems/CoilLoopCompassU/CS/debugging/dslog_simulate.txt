@@ -1,5 +1,5 @@
 Log-file of program ./dymosim
-(generated: Thu Oct 29 18:40:27 2026)
+(generated: Thu Oct 29 21:15:42 2026)
 
 dymosim started
 ... "CoilLoopCompassU.CS.CSCircuit" simulating
@@ -10,29 +10,114 @@ Integration started at T = 0 using integration method DASSL
 (DAE multi-step solver (dassl/dasslrt of Petzold modified by Dassault Systemes))
 
 ... Warning message from dymosim
-At time T = 3.091617e+00 in current integration interval
+At time T = 2.163512e+00 in current integration interval
 T_interval = 0.000000e+00 ... 3.600000e+00
 a large amount of work has been expended
 (about 500 steps) in the integrator. Probably the communication
 interval is too large or the system is stiff.
 
+Warning: The following was detected at time: 4.845855440224876
+TSMedia-Error(CSCircuit.junction7.gas.gasPointer, GM_GasMixtureModel_computeSimpleCondensingProperties_phxi, mediumPointerID=98): h (=5.91366e+07 J/kg) > h_max (5.03827e+07 J/kg at T=10000 K), T limited to 10000 K, p=9.28518e+07 Pa, xi={1}
+
+The stack of functions is:
+TSMedia.Internals.GasObjectFunctions.densityDerivativeWRTspecificEnthalpy_phxi
+TSMedia.Internals.GasObjectFunctions.densityDerivativeWRTspecificEnthalpy_phxi(
+junction7.gas.p, 
+junction7.gas.h, 
+junction7.gas.xi, 
+junction7.gas.gasPointer)
+
+Warning: The following was detected at time: 4.845855440224876
+TSMedia-Error(CSCircuit.valve5.gasInB.gasPointer, GM_GasMixtureModel_computeSimpleCondensingProperties_phxi, mediumPointerID=70): h (=5.91366e+07 J/kg) > h_max (5.03827e+07 J/kg at T=10000 K), T limited to 10000 K, p=1 Pa, xi={1}
+
+The stack of functions is:
+TSMedia.Internals.GasObjectFunctions.temperature_phxi
+TSMedia.Internals.GasObjectFunctions.temperature_phxi(
+1, 
+valve5.gasInB.h, 
+valve5.gasInB.xi, 
+valve5.gasInB.gasPointer)
+
+Warning: The following was detected at time: 4.845855440224876
+TSMedia-Error(CSCircuit.valve5.gasInB.gasPointer, GM_GasMixtureModel_computeSimpleCondensingProperties_phxi, mediumPointerID=70): h (=5.91366e+07 J/kg) > h_max (5.03827e+07 J/kg at T=10000 K), T limited to 10000 K, p=9.28518e+07 Pa, xi={1}
+
+The stack of functions is:
+TSMedia.Internals.GasObjectFunctions.density_phxi
+TSMedia.Internals.GasObjectFunctions.density_phxi(
+valve5.gasInB.p, 
+valve5.gasInB.h, 
+valve5.gasInB.xi, 
+valve5.gasInB.gasPointer)
+
+Warning: The following was detected at time: 4.845855440224876
+TSMedia-Error(CSCircuit.valve3.gasInA.gasPointer, GM_GasMixtureModel_computeSimpleCondensingProperties_phxi, mediumPointerID=60): h (=-2.74265e+07 J/kg) < h_min (-1.53794e+06 J/kg at T=2 K), T limited to 2 K, p=1 Pa, xi={1}
+
+The stack of functions is:
+TSMedia.Internals.GasObjectFunctions.temperature_phxi
+TSMedia.Internals.GasObjectFunctions.temperature_phxi(
+1, 
+valve3.gasInA.h, 
+valve3.gasInA.xi, 
+valve3.gasInA.gasPointer)
+
+Warning: The following was detected at time: 4.845855440224876
+TSMedia-Error(CSCircuit.valve3.gasInB.gasPointer, GM_GasMixtureModel_computeSimpleCondensingProperties_phxi, mediumPointerID=62): h (=5.91366e+07 J/kg) > h_max (5.03827e+07 J/kg at T=10000 K), T limited to 10000 K, p=1 Pa, xi={1}
+
+The stack of functions is:
+TSMedia.Internals.GasObjectFunctions.temperature_phxi
+TSMedia.Internals.GasObjectFunctions.temperature_phxi(
+1, 
+valve3.gasInB.h, 
+valve3.gasInB.xi, 
+valve3.gasInB.gasPointer)
+
+Warning: The following was detected at time: 4.845855440224876
+TSMedia-Error(CSCircuit.valve3.gasInA.gasPointer, GM_GasMixtureModel_computeSimpleCondensingProperties_phxi, mediumPointerID=60): h (=-2.74265e+07 J/kg) < h_min (-1.53794e+06 J/kg at T=2 K), T limited to 2 K, p=9.7711e+07 Pa, xi={1}
+
+The stack of functions is:
+TSMedia.Internals.GasObjectFunctions.density_phxi
+TSMedia.Internals.GasObjectFunctions.density_phxi(
+valve3.gasInA.p, 
+valve3.gasInA.h, 
+valve3.gasInA.xi, 
+valve3.gasInA.gasPointer)
+
+Warning: The following was detected at time: 4.845855440224876
+TSMedia-Error(CSCircuit.valve3.gasInB.gasPointer, GM_GasMixtureModel_computeSimpleCondensingProperties_phxi, mediumPointerID=62): h (=5.91366e+07 J/kg) > h_max (5.03827e+07 J/kg at T=10000 K), T limited to 10000 K, p=9.28518e+07 Pa, xi={1}
+
+The stack of functions is:
+TSMedia.Internals.GasObjectFunctions.density_phxi
+TSMedia.Internals.GasObjectFunctions.density_phxi(
+valve3.gasInB.p, 
+valve3.gasInB.h, 
+valve3.gasInB.xi, 
+valve3.gasInB.gasPointer)
+
+
+Warning: Failed to solve nonlinear system using Newton solver.
+  Time: 4.845855440224876
+  Tag: simulation.nonlinear[1]
+  For debugging information enable
+  Simulation/Setup/Debug/Nonlinear solver diagnostics/Detailed logging of failed nonlinear solutions.
+Solver will attempt to handle this problem.
+
 
 Integration terminated successfully at T = 1800
-   CPU-time for integration                : 393 seconds
-   CPU-time for one grid interval          : 785 milliseconds
-   CPU-time for initialization             : 0.026 seconds
-   Number of result points                 : 526
+   CPU-time for integration                : 921 seconds
+   CPU-time for one grid interval          : 1.84e+03 milliseconds
+   CPU-time for initialization             : 0.028 seconds
+   Number of result points                 : 530
    Number of grid points                   : 501
-   Number of accepted steps                : 6598
-   Number of f-evaluations (dynamics)      : 23882
-   Number of crossing function evaluations : 7205
-   Number of Jacobian-evaluations          : 9107
+   Number of accepted steps                : 75944
+   Number of f-evaluations (dynamics)      : 197923
+   Number of crossing function evaluations : 76710
+   Number of Jacobian-evaluations          : 15424
    Number of model time events             : 3
    Number of input time events             : 0
-   Number of state events                  : 9
+   Number of state events                  : 11
    Number of step events                   : 0
    Minimum integration stepsize            : 1.03e-05
-   Maximum integration stepsize            : 56.6
+   Maximum integration stepsize            : 49
    Maximum integration order               : 5
 Calling terminal section
 ... "dsfinal.txt" creating (final states)
