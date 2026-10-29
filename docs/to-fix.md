@@ -39,6 +39,7 @@ structure.
 | [FIX-24](#fix-24) | PF | Coil valves at the inlet only (no R-BOTHENDS) | P3 | open |
 | [FIX-25](#fix-25) | PF | Evaporator modelled as one well-mixed cell, likely oversized | P2 | open |
 | [FIX-26](#fix-26) | PF | Power-cap PI integrates while its gate is shut | P3 | open |
+| [FIX-27](#fix-27) | CS | Recoverable Newton-solver failure at T~4.85s, every run since commit 13c9717 | P2 | open |
 
 ---
 
@@ -381,3 +382,37 @@ downstream of the RV01 tee. FM01 (`sensor_m_flow`) sits upstream on PFD
 22178 and reads loop + bypass.
 **Fix:** a meter on the loop side, or FM01 minus an RV01 flow estimate.
 Raise it with the PFD owner.
+
+<a id="fix-27"></a>
+### FIX-27 — Recoverable Newton-solver failure at T~4.85s since commit 13c9717 (P2)
+
+**Where:** `junction7`/`valve3`/`valve5` (the evaporator-outlet/bypass
+trio right before the coil supply header).
+**Problem:** every run compiled since the `PID_power` gate fix (commit
+`13c9717`, FIX-14) -- Run_3, Run_4, Run_5, regardless of `rv01Goal` --
+hits an identical nonlinear-solver failure at the identical instant,
+`T = 4.845855440224876 s`: gas enthalpy/pressure briefly go unphysical
+(`T` clamped to 10000 K / 2 K, `p` swinging between ~1 Pa and
+~93-98 MPa), logged as `"Failed to solve nonlinear system using Newton
+solver... Solver will attempt to handle this problem."` Dymola's
+solver recovers and the run still reaches `T=1800` successfully, but
+at a large CPU cost (Run_3: 921 s / 75944 steps vs. Run_1/Run_2's
+~393 s / ~6600 steps; Run_4: 767 s / 76162 steps; Run_5 recovered more
+cheaply, 155 s / 49201 steps -- cost varies by run, cause unclear).
+Run_1 and Run_2 (compiled before `13c9717`) never show this; every run
+compiled after it does, which rules out `rv01Goal` as the cause (first
+suspected after Run_3/Run_4, falsified by Run_5 -- see
+`data/CS/paper/Run_4/run.md`'s correction). The leading hypothesis is
+that adding a `controlsActive`-dependent term to `PID_power.u_s`
+shifted Dymola's symbolic equation sorting/nonlinear block grouping
+elsewhere in the model, exposing a pre-existing fragility in this
+already anti-chatter-flagged trio (`CSCircuit.mo`'s own header notes
+"valve3 decouples the near-zero-flow evaporator from the supply
+junctions").
+**Fix:** not investigated. Needs either reproducing with
+`Nonlinear solver diagnostics/Detailed logging of failed nonlinear
+solutions` enabled in Dymola, or bisecting what specifically in the
+`13c9717` diff perturbs the equation ordering (e.g. try the gate via a
+separate `Boolean`/`Real` intermediate variable instead of inlining
+`controlsActive` and `fan2ndOrder.P_shaft` directly into `PID_power.u_s`,
+to see if that changes the BLT decomposition back).

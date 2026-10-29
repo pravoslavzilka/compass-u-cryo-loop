@@ -32,7 +32,10 @@ Do the two secondary algorithms interact? Compare with Run_2 and Run_3.
 
 ## Translation/simulation
 
-Same two-stage startup pattern seen in Run_3 — gated `PID_power` passes `T≈3.6s` cleanly, then the same recoverable nonlinear-solver failure at `T≈4.845855s` in `junction7`/`valve3`/`valve5` (`"Failed to solve nonlinear system using Newton solver... Solver will attempt to handle this problem"`), which the solver pushed through. Seeing the identical failure signature in both power-mode runs (Run_3 and Run_4) and in neither flow-mode run (Run_1, Run_2) supports the earlier hypothesis that it's specific to the power-mode code path, not a generic recompile artifact.
+Same two-stage startup pattern seen in Run_3 — gated `PID_power` passes `T≈3.6s` cleanly, then the same recoverable nonlinear-solver failure at `T≈4.845855s` in `junction7`/`valve3`/`valve5` (`"Failed to solve nonlinear system using Newton solver... Solver will attempt to handle this problem"`), which the solver pushed through.
+
+**Correction (2026-10-29, after Run_5):** the note below originally claimed this was specific to power mode because it appeared in Run_3/Run_4 but not Run_1/Run_2. Run_5 (`rv01Goal=Flow`, same as Run_1/Run_2) hit the identical failure at the identical timestamp, which falsifies that. The actual dividing line is compiling before vs. after the `PID_power` gate fix (commit `13c9717`) — Run_1/Run_2 predate it, Run_3/Run_4/Run_5 postdate it, regardless of `rv01Goal`. See `data/CS/paper/Run_5/run.md` and the new FIX-27 in `docs/to-fix.md`.
+<!-- original (incorrect) note, kept for the record: "Seeing the identical failure signature in both power-mode runs (Run_3 and Run_4) and in neither flow-mode run (Run_1, Run_2) supports the earlier hypothesis that it's specific to the power-mode code path, not a generic recompile artifact." -->
 
 `SUCCESSFUL simulation of CoilLoopCompassU.CS.CSCircuit`, `T = 1800` reached, CPU 767 s, 76162 accepted steps, **28 state events** (vs. Run_3's 11, Run_2's 9, Run_1's 6 — C-COLDSHUT's extra per-coil latching adds events on top of power mode's).
 
