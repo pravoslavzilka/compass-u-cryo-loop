@@ -96,6 +96,11 @@ design flow. C-ISO, C-COLDSHUT and C-OVERCOOL only run after that.
 
 `coolantReady` never resets: preparation runs once per simulation.
 
+**Switch:** `enableCSPrep` (default `true`). `false` starts `coolantReady`
+latched true, so the coils open at t = 0 as if no preparation had run —
+used for the Run\_6 ablation in `run_simulation.md` (is CS-PREP needed to
+meet the 40 K rule at first contact?).
+
 <a id="cs-flow-sp"></a>
 
 ### CS-FLOW-SP — Coil-loop flow setpoint

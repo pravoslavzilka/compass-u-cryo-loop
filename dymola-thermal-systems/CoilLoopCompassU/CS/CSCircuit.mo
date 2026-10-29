@@ -50,6 +50,8 @@ model CSCircuit
     "Lower bound on wanted_temp -- 77K LIN evaporation temperature (ATEKO S3.4 minimum target), same as TF.";
 
   // --- startup coolant preparation through the coil bypass valve4 [CS-PREP] ---
+  parameter Boolean enableCSPrep = true
+    "Master switch for CS-PREP. On by default (baseline): coils stay shut and the loop circulates through valve4 until the supply settles, avoiding the 40K first-contact violation (FIX-01). Off: coolantReady starts true, so the coils open at t=0 as if no preparation had run -- for Run_6's ablation (docs/cs/run_simulation.md), which asks whether CS-PREP is needed to meet the 40K rule at first coolant contact.";
   parameter Real Kv_prepBypass = 1
     "valve4 Kv during preparation: ~10 bar at 0.17 kg/s of 97.5K/82 bar helium, about the coils' own loss, so the circulator runs near its design point and RV01 hardly moves at the hand-over.";
   parameter Modelica.Units.SI.TemperatureDifference prepTempBand = 2
@@ -72,8 +74,8 @@ model CSCircuit
     "Per-coil relative-margin isolation (ATEKO S6.1: 'ON/OFF valve switch ON/OFF flow rate through coils according to their temperature') -- all 5 coils, CS_V01..V05.";
   parameter Modelica.Units.SI.TemperatureDifference coilIsolationCloseMargin = 40 "Same as TF/PF.";
   parameter Modelica.Units.SI.TemperatureDifference coilIsolationReopenMargin = 35 "Same as TF/PF.";
-  parameter Boolean shutWhenCold_CS[nCS] = fill(true, nCS)
-    "Per-coil opt-in to the permanent 'cooled down' shut-off, same rule as TF's upper limb -- a coil that reaches T_coldShut gives its flow to the others.";
+  parameter Boolean shutWhenCold_CS[nCS] = fill(false, nCS)
+    "Per-coil opt-in to the permanent 'cooled down' shut-off, same rule as TF's upper limb -- a coil that reaches T_coldShut gives its flow to the others. Off by default: Run_1 (docs/cs/run_simulation.md) is the reference configuration with C-COLDSHUT off; set true for Run_2/Run_4.";
   parameter Modelica.Units.SI.Temperature T_coldShut(displayUnit="K") = 80 "ATEKO S3.4 target temperature.";
   parameter Modelica.Units.SI.Temperature T_releaseAll(displayUnit="K") = 80
     "Once the hottest wall cell of every coil still being cooled is below this, all shut-offs are lifted (allReleased), same as TF.";
@@ -166,8 +168,8 @@ model CSCircuit
   parameter Modelica.Units.SI.Time pressureValveRampTime = 2
     "RV07/RV08 command lag (was valveRampTime=8); with kPressurePID it sets the pressure loop damping.";
 
-  Boolean coolantReady(start=false, fixed=true)
-    "False during startup preparation (coils shut, flow through valve4); latched true once the supply has settled.";
+  Boolean coolantReady(start=not enableCSPrep, fixed=true)
+    "False during startup preparation (coils shut, flow through valve4); latched true once the supply has settled. Starts true when enableCSPrep is false, skipping preparation entirely.";
   Real coolantReadySince(start=0, fixed=true) "Time the coils were opened.";
   Real prepBandEnteredAt(start=0, fixed=true) "Time the supply last entered the preparation band.";
   Modelica.Units.SI.Temperature T_prepTarget = max(max(T_wall_max_CS) - tempMargin, T_supplyFloor)
@@ -496,7 +498,8 @@ model CSCircuit
          else 0.001)
     annotation (Placement(transformation(extent={{-54,60},{-34,80}})));
   Modelica.Blocks.Continuous.FirstOrder firstOrder3(T=3,
-    initType=Modelica.Blocks.Types.Init.InitialOutput, y_start=Kv_prepBypass)
+    initType=Modelica.Blocks.Types.Init.InitialOutput,
+    y_start=if enableCSPrep then Kv_prepBypass else 0.001)
     annotation (Placement(transformation(extent={{-20,60},{0,80}})));
 
   // --- supply header (CS1, CS2U, CS2L, CS3U, CS3L) ---

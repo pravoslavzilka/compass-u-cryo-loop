@@ -1,5 +1,5 @@
 Log-file of program ./dymosim
-(generated: Fri Oct 16 13:17:30 2026)
+(generated: Thu Oct 29 17:24:23 2026)
 
 dymosim started
 ... "CoilLoopCompassU.CS.CSCircuit" simulating
@@ -10,109 +10,29 @@ Integration started at T = 0 using integration method DASSL
 (DAE multi-step solver (dassl/dasslrt of Petzold modified by Dassault Systemes))
 
 ... Warning message from dymosim
-At time T = 2.359236e+00 in current integration interval
+At time T = 3.091617e+00 in current integration interval
 T_interval = 0.000000e+00 ... 3.600000e+00
 a large amount of work has been expended
 (about 500 steps) in the integrator. Probably the communication
 interval is too large or the system is stiff.
 
 
-Warning: Failed to solve nonlinear system using Newton solver.
-  Time: 3.317505109290928
-  Tag: simulation.nonlinear[13]
-  For debugging information enable
-  Simulation/Setup/Debug/Nonlinear solver diagnostics/Detailed logging of failed nonlinear solutions.
-Solver will attempt to handle this problem.
-
-
-Warning: Failed to solve nonlinear system using Newton solver.
-  Time: 3.317505109290928
-  Tag: simulation.nonlinear[13]
-Solver will attempt to handle this problem.
-
-Failed to evaluate model for ODE-Jacobian
-
-Warning: Failed to solve nonlinear system using Newton solver.
-  Time: 6.143000950967479
-  Tag: simulation.nonlinear[13]
-Solver will attempt to handle this problem.
-
-
-Warning: Failed to solve nonlinear system using Newton solver.
-  Time: 6.143000950967479
-  Tag: simulation.nonlinear[13]
-Solver will attempt to handle this problem.
-
-Failed to evaluate model for ODE-Jacobian
-
-Warning: Failed to solve nonlinear system using Newton solver.
-  Time: 8.323515182265302
-  Tag: simulation.nonlinear[13]
-Solver will attempt to handle this problem.
-
-
-Warning: Failed to solve nonlinear system using Newton solver.
-  Time: 8.323515182265302
-  Tag: simulation.nonlinear[13]
-Solver will attempt to handle this problem.
-
-Failed to evaluate model for ODE-Jacobian
-
-Warning: Failed to solve nonlinear system using Newton solver.
-  Time: 8.352144381578336
-  Tag: simulation.nonlinear[13]
-Solver will attempt to handle this problem.
-
-
-Warning: Failed to solve nonlinear system using Newton solver.
-  Time: 8.352144381578336
-  Tag: simulation.nonlinear[13]
-Solver will attempt to handle this problem.
-
-Failed to evaluate model for ODE-Jacobian
-
-Warning: Failed to solve nonlinear system using Newton solver.
-  Time: 9.850562607267847
-  Tag: simulation.nonlinear[13]
-Solver will attempt to handle this problem.
-
-
-Warning: Failed to solve nonlinear system using Newton solver.
-  Time: 9.850562607267847
-  Tag: simulation.nonlinear[13]
-Solver will attempt to handle this problem.
-
-Failed to evaluate model for ODE-Jacobian
-
-Warning: Failed to solve nonlinear system using Newton solver.
-  Time: 9.852958356164336
-  Tag: simulation.nonlinear[13]
-Solver will attempt to handle this problem.
-
-
-Warning: Failed to solve nonlinear system using Newton solver.
-  Time: 9.852958356164336
-  Tag: simulation.nonlinear[13]
-Solver will attempt to handle this problem.
-
-Failed to evaluate model for ODE-Jacobian
-
 Integration terminated successfully at T = 1800
-   CPU-time for integration                : 5.04e+04 seconds
-   CPU-time for one grid interval          : 1.01e+05 milliseconds
-   CPU-time for initialization             : 0.094 seconds
-   Number of result points                 : 534
+   CPU-time for integration                : 393 seconds
+   CPU-time for one grid interval          : 786 milliseconds
+   CPU-time for initialization             : 0.026 seconds
+   Number of result points                 : 520
    Number of grid points                   : 501
-   Number of accepted steps                : 298206
-   Number of f-evaluations (dynamics)      : 1075752
-   Number of crossing function evaluations : 299443
-   Number of Jacobian-evaluations          : 382075
+   Number of accepted steps                : 6551
+   Number of f-evaluations (dynamics)      : 23795
+   Number of crossing function evaluations : 7132
+   Number of Jacobian-evaluations          : 9091
    Number of model time events             : 3
    Number of input time events             : 0
-   Number of state events                  : 13
+   Number of state events                  : 6
    Number of step events                   : 0
-   Minimum integration stepsize            : 6.44e-06
-   Maximum integration stepsize            : 53.8
+   Minimum integration stepsize            : 1.03e-05
+   Maximum integration stepsize            : 56.6
    Maximum integration order               : 5
 Calling terminal section
 ... "dsfinal.txt" creating (final states)
