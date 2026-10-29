@@ -1,5 +1,5 @@
 Log-file of program ./dymosim
-(generated: Thu Oct 29 21:15:42 2026)
+(generated: Thu Oct 29 23:14:51 2026)
 
 dymosim started
 ... "CoilLoopCompassU.CS.CSCircuit" simulating
@@ -103,18 +103,18 @@ Solver will attempt to handle this problem.
 
 
 Integration terminated successfully at T = 1800
-   CPU-time for integration                : 921 seconds
-   CPU-time for one grid interval          : 1.84e+03 milliseconds
-   CPU-time for initialization             : 0.028 seconds
-   Number of result points                 : 530
+   CPU-time for integration                : 767 seconds
+   CPU-time for one grid interval          : 1.53e+03 milliseconds
+   CPU-time for initialization             : 0.029 seconds
+   Number of result points                 : 564
    Number of grid points                   : 501
-   Number of accepted steps                : 75944
-   Number of f-evaluations (dynamics)      : 197923
-   Number of crossing function evaluations : 76710
-   Number of Jacobian-evaluations          : 15424
+   Number of accepted steps                : 76162
+   Number of f-evaluations (dynamics)      : 198383
+   Number of crossing function evaluations : 77122
+   Number of Jacobian-evaluations          : 15500
    Number of model time events             : 3
    Number of input time events             : 0
-   Number of state events                  : 11
+   Number of state events                  : 28
    Number of step events                   : 0
    Minimum integration stepsize            : 1.03e-05
    Maximum integration stepsize            : 49

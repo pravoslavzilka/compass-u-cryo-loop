@@ -74,8 +74,8 @@ model CSCircuit
     "Per-coil relative-margin isolation (ATEKO S6.1: 'ON/OFF valve switch ON/OFF flow rate through coils according to their temperature') -- all 5 coils, CS_V01..V05.";
   parameter Modelica.Units.SI.TemperatureDifference coilIsolationCloseMargin = 40 "Same as TF/PF.";
   parameter Modelica.Units.SI.TemperatureDifference coilIsolationReopenMargin = 35 "Same as TF/PF.";
-  parameter Boolean shutWhenCold_CS[nCS] = fill(false, nCS)
-    "Per-coil opt-in to the permanent 'cooled down' shut-off, same rule as TF's upper limb -- a coil that reaches T_coldShut gives its flow to the others. Currently set for Run_3 (docs/cs/run_simulation.md), C-COLDSHUT off; set to fill(true, nCS) for Run_2/Run_4.";
+  parameter Boolean shutWhenCold_CS[nCS] = fill(true, nCS)
+    "Per-coil opt-in to the permanent 'cooled down' shut-off, same rule as TF's upper limb -- a coil that reaches T_coldShut gives its flow to the others. Currently set for Run_4 (docs/cs/run_simulation.md), C-COLDSHUT on; set to fill(false, nCS) for Run_1/Run_3/Run_5/Run_6.";
   parameter Modelica.Units.SI.Temperature T_coldShut(displayUnit="K") = 80 "ATEKO S3.4 target temperature.";
   parameter Modelica.Units.SI.Temperature T_releaseAll(displayUnit="K") = 80
     "Once the hottest wall cell of every coil still being cooled is below this, all shut-offs are lifted (allReleased), same as TF.";
