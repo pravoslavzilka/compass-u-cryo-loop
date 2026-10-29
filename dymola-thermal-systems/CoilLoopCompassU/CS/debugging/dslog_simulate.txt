@@ -1,5 +1,5 @@
 Log-file of program ./dymosim
-(generated: Thu Oct 29 17:24:23 2026)
+(generated: Thu Oct 29 18:40:27 2026)
 
 dymosim started
 ... "CoilLoopCompassU.CS.CSCircuit" simulating
@@ -19,17 +19,17 @@ interval is too large or the system is stiff.
 
 Integration terminated successfully at T = 1800
    CPU-time for integration                : 393 seconds
-   CPU-time for one grid interval          : 786 milliseconds
+   CPU-time for one grid interval          : 785 milliseconds
    CPU-time for initialization             : 0.026 seconds
-   Number of result points                 : 520
+   Number of result points                 : 526
    Number of grid points                   : 501
-   Number of accepted steps                : 6551
-   Number of f-evaluations (dynamics)      : 23795
-   Number of crossing function evaluations : 7132
-   Number of Jacobian-evaluations          : 9091
+   Number of accepted steps                : 6598
+   Number of f-evaluations (dynamics)      : 23882
+   Number of crossing function evaluations : 7205
+   Number of Jacobian-evaluations          : 9107
    Number of model time events             : 3
    Number of input time events             : 0
-   Number of state events                  : 6
+   Number of state events                  : 9
    Number of step events                   : 0
    Minimum integration stepsize            : 1.03e-05
    Maximum integration stepsize            : 56.6
