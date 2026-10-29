@@ -70,12 +70,12 @@ model CSCircuit
   parameter Modelica.Units.SI.Time overCoolStabilizeDelay = 30 "Copied from TF/PF.";
   parameter Real Kv_coilBypassOpen = 5000*kvScale "valve4 Kv when opened by the overcool logic (TF 5000, scaled).";
 
-  parameter Boolean enableCoilIsolation = true
-    "Per-coil relative-margin isolation (ATEKO S6.1: 'ON/OFF valve switch ON/OFF flow rate through coils according to their temperature') -- all 5 coils, CS_V01..V05.";
+  parameter Boolean enableCoilIsolation = false
+    "Per-coil relative-margin isolation (ATEKO S6.1: 'ON/OFF valve switch ON/OFF flow rate through coils according to their temperature') -- all 5 coils, CS_V01..V05. Currently set for Run_5 (docs/cs/run_simulation.md), C-ISO off; set to true for Run_1/Run_2/Run_3/Run_4/Run_6.";
   parameter Modelica.Units.SI.TemperatureDifference coilIsolationCloseMargin = 40 "Same as TF/PF.";
   parameter Modelica.Units.SI.TemperatureDifference coilIsolationReopenMargin = 35 "Same as TF/PF.";
-  parameter Boolean shutWhenCold_CS[nCS] = fill(true, nCS)
-    "Per-coil opt-in to the permanent 'cooled down' shut-off, same rule as TF's upper limb -- a coil that reaches T_coldShut gives its flow to the others. Currently set for Run_4 (docs/cs/run_simulation.md), C-COLDSHUT on; set to fill(false, nCS) for Run_1/Run_3/Run_5/Run_6.";
+  parameter Boolean shutWhenCold_CS[nCS] = fill(false, nCS)
+    "Per-coil opt-in to the permanent 'cooled down' shut-off, same rule as TF's upper limb -- a coil that reaches T_coldShut gives its flow to the others. Currently set for Run_5 (docs/cs/run_simulation.md), C-COLDSHUT off; set to fill(true, nCS) for Run_2/Run_4.";
   parameter Modelica.Units.SI.Temperature T_coldShut(displayUnit="K") = 80 "ATEKO S3.4 target temperature.";
   parameter Modelica.Units.SI.Temperature T_releaseAll(displayUnit="K") = 80
     "Once the hottest wall cell of every coil still being cooled is below this, all shut-offs are lifted (allReleased), same as TF.";
@@ -123,8 +123,8 @@ model CSCircuit
       Flow "Hold the coil-loop flow at m_flow_set",
       Power "Spend the shaft-power budget P_shaftLimit on extra coil flow, never below m_flow_set")
     "C-RV01 control goal.";
-  parameter RV01Goal rv01Goal = RV01Goal.Power
-    "Flow: RV01 holds m_flow_set. Power: PID_power adds 0..dm_flowPowerMax to the flow target while P_shaft is below P_shaftLimit, and takes it back above; the flow PI and the m_flow_set floor are the same in both modes. Currently set for Run_3 (docs/cs/run_simulation.md); set to Flow for Run_1/Run_2/Run_5/Run_6.";
+  parameter RV01Goal rv01Goal = RV01Goal.Flow
+    "Flow: RV01 holds m_flow_set. Power: PID_power adds 0..dm_flowPowerMax to the flow target while P_shaft is below P_shaftLimit, and takes it back above; the flow PI and the m_flow_set floor are the same in both modes. Currently set for Run_5 (docs/cs/run_simulation.md); set to Power for Run_3/Run_4.";
   parameter Modelica.Units.SI.Power P_shaftLimit = 20000
     "ASSUMED placeholder: shaft-power budget in power mode. Flow mode runs at ~16-18 kW over the cooldown (2026-10-16 sizing), so 20 kW leaves a few kW for extra flow.";
   parameter Modelica.Units.SI.MassFlowRate dm_flowPowerMax = 0.1
