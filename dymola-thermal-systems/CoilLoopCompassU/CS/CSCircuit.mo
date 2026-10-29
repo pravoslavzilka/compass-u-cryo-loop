@@ -74,8 +74,8 @@ model CSCircuit
     "Per-coil relative-margin isolation (ATEKO S6.1: 'ON/OFF valve switch ON/OFF flow rate through coils according to their temperature') -- all 5 coils, CS_V01..V05.";
   parameter Modelica.Units.SI.TemperatureDifference coilIsolationCloseMargin = 40 "Same as TF/PF.";
   parameter Modelica.Units.SI.TemperatureDifference coilIsolationReopenMargin = 35 "Same as TF/PF.";
-  parameter Boolean shutWhenCold_CS[nCS] = fill(true, nCS)
-    "Per-coil opt-in to the permanent 'cooled down' shut-off, same rule as TF's upper limb -- a coil that reaches T_coldShut gives its flow to the others. Currently set for Run_2 (docs/cs/run_simulation.md), C-COLDSHUT on; set to fill(false, nCS) for Run_1/Run_3/Run_5/Run_6.";
+  parameter Boolean shutWhenCold_CS[nCS] = fill(false, nCS)
+    "Per-coil opt-in to the permanent 'cooled down' shut-off, same rule as TF's upper limb -- a coil that reaches T_coldShut gives its flow to the others. Currently set for Run_3 (docs/cs/run_simulation.md), C-COLDSHUT off; set to fill(true, nCS) for Run_2/Run_4.";
   parameter Modelica.Units.SI.Temperature T_coldShut(displayUnit="K") = 80 "ATEKO S3.4 target temperature.";
   parameter Modelica.Units.SI.Temperature T_releaseAll(displayUnit="K") = 80
     "Once the hottest wall cell of every coil still being cooled is below this, all shut-offs are lifted (allReleased), same as TF.";
@@ -123,8 +123,8 @@ model CSCircuit
       Flow "Hold the coil-loop flow at m_flow_set",
       Power "Spend the shaft-power budget P_shaftLimit on extra coil flow, never below m_flow_set")
     "C-RV01 control goal.";
-  parameter RV01Goal rv01Goal = RV01Goal.Flow
-    "Flow: RV01 holds m_flow_set. Power: PID_power adds 0..dm_flowPowerMax to the flow target while P_shaft is below P_shaftLimit, and takes it back above; the flow PI and the m_flow_set floor are the same in both modes.";
+  parameter RV01Goal rv01Goal = RV01Goal.Power
+    "Flow: RV01 holds m_flow_set. Power: PID_power adds 0..dm_flowPowerMax to the flow target while P_shaft is below P_shaftLimit, and takes it back above; the flow PI and the m_flow_set floor are the same in both modes. Currently set for Run_3 (docs/cs/run_simulation.md); set to Flow for Run_1/Run_2/Run_5/Run_6.";
   parameter Modelica.Units.SI.Power P_shaftLimit = 20000
     "ASSUMED placeholder: shaft-power budget in power mode. Flow mode runs at ~16-18 kW over the cooldown (2026-10-16 sizing), so 20 kW leaves a few kW for extra flow.";
   parameter Modelica.Units.SI.MassFlowRate dm_flowPowerMax = 0.1
@@ -321,7 +321,7 @@ model CSCircuit
     yMin=0,
     initType=Modelica.Blocks.Types.Init.InitialOutput,
     y_start=0)
-    "C-RV01 power mode: u_s=P_shaftLimit, u_m=fan2ndOrder.P_shaft. Power below the limit -> y>0 -> extra flow target -> RV01 closes. Only read when rv01Goal=Power; yMin=0 keeps m_flow_set as the floor."
+    "C-RV01 power mode: u_s=P_shaftLimit, u_m=fan2ndOrder.P_shaft, gated to u_s=u_m until controlsActive (see the equation section). Power below the limit -> y>0 -> extra flow target -> RV01 closes. Only read when rv01Goal=Power; yMin=0 keeps m_flow_set as the floor."
     annotation (Placement(transformation(extent={{-230,206},{-210,226}})));
 
   // --- heater EH01 ---
@@ -630,7 +630,13 @@ equation
   coolingHysteresis.u = -PID.y;
   bypassHysteresis.u = -PID.y;
   PID_RV01.u_m = m_flow_loop;
-  PID_power.u_s = P_shaftLimit;
+  // Gated: zero error (u_s=u_m) until controlsActive, so the integrator can't wind up
+  // and PID_power.y stays ~0 while the circulator is still on its soft-start ramp.
+  // Without this, the 2026-10-29 Run_3 attempt saturated PID_power to dm_flowPowerMax
+  // within the first simulated second (P_shaft near zero vs P_shaftLimit=20kW), demanded
+  // flow the ramping circulator couldn't deliver, and stalled DASSL at the T~3.6s startup
+  // transient (see FIX-14, docs/to-fix.md).
+  PID_power.u_s = if controlsActive then P_shaftLimit else fan2ndOrder.P_shaft;
   PID_power.u_m = fan2ndOrder.P_shaft;
 
   for i in 1:nCS loop

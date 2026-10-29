@@ -355,6 +355,23 @@ the common power mode with a flow floor.
 `Ti_powerPID` 60 s are all ASSUMED.
 **Fix:** run power mode; check `P_shaft` settles near the limit and loop
 flow stays ≥ `m_flow_set`; retune.
+**2026-10-29 (commit e0fe3ad):** the first power-mode run (Run_3,
+`docs/cs/run_simulation.md`) stalled DASSL at the T≈3.6 s startup
+transient instead of completing. Cause: `PID_power.u_s = P_shaftLimit`
+was unconditional, so at t=0 (circulator still on its soft-start ramp,
+`fan2ndOrder.P_shaft` near zero) the error against the 20 kW limit
+saturated `PID_power.y` to `dm_flowPowerMax` almost instantly, demanding
+loop flow the ramping circulator couldn't deliver — `PID_RV01` then
+fought that infeasible target at exactly the point Run_1/Run_2 already
+found numerically delicate. Fixed the stall in `CSCircuit.mo` by gating
+`PID_power.u_s = if controlsActive then P_shaftLimit else
+fan2ndOrder.P_shaft` (zero error, no integrator wind-up, until the
+coils are open and `controlActivationDelay` has passed — the same gate
+C-ISO/C-COLDSHUT already use). `docs/cs/control-logic.md`'s C-RV01
+power-mode section updated to match. **Still open:** re-run Run_3 with
+the gate in place and check `P_shaft` settles near the limit / loop flow
+stays ≥ `m_flow_set` — the four power-mode parameters themselves remain
+untuned ASSUMED values, which is the original ask this item is tracking.
 
 <a id="fix-15"></a>
 ### FIX-15 — Loop-side flow not measured on the plant (P2, plant)

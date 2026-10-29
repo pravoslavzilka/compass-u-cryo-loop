@@ -163,8 +163,17 @@ Selected by `rv01Goal = RV01Goal.Power` (default `Flow`). `PID\_power`
 `dm\_flowPowerMax`]) adds its output to the flow target in
 `massFlowSetpoint`; `PID\_RV01` and the `m\_flow\_set` floor are unchanged.
 PID\_power runs in both modes but is only read in power mode, so
-switching is a parameter change only. It also acts during CS-PREP (the
-extra flow goes through valve4).
+switching is a parameter change only.
+
+**Gated by `controlsActive`:** `PID\_power.u\_s` is held equal to `u\_m`
+(zero error, output pinned near 0, no integrator wind-up) until
+`controlsActive` -- i.e. not during CS-PREP, and not until
+`controlActivationDelay` after the coils open. Added 2026-10-29 after
+the first power-mode run (Run\_3) stalled DASSL at the T\~3.6 s startup
+transient: with no gate, `PID\_power` saturated to `dm\_flowPowerMax`
+within the first simulated second (circulator still on its soft-start
+ramp, `P\_shaft` near zero vs `P\_shaftLimit` = 20 kW), demanding flow
+the ramping circulator couldn't deliver. See FIX-14 in `to-fix.md`.
 
 |Parameter|Value|Status|
 |-|-|-|
