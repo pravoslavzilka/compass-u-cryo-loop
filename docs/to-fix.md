@@ -39,6 +39,7 @@ structure.
 | [FIX-24](#fix-24) | PF | Coil valves at the inlet only (no R-BOTHENDS) | P3 | open |
 | [FIX-25](#fix-25) | PF | Evaporator modelled as one well-mixed cell, likely oversized | P2 | open |
 | [FIX-26](#fix-26) | PF | Power-cap PI integrates while its gate is shut | P3 | open |
+| [FIX-27](#fix-27) | CS | Recoverable Newton-solver failure at T~4.85s, every run since commit 13c9717 | P2 | open |
 
 ---
 
@@ -355,6 +356,23 @@ the common power mode with a flow floor.
 `Ti_powerPID` 60 s are all ASSUMED.
 **Fix:** run power mode; check `P_shaft` settles near the limit and loop
 flow stays ≥ `m_flow_set`; retune.
+**2026-10-29 (commit 13c9717):** the first power-mode run (Run_3,
+`docs/cs/run_simulation.md`) stalled DASSL at the T≈3.6 s startup
+transient instead of completing. Cause: `PID_power.u_s = P_shaftLimit`
+was unconditional, so at t=0 (circulator still on its soft-start ramp,
+`fan2ndOrder.P_shaft` near zero) the error against the 20 kW limit
+saturated `PID_power.y` to `dm_flowPowerMax` almost instantly, demanding
+loop flow the ramping circulator couldn't deliver — `PID_RV01` then
+fought that infeasible target at exactly the point Run_1/Run_2 already
+found numerically delicate. Fixed the stall in `CSCircuit.mo` by gating
+`PID_power.u_s = if controlsActive then P_shaftLimit else
+fan2ndOrder.P_shaft` (zero error, no integrator wind-up, until the
+coils are open and `controlActivationDelay` has passed — the same gate
+C-ISO/C-COLDSHUT already use). `docs/cs/control-logic.md`'s C-RV01
+power-mode section updated to match. **Still open:** re-run Run_3 with
+the gate in place and check `P_shaft` settles near the limit / loop flow
+stays ≥ `m_flow_set` — the four power-mode parameters themselves remain
+untuned ASSUMED values, which is the original ask this item is tracking.
 
 <a id="fix-15"></a>
 ### FIX-15 — Loop-side flow not measured on the plant (P2, plant)
@@ -364,3 +382,37 @@ downstream of the RV01 tee. FM01 (`sensor_m_flow`) sits upstream on PFD
 22178 and reads loop + bypass.
 **Fix:** a meter on the loop side, or FM01 minus an RV01 flow estimate.
 Raise it with the PFD owner.
+
+<a id="fix-27"></a>
+### FIX-27 — Recoverable Newton-solver failure at T~4.85s since commit 13c9717 (P2)
+
+**Where:** `junction7`/`valve3`/`valve5` (the evaporator-outlet/bypass
+trio right before the coil supply header).
+**Problem:** every run compiled since the `PID_power` gate fix (commit
+`13c9717`, FIX-14) -- Run_3, Run_4, Run_5, regardless of `rv01Goal` --
+hits an identical nonlinear-solver failure at the identical instant,
+`T = 4.845855440224876 s`: gas enthalpy/pressure briefly go unphysical
+(`T` clamped to 10000 K / 2 K, `p` swinging between ~1 Pa and
+~93-98 MPa), logged as `"Failed to solve nonlinear system using Newton
+solver... Solver will attempt to handle this problem."` Dymola's
+solver recovers and the run still reaches `T=1800` successfully, but
+at a large CPU cost (Run_3: 921 s / 75944 steps vs. Run_1/Run_2's
+~393 s / ~6600 steps; Run_4: 767 s / 76162 steps; Run_5 recovered more
+cheaply, 155 s / 49201 steps -- cost varies by run, cause unclear).
+Run_1 and Run_2 (compiled before `13c9717`) never show this; every run
+compiled after it does, which rules out `rv01Goal` as the cause (first
+suspected after Run_3/Run_4, falsified by Run_5 -- see
+`data/CS/paper/Run_4/run.md`'s correction). The leading hypothesis is
+that adding a `controlsActive`-dependent term to `PID_power.u_s`
+shifted Dymola's symbolic equation sorting/nonlinear block grouping
+elsewhere in the model, exposing a pre-existing fragility in this
+already anti-chatter-flagged trio (`CSCircuit.mo`'s own header notes
+"valve3 decouples the near-zero-flow evaporator from the supply
+junctions").
+**Fix:** not investigated. Needs either reproducing with
+`Nonlinear solver diagnostics/Detailed logging of failed nonlinear
+solutions` enabled in Dymola, or bisecting what specifically in the
+`13c9717` diff perturbs the equation ordering (e.g. try the gate via a
+separate `Boolean`/`Real` intermediate variable instead of inlining
+`controlsActive` and `fan2ndOrder.P_shaft` directly into `PID_power.u_s`,
+to see if that changes the BLT decomposition back).

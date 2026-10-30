@@ -50,6 +50,8 @@ model CSCircuit
     "Lower bound on wanted_temp -- 77K LIN evaporation temperature (ATEKO S3.4 minimum target), same as TF.";
 
   // --- startup coolant preparation through the coil bypass valve4 [CS-PREP] ---
+  parameter Boolean enableCSPrep = false
+    "Master switch for CS-PREP. On by default (baseline): coils stay shut and the loop circulates through valve4 until the supply settles, avoiding the 40K first-contact violation (FIX-01). Off: coolantReady starts true, so the coils open at t=0 as if no preparation had run -- currently set for Run_6's ablation (docs/cs/run_simulation.md), which asks whether CS-PREP is needed to meet the 40K rule at first coolant contact; set to true for every other run.";
   parameter Real Kv_prepBypass = 1
     "valve4 Kv during preparation: ~10 bar at 0.17 kg/s of 97.5K/82 bar helium, about the coils' own loss, so the circulator runs near its design point and RV01 hardly moves at the hand-over.";
   parameter Modelica.Units.SI.TemperatureDifference prepTempBand = 2
@@ -69,11 +71,11 @@ model CSCircuit
   parameter Real Kv_coilBypassOpen = 5000*kvScale "valve4 Kv when opened by the overcool logic (TF 5000, scaled).";
 
   parameter Boolean enableCoilIsolation = true
-    "Per-coil relative-margin isolation (ATEKO S6.1: 'ON/OFF valve switch ON/OFF flow rate through coils according to their temperature') -- all 5 coils, CS_V01..V05.";
+    "Per-coil relative-margin isolation (ATEKO S6.1: 'ON/OFF valve switch ON/OFF flow rate through coils according to their temperature') -- all 5 coils, CS_V01..V05. Currently set for Run_6 (docs/cs/run_simulation.md); set to false for Run_5.";
   parameter Modelica.Units.SI.TemperatureDifference coilIsolationCloseMargin = 40 "Same as TF/PF.";
   parameter Modelica.Units.SI.TemperatureDifference coilIsolationReopenMargin = 35 "Same as TF/PF.";
-  parameter Boolean shutWhenCold_CS[nCS] = fill(true, nCS)
-    "Per-coil opt-in to the permanent 'cooled down' shut-off, same rule as TF's upper limb -- a coil that reaches T_coldShut gives its flow to the others.";
+  parameter Boolean shutWhenCold_CS[nCS] = fill(false, nCS)
+    "Per-coil opt-in to the permanent 'cooled down' shut-off, same rule as TF's upper limb -- a coil that reaches T_coldShut gives its flow to the others. Currently set for Run_5 (docs/cs/run_simulation.md), C-COLDSHUT off; set to fill(true, nCS) for Run_2/Run_4.";
   parameter Modelica.Units.SI.Temperature T_coldShut(displayUnit="K") = 80 "ATEKO S3.4 target temperature.";
   parameter Modelica.Units.SI.Temperature T_releaseAll(displayUnit="K") = 80
     "Once the hottest wall cell of every coil still being cooled is below this, all shut-offs are lifted (allReleased), same as TF.";
@@ -122,7 +124,7 @@ model CSCircuit
       Power "Spend the shaft-power budget P_shaftLimit on extra coil flow, never below m_flow_set")
     "C-RV01 control goal.";
   parameter RV01Goal rv01Goal = RV01Goal.Flow
-    "Flow: RV01 holds m_flow_set. Power: PID_power adds 0..dm_flowPowerMax to the flow target while P_shaft is below P_shaftLimit, and takes it back above; the flow PI and the m_flow_set floor are the same in both modes.";
+    "Flow: RV01 holds m_flow_set. Power: PID_power adds 0..dm_flowPowerMax to the flow target while P_shaft is below P_shaftLimit, and takes it back above; the flow PI and the m_flow_set floor are the same in both modes. Currently set for Run_5 (docs/cs/run_simulation.md); set to Power for Run_3/Run_4.";
   parameter Modelica.Units.SI.Power P_shaftLimit = 20000
     "ASSUMED placeholder: shaft-power budget in power mode. Flow mode runs at ~16-18 kW over the cooldown (2026-10-16 sizing), so 20 kW leaves a few kW for extra flow.";
   parameter Modelica.Units.SI.MassFlowRate dm_flowPowerMax = 0.1
@@ -166,8 +168,8 @@ model CSCircuit
   parameter Modelica.Units.SI.Time pressureValveRampTime = 2
     "RV07/RV08 command lag (was valveRampTime=8); with kPressurePID it sets the pressure loop damping.";
 
-  Boolean coolantReady(start=false, fixed=true)
-    "False during startup preparation (coils shut, flow through valve4); latched true once the supply has settled.";
+  Boolean coolantReady(start=not enableCSPrep, fixed=true)
+    "False during startup preparation (coils shut, flow through valve4); latched true once the supply has settled. Starts true when enableCSPrep is false, skipping preparation entirely.";
   Real coolantReadySince(start=0, fixed=true) "Time the coils were opened.";
   Real prepBandEnteredAt(start=0, fixed=true) "Time the supply last entered the preparation band.";
   Modelica.Units.SI.Temperature T_prepTarget = max(max(T_wall_max_CS) - tempMargin, T_supplyFloor)
@@ -319,7 +321,7 @@ model CSCircuit
     yMin=0,
     initType=Modelica.Blocks.Types.Init.InitialOutput,
     y_start=0)
-    "C-RV01 power mode: u_s=P_shaftLimit, u_m=fan2ndOrder.P_shaft. Power below the limit -> y>0 -> extra flow target -> RV01 closes. Only read when rv01Goal=Power; yMin=0 keeps m_flow_set as the floor."
+    "C-RV01 power mode: u_s=P_shaftLimit, u_m=fan2ndOrder.P_shaft, gated to u_s=u_m until controlsActive (see the equation section). Power below the limit -> y>0 -> extra flow target -> RV01 closes. Only read when rv01Goal=Power; yMin=0 keeps m_flow_set as the floor."
     annotation (Placement(transformation(extent={{-230,206},{-210,226}})));
 
   // --- heater EH01 ---
@@ -496,7 +498,8 @@ model CSCircuit
          else 0.001)
     annotation (Placement(transformation(extent={{-54,60},{-34,80}})));
   Modelica.Blocks.Continuous.FirstOrder firstOrder3(T=3,
-    initType=Modelica.Blocks.Types.Init.InitialOutput, y_start=Kv_prepBypass)
+    initType=Modelica.Blocks.Types.Init.InitialOutput,
+    y_start=if enableCSPrep then Kv_prepBypass else 0.001)
     annotation (Placement(transformation(extent={{-20,60},{0,80}})));
 
   // --- supply header (CS1, CS2U, CS2L, CS3U, CS3L) ---
@@ -627,7 +630,13 @@ equation
   coolingHysteresis.u = -PID.y;
   bypassHysteresis.u = -PID.y;
   PID_RV01.u_m = m_flow_loop;
-  PID_power.u_s = P_shaftLimit;
+  // Gated: zero error (u_s=u_m) until controlsActive, so the integrator can't wind up
+  // and PID_power.y stays ~0 while the circulator is still on its soft-start ramp.
+  // Without this, the 2026-10-29 Run_3 attempt saturated PID_power to dm_flowPowerMax
+  // within the first simulated second (P_shaft near zero vs P_shaftLimit=20kW), demanded
+  // flow the ramping circulator couldn't deliver, and stalled DASSL at the T~3.6s startup
+  // transient (see FIX-14, docs/to-fix.md).
+  PID_power.u_s = if controlsActive then P_shaftLimit else fan2ndOrder.P_shaft;
   PID_power.u_m = fan2ndOrder.P_shaft;
 
   for i in 1:nCS loop
