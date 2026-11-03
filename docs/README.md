@@ -11,6 +11,8 @@
 | `docs/{cs,pf,tf}/circulator-sizing.md` | Circulator sizing derivations (design basis), numbers tagged [FROM SOURCE] / [CALCULATED] / [ASSUMED]. |
 | `docs/pf/pf_circulator_sizing.py` | Reproduces the PF sizing numbers from a result file. |
 | `docs/pf/pid-sensitivity-report.md` | One-off PF investigation report (mass-flow/pressure sensitivity to PID and isolation tuning). |
+| `docs/reading-simulations.md` | How to read a run, which signals the real plant has (outlet only) vs model-only (wall), the requirements, and the mandatory outlet-vs-wall check after every run. Start here for results. |
+| `docs/plant-design-requests.md` | What the controls need that the real plant design (PFDs) lacks, e.g. a loop-side flow meter. Requests to the PFD owner, with IDs (`PLANT-…`). |
 | `docs/to-fix.md` | Open problems found in reviews, all circuits, with IDs (`FIX-…`) and status. Close an item by marking it done with the commit, not by deleting it. |
 | `docs/migration-notes.md` | Chronological troubleshooting log (bugs, root causes), all circuits. |
 

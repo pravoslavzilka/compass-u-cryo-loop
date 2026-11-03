@@ -198,6 +198,11 @@ variant a lets the supply sit slightly more than 40 K below the coil.
 Shut coils are excluded in b because they receive no coolant; including
 them would hold the supply up for coils it never reaches.
 
+**Caveat (FIX-28):** variant b reads the wall temperature, which the real
+plant can't measure (only return-line outlets exist). Treat it as an
+idealisation until the outlet-vs-wall check in
+[reading-simulations.md](reading-simulations.md) §5 has been done.
+
 **Revision history:** 2026-10-22 entry created.
 
 ---
@@ -213,7 +218,12 @@ assembly's `KvValue_in1` (its ON/OFF valve(s)).
 ATEKO S6.1: "ON/OFF valve switch ON/OFF flow rate through coils according
 to their temperature"; S3.2: focus on temperature homogeneity. IPP
 requirement: the spread between the hottest and the coldest coil must
-not exceed 40 K.
+not exceed 40 K. Source: thesis §6.1–6.2 (coils are judged by their return
+temperature, since there are no coil sensors; coils more than 40 K cooler
+than the hottest are isolated). The coil temperature is therefore the
+**gas outlet** temperature, and each run is checked against the wall
+temperature, see [reading-simulations.md](reading-simulations.md) §5
+(FIX-16).
 
 ```
 close coil i   when  T_gas_out_max − T_cmp[i] > coilIsolationCloseMargin   (40 K)
