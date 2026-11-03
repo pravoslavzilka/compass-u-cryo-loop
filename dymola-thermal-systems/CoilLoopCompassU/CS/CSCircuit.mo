@@ -699,10 +699,14 @@ algorithm
     end when;
 
     // [C-COLDSHUT] Permanent "cooled down" shut-off, same as TF's upper limb.
+    // Re-freeze only if the coil is flowing: for a coil already isolated by C-ISO the raw
+    // outlet is stagnant, and the frozen value must stay (R-FROZEN, FIX-04).
     when shutWhenCold_CS[i] and controlsActive
         and T_gas_out_compare_CS[i] <= T_coldShut and not pre(coldShut[i]) then
       coldShut[i] := true;
-      T_gas_out_frozen[i] := T_gas_out_CS[i];
+      if coilFlowing[i] then
+        T_gas_out_frozen[i] := T_gas_out_CS[i];
+      end if;
     end when;
   end for;
 

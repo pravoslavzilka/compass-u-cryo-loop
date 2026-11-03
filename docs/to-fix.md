@@ -16,7 +16,7 @@ structure.
 | [FIX-01](#fix-01) | TF, PF | Coils meet 80 K gas at 137 K (TF) / 160 K (PF): 40 K rule broken at startup | P1 | open |
 | [FIX-02](#fix-02) | TF | Pressure PI saturates at 150 Pa error (CS found ringing with the same gain) | P1 | open |
 | [FIX-03](#fix-03) | TF, PF | valve6 Kv negative for 0 < PID.y < 0.7 (no R-KVFLOOR) | P2 | open |
-| [FIX-04](#fix-04) | TF, CS | Cold shut-off overwrites a frozen temperature with the raw stagnant one | P2 | open |
+| [FIX-04](#fix-04) | TF, CS | Cold shut-off overwrites a frozen temperature with the raw stagnant one | P2 | **done** 2026-11-03 (not yet simulated) |
 | [FIX-05](#fix-05) | TF, PF | Isolation close not gated by the activation delay | P3 | open |
 | [FIX-06](#fix-06) | TF | PID_pressure limits don't match the Kv clamp (no R-WINDUP) | P3 | open |
 | [FIX-07](#fix-07) | TF | No flow control: coil flow is whatever the fixed-speed fan gives | P2 | open, check PFD |
@@ -89,7 +89,14 @@ command is negative: reverse evaporator flow (16k Newton failures in CS).
 one-token fix in `PFCircuit.mo`.
 
 <a id="fix-04"></a>
-### FIX-04 — Cold shut-off overwrites the frozen temperature (P2, also CS)
+### FIX-04 — Cold shut-off overwrites the frozen temperature (P2, also CS) — done
+
+**Done** 2026-11-03 in `CSCircuit.mo` and `TFCircuit.mo`: the `[C-COLDSHUT]`
+when-block now re-freezes `T_gas_out_frozen[i]` only if the coil/bus is flowing
+(`coilFlowing[i]` in CS; `(pre(allReleased) and isCoil_TF[i]) or pre(coilOpen[i])`
+in TF). Not yet translated or simulated; check that a CS and a TF run still
+translate and that Runs 2/4 are unchanged (the case never triggers in the
+symmetric runs). Original entry follows.
 
 **Where:** algorithm section, `[C-COLDSHUT]` when-block:
 `T_gas_out_frozen[i] := T_gas_out_TF[i]`.

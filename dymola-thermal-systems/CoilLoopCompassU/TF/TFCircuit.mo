@@ -567,10 +567,14 @@ algorithm
     // the shut bus's stagnant outlet temperature can't re-cross the threshold
     // and fire events afterwards. Gated by controlActivationDelay because the
     // gas starts at 80K (= T_coldShut) before the 137K coils heat it.
+    // Re-freeze only if the bus is flowing: for a bus already isolated by C-ISO the raw
+    // outlet is stagnant, and the frozen value must stay (R-FROZEN, FIX-04).
     when shutWhenCold_TF[i] and time >= controlActivationDelay
         and T_gas_out_compare_TF[i] <= T_coldShut and not pre(coldShut[i]) then
       coldShut[i] := true;
-      T_gas_out_frozen[i] := T_gas_out_TF[i];
+      if (pre(allReleased) and isCoil_TF[i]) or pre(coilOpen[i]) then
+        T_gas_out_frozen[i] := T_gas_out_TF[i];
+      end if;
     end when;
   end for;
 

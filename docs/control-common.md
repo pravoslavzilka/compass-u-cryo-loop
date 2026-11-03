@@ -251,7 +251,9 @@ Both latches are permanent for the run.
 **Optimizes:** cooldown time of the slowest coil (flow redistribution).
 The requirements are met without it.
 
-**Revision history:** 2026-10-22 entry created.
+**Revision history:** 2026-10-22 entry created. 2026-11-03 cold shut-off
+re-freezes `T_gas_out_frozen[i]` only while the coil flows, so an
+isolated coil keeps its R-FROZEN value (FIX-04).
 
 ---
 
