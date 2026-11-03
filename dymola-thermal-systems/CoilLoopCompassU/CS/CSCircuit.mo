@@ -577,8 +577,8 @@ model CSCircuit
     fixedInitialPressure=false, TInitial(displayUnit="K") = T_loopInitial)
     "Pressure-control node: portA from junction1, portB to RV07 (make-up), portC to RV08 (relief)."
     annotation (Placement(transformation(extent={{-4,4},{4,-4}}, rotation=90, origin={-2,156})));
-  ThermalSystems.GasComponents.Sensors.Sensor_p sensor_p_suction
-    "Name kept from PF/TF; measures the controlled node junction22 (circulator discharge side), not the suction."
+  ThermalSystems.GasComponents.Sensors.Sensor_p sensor_p_discharge
+    "Measures the controlled node junction22 (circulator discharge side). Renamed from sensor_p_suction (FIX-17)."
     annotation (Placement(transformation(extent={{58,134},{66,142}})));
   Modelica.Blocks.Sources.RealExpression pressureSetpointSource(y=pressureSetpoint)
     annotation (Placement(transformation(extent={{80,160},{100,180}})));
@@ -863,7 +863,7 @@ equation
   connect(junction1.portB, junction22.portA)
     annotation (Line(points={{-116,-24},{-120,-24},{-120,158},{-12,158},{-12,148},{-2,148},{-2,152}},
       color={255,153,0}, thickness=0.5));
-  connect(sensor_p_suction.port, junction22.portA)
+  connect(sensor_p_discharge.port, junction22.portA)
     annotation (Line(points={{62,134},{62,130},{-2,130},{-2,152}}, color={255,153,0}, thickness=0.5));
   connect(RV07.portB, junction22.portB)
     annotation (Line(points={{10,180},{4,180},{4,164},{6,164},{6,156},{2,156}}, color={255,153,0}, thickness=0.5));
@@ -879,7 +879,7 @@ equation
     annotation (Line(points={{-32,182.225},{-32,178},{-20,178}}, color={255,153,0}, thickness=0.5));
   connect(pressureSetpointSource.y, PID_pressure.u_s)
     annotation (Line(points={{101,170},{118,170}}, color={0,0,127}));
-  connect(sensor_p_suction.sensorValue, PID_pressure.u_m)
+  connect(sensor_p_discharge.sensorValue, PID_pressure.u_m)
     annotation (Line(points={{62,140},{62,148},{130,148},{130,158}}, color={0,0,127}));
   connect(RV07Limiter.y, firstOrderRV07.u)
     annotation (Line(points={{-19,268},{-10,268},{-10,270},{-2,270}}, color={0,0,127}));

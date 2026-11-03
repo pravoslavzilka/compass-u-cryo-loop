@@ -378,7 +378,7 @@ model TFCircuit
   ThermalSystems.GasComponents.JunctionElements.VolumeJunction junction22(
     volume=1e-2, m_flowStart=1e-5, pInitial=2500000,
     fixedInitialPressure=false, TInitial(displayUnit="K") = 80)
-    "[C-PRES-a] Pressure-control tee on the circulator DISCHARGE side: portA to junction1 (evaporator inlet tee after the heater) and sensor_p_suction, portB to RV07 (make-up), portC to RV08 (relief) -- same role as PFCircuit.mo's junction22."
+    "[C-PRES-a] Pressure-control tee on the circulator DISCHARGE side: portA to junction1 (evaporator inlet tee after the heater) and sensor_p_discharge, portB to RV07 (make-up), portC to RV08 (relief) -- same role as PFCircuit.mo's junction22."
     annotation (Placement(transformation(extent={{-4,4},{4,-4}}, rotation=90, origin={-2,156})));
 
   // --- valve4 overcool bypass branch [C-OVERCOOL, archived], copied from PFCircuit.mo: supply tee
@@ -436,7 +436,7 @@ model TFCircuit
     annotation (Placement(transformation(extent={{-220,-100},{-200,-80}})));
 
   // --- pressure control RV07/RV08 at junction22 (circulator discharge side) [C-PRES-a] ---
-  ThermalSystems.GasComponents.Sensors.Sensor_p sensor_p_suction
+  ThermalSystems.GasComponents.Sensors.Sensor_p sensor_p_discharge
     "[C-PRES-a] Pressure at junction22 -- the circulator DISCHARGE side despite the name (kept so result-file variable names don't change)."
     annotation (Placement(transformation(extent={{64,160},{72,168}})));
   Modelica.Blocks.Continuous.LimPID PID_pressure(
@@ -497,7 +497,7 @@ equation
   bypassHysteresis.u = -PID.y;
   // [C-PRES-a]
   PID_pressure.u_s = pressureSetpoint;
-  PID_pressure.u_m = sensor_p_suction.sensorValue;
+  PID_pressure.u_m = sensor_p_discharge.sensorValue;
 
   // [C-ISO] [C-COLDSHUT] a bus flows if released, or open and not cold-shut;
   // [R-FROZEN] a closed bus is compared on its outlet temperature at closing.
@@ -733,7 +733,7 @@ equation
       points={{-24,120},{-52,120}},
       color={255,153,0},
       thickness=0.5));
-  connect(sensor_p_suction.port, junction22.portA) annotation (Line(
+  connect(sensor_p_discharge.port, junction22.portA) annotation (Line(
       points={{68,160},{68,138},{-2,138},{-2,152}},
       color={255,153,0},
       thickness=0.5));

@@ -36,7 +36,7 @@ pressure spike that opened RV07 and RV08 together (CS 2026-10-08 run).
 <a id="c-pres"></a>
 ## C-PRES — Loop pressure control (RV07 make-up / RV08 relief)
 
-**Components:** `sensor_p_suction` → `PID_pressure` → `RV07Limiter` /
+**Components:** `sensor_p_discharge` → `PID_pressure` → `RV07Limiter` /
 `RV08Limiter` → `firstOrderRV07` / `firstOrderRV08` → `RV07`, `RV08`.
 Reservoirs: `makeupReservoir` → `makeupBuffer` → RV07 → `junction22`;
 `junction22` → RV08 → `reliefBuffer` → `reliefReservoir`.
@@ -66,9 +66,10 @@ the downstream Kv clamp does (`R-WINDUP`).
 
 In all three circuits `junction22` hangs off the evaporator inlet tee
 after the heater, so the controlled pressure is the **circulator
-discharge** side, not the suction. The sensor is still called
-`sensor_p_suction`, and PF/TF docstrings (and the moved PressureStabilizer
-text below) still say "suction node": the names are historical.
+discharge** side, not the suction. The sensor was renamed from
+`sensor_p_suction` to `sensor_p_discharge` (FIX-17, 2026-11-03); older result
+files still use the old name. Some PF/TF docstrings (and the moved
+PressureStabilizer text below) still say "suction node": historical wording.
 
 **Revision history:** 2026-10-22 entry created; variant b text moved
 from the former `docs/algorithms.md` (PressureStabilizer entry, last
@@ -318,7 +319,7 @@ Moved from the former `docs/algorithms.md`. Written for
 
 RV07 (make-up, admits helium from a higher-pressure reservoir) and RV08
 (relief, vents helium to a lower-pressure reservoir) hold the suction-node
-pressure (`sensor_p_suction`) near `pressureSetpoint` (3,650,000 Pa /
+pressure (`sensor_p_discharge`) near `pressureSetpoint` (3,650,000 Pa /
 36.5 bar). Earlier designs made each valve a pure on/off (or
 dwell-debounced on/off) relay: fully shut, or open at close to full
 authority. A relay controller structurally cannot rest at a point — it
@@ -337,7 +338,7 @@ enough.
 
 **1. Continuous trim (runs essentially always).** `RV07Limiter`/
 `RV08Limiter` compute Kv directly from `PID_pressure.y` — the live PI
-error between `pressureSetpoint` and `sensor_p_suction` — with a small
+error between `pressureSetpoint` and `sensor_p_discharge` — with a small
 gain and cap:
 
 ```
@@ -373,11 +374,11 @@ drifts past the outer thresholds (`pMakeupOpen` = 34 bar / `pReliefOpen`
 activity never reaches them), a pulse fires:
 
 ```
-when enablePressureControl and sensor_p_suction.sensorValue <= pMakeupOpen
+when enablePressureControl and sensor_p_discharge.sensorValue <= pMakeupOpen
     and not pre(makeupActive) then
   makeupActive := true;
   makeupPulsing := true;
-  makeupPulseTargetMass := (pMakeupClose - sensor_p_suction.sensorValue)
+  makeupPulseTargetMass := (pMakeupClose - sensor_p_discharge.sensorValue)
                             * V_loopEffective / (R_specificHelium * T_loopEstimate);
 end when;
 ```
@@ -396,7 +397,7 @@ the valve is integrated live:
 
 ```
 der(makeupDeliveredMass) = if makeupPulsing then abs(RV07.summary.m_flow_gas_B) else 0;
-when enablePressureControl and sensor_p_suction.sensorValue <= pMakeupOpen
+when enablePressureControl and sensor_p_discharge.sensorValue <= pMakeupOpen
     and not pre(makeupActive) then
   reinit(makeupDeliveredMass, 0);
 end when;
@@ -408,7 +409,7 @@ end when;
 
 ```
 when pre(makeupPulsing) and (makeupDeliveredMass >= makeupPulseTargetMass
-    or sensor_p_suction.sensorValue >= pMakeupClose) then
+    or sensor_p_discharge.sensorValue >= pMakeupClose) then
   makeupPulsing := false;
 end when;
 ```
@@ -429,7 +430,7 @@ smoothly.
 
 RV08/relief mirrors all of this exactly: `pReliefOpen` = 39 bar,
 `pReliefClose` = 37.5 bar, `KvReliefPulse` = 60, `reliefPulseTargetMass =
-(sensor_p_suction - pReliefClose) * V_loopEffective / (R_specificHelium *
+(sensor_p_discharge - pReliefClose) * V_loopEffective / (R_specificHelium *
 T_loopEstimate)`, integrating `abs(RV08.summary.m_flow_gas_A)` (RV08's
 loop-side port — note it's port A for RV08 vs. port B for RV07, since the
 two valves are wired with opposite port orientation relative to
@@ -443,7 +444,7 @@ turns true on the exact same edge that arms a pulse (crossing
 the way to `pMakeupClose` — a third, independent `when` block:
 
 ```
-when pre(makeupActive) and sensor_p_suction.sensorValue >= pMakeupClose then
+when pre(makeupActive) and sensor_p_discharge.sensorValue >= pMakeupClose then
   makeupActive := false;
   makeupPulsing := false;   -- safety net; normally already false by now
 end when;

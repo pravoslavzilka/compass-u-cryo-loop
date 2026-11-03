@@ -29,7 +29,7 @@ structure.
 | [FIX-14](#fix-14) | CS | C-RV01 power mode never run, all four parameters guessed | P2 | open |
 | [FIX-15](#fix-15) | CS | RV01 flow PI reads a loop-side flow the plant doesn't measure | P2 | open, plant |
 | [FIX-16](#fix-16) | all | C-ISO 40 K coil-to-coil: source unknown; outlet vs wall undecided | P2 | open, decision |
-| [FIX-17](#fix-17) | all | `sensor_p_suction` measures the discharge side | P3 | open, ask first |
+| [FIX-17](#fix-17) | all | `sensor_p_suction` measures the discharge side: renamed `sensor_p_discharge` | P3 | **done** 2026-11-03 (not yet simulated) |
 | [FIX-18](#fix-18) | PF | `.mo` not tagged with algorithm IDs; stale docstrings (thresholds, suction, line numbers) | P3 | open |
 | [FIX-19](#fix-19) | PF | `pressureSetpoint` docstring says 35.5 barg for 36.5 bara | P3 | open |
 | [FIX-20](#fix-20) | all | Coil-sequencing rules share latches but are separate algorithms | P3 | proposal |
@@ -186,7 +186,14 @@ use `T_wall_max`.
 **Fix:** get the source; settle outlet vs wall.
 
 <a id="fix-17"></a>
-### FIX-17 — `sensor_p_suction` measures the discharge side (P3, ask first)
+### FIX-17 — `sensor_p_suction` measures the discharge side (P3, ask first) — done
+
+**Done** 2026-11-03: renamed to `sensor_p_discharge` in `CSCircuit.mo`,
+`PFCircuit.mo`, `TFCircuit.mo` and the current docs. Not yet translated.
+Result files, `dsin.txt` files and `debugging/` build output from before the
+rename keep the old name (they record what was simulated); scripts reading old
+results must use `sensor_p_suction`. `migration-notes.md` is left as the
+historical log. Original entry follows.
 
 **Problem:** in CS, PF and TF it reads `junction22`, which hangs off the
 evaporator inlet tee after the heater, i.e. the circulator discharge. The
@@ -273,7 +280,7 @@ valve5 fully open while the supply sat 7–14 K above setpoint.
   topology" — it hangs off `junction6`, the evaporator inlet tee
   (discharge side). Same "suction" wording in `enablePressureControl`,
   `pressureSetpoint`, `PID_pressure`, `V_loopEffective`.
-- `sensor_p_suction`: "CLASS NAME ASSUMED … verify at translate-check".
+- `sensor_p_discharge` (was `sensor_p_suction`): "CLASS NAME ASSUMED … verify at translate-check".
 - `sensorTFiltered`: cites "line 693", "lines 525/529" — no longer match.
 - `valve1PowerLimitTriggerTemp`: reasons from `P_shaftLimit=40000`; the
   value is now 50 kW. The name says `valve1`, the valve is `PF_RV01`.
