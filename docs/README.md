@@ -5,6 +5,7 @@
 | Path | Content |
 |---|---|
 | `docs/control-common.md` | Control algorithms shared by more than one circuit, each with a stable ID (`C-…`), plus shared robustness measures (`R-…`). Definitions only: what the algorithm does, its parameters, its variants. |
+| `docs/cs/requirements.md` | CS requirements, conditions and limits extracted from the ATEKO study and the thesis, each with section and page; discrepancies between the sources; which model parameters trace to them. Start here for "where does this number come from". |
 | `docs/cs/control-logic.md` | CS circuit: which algorithms it uses (linked by ID), their tier and default state, what differs in CS, and the CS-only algorithms (`CS-…`). |
 | `docs/pf/control-logic.md` | Same for PF (`PF-…`). |
 | `docs/tf/control-logic.md` | Same for TF (`TF-…`). |
