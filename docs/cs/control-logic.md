@@ -271,7 +271,10 @@ while shut.
 ### C-COLDSHUT
 
 All five coils opted in (`shutWhenCold\_CS` = true × 5). `T\_coldShut` =
-`T\_releaseAll` = 80 K. Gated by `controlsActive`.
+`T\_releaseAll` = 80 K. Gated by `controlsActive`. Since 2026-11-03 the cold
+shut-off re-freezes `T\_gas\_out\_frozen[i]` only while the coil flows
+(`coilFlowing[i]`), so a coil already isolated by C-ISO keeps its R-FROZEN
+value (FIX-04, not yet simulated).
 
 ### C-OVERCOOL (archived)
 

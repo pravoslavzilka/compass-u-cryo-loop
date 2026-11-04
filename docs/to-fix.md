@@ -30,7 +30,7 @@ structure.
 | [FIX-15](#fix-15) | CS | RV01 flow PI reads a loop-side flow the plant doesn't measure | P2 | open, plant |
 | [FIX-16](#fix-16) | all | C-ISO 40 K coil-to-coil: source (thesis §6.2) found; coil temperature = outlet | P2 | **done** 2026-11-03 |
 | [FIX-17](#fix-17) | all | `sensor_p_suction` measures the discharge side: renamed `sensor_p_discharge` | P3 | **done** 2026-11-03 (not yet simulated) |
-| [FIX-18](#fix-18) | PF | `.mo` not tagged with algorithm IDs; stale docstrings (thresholds, suction, line numbers) | P3 | open |
+| [FIX-18](#fix-18) | PF | `.mo` not tagged with algorithm IDs; stale docstrings (thresholds, suction, line numbers) | P3 | **done** 2026-11-04 (comments only; code verified identical) |
 | [FIX-19](#fix-19) | PF | `pressureSetpoint` docstring says 35.5 barg for 36.5 bara | P3 | open |
 | [FIX-20](#fix-20) | all | Coil-sequencing rules share latches but are separate algorithms | P3 | proposal |
 | [FIX-21](#fix-21) | TF | Four branch masks only special-case the Structure | P3 | proposal |
@@ -292,7 +292,9 @@ valve5 fully open while the supply sat 7–14 K above setpoint.
 **Fix:** 2 / 50 as TF, with the gain as a parameter.
 
 <a id="fix-18"></a>
-### FIX-18 — No ID tags, stale docstrings (P3)
+### FIX-18 — No ID tags, stale docstrings (P3) — done
+
+**Done** 2026-11-04 in `PFCircuit.mo`: header (flow path, algorithms, robustness), `[ID]` tags on parameters, state variables, blocks and when-blocks, and the stale docstrings listed below corrected (thresholds 34/35/39/37.5 bar, discharge instead of suction, sensor class note, line numbers, `P_shaftLimit` 50 kW, `m_total` unused). Not done: moving the long dated histories to `migration-notes.md`, and renaming `valve1PowerLimitTriggerTemp`. Comments and docstrings only: code compared identical with comments and strings stripped. Original entry follows.
 
 **What is stale in `PFCircuit.mo`:**
 - `RV07` docstring: opens at "32 bar", closes at "35 bar" — actual
