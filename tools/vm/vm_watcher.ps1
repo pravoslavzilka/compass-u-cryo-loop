@@ -12,7 +12,7 @@
 
 param(
   [string]$Root = "Z:\compass-u-cryo-loop",
-  [string]$DymolaExe = "C:\Program Files\Dymola 2025x\bin64\Dymola.exe",  # CHECK this path in the VM
+  [string]$DymolaExe = "",   # empty = search C:\Program Files* for Dymola.exe
   [int]$PollSeconds = 3,
   [int]$DefaultTimeoutMin = 60,
   [string]$DefaultScript = "dymola-thermal-systems/CoilLoopCompassU/CS/auto_translate_log.mos"
@@ -35,7 +35,16 @@ function KillDymola($p) {
   Get-Process dymosim -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
 }
 
-Log "watcher started, root=$Root"
+if (-not $DymolaExe -or -not (Test-Path $DymolaExe)) {
+  $DymolaExe = Get-ChildItem "C:\Program Files*","D:\Program Files*" -Recurse -Filter Dymola.exe -ErrorAction SilentlyContinue |
+    Select-Object -First 1 -ExpandProperty FullName
+}
+if (-not $DymolaExe) {
+  Write-Host "Dymola.exe not found. Start again with -DymolaExe <full path>."
+  Log "ERROR Dymola.exe not found"; SetStatus "ERROR: Dymola.exe not found"; exit 1
+}
+Write-Host "Using $DymolaExe"
+Log "watcher started, root=$Root, dymola=$DymolaExe"
 while ($true) {
   if (Test-Path $quit) { Remove-Item $quit -Force; Log "quit"; SetStatus "STOPPED"; break }
   if (Test-Path $cancel) { Remove-Item $cancel -Force }   # stale cancel while idle
@@ -65,7 +74,8 @@ while ($true) {
 
     Log "START $($opt.script) timeout=${timeout}min"
     SetStatus "RUNNING: $($opt.script) since $(Get-Date -Format 'HH:mm:ss'), timeout ${timeout} min"
-    $p = Start-Process -FilePath $DymolaExe -ArgumentList @("/nosplash", "`"$wrapper`"") -PassThru
+    try { $p = Start-Process -FilePath $DymolaExe -ArgumentList @("/nosplash", "`"$wrapper`"") -PassThru -ErrorAction Stop }
+    catch { Log "ERROR launching Dymola: $_"; SetStatus "ERROR launching Dymola: $_"; Remove-Item $running -Force -ErrorAction SilentlyContinue; continue }
     $t0 = Get-Date
     $result = "FINISHED"
     while (-not $p.HasExited) {

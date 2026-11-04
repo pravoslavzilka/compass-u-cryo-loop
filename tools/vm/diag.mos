@@ -1,0 +1,16 @@
+// Diagnostic for the VM watcher: why does a freshly started Dymola fail to translate?
+// Writes vm-inbox/diag.txt and vm-inbox/diag_log.txt. Run via run.request (script=tools/vm/diag.mos).
+d := "Z:/compass-u-cryo-loop/vm-inbox/diag.txt";
+if Modelica.Utilities.Files.exist(d) then
+  Modelica.Utilities.Files.remove(d);
+end if;
+clearlog();
+Modelica.Utilities.Streams.print("Dymola version: " + DymolaVersion(), d);
+loaded := openModel("Z:/compass-u-cryo-loop/dymola-thermal-systems/CoilLoopCompassU/package.mo", mustRead=true);
+Modelica.Utilities.Streams.print("openModel ok: " + String(loaded), d);
+savelog("Z:/compass-u-cryo-loop/vm-inbox/diag_log.txt");
+ok := checkModel("CoilLoopCompassU.PF.PFCircuit");
+Modelica.Utilities.Streams.print("checkModel ok: " + String(ok), d);
+savelog("Z:/compass-u-cryo-loop/vm-inbox/diag_log.txt");
+Modelica.Utilities.Streams.print("last error log:", d);
+Modelica.Utilities.Streams.print(getLastErrorLog(), d);

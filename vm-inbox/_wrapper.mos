@@ -1,0 +1,2 @@
+RunScript("Z:/compass-u-cryo-loop/tools/vm/diag.mos");
+exit();

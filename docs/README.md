@@ -7,6 +7,7 @@
 | `docs/control-common.md` | Control algorithms shared by more than one circuit, each with a stable ID (`C-…`), plus shared robustness measures (`R-…`). Definitions only: what the algorithm does, its parameters, its variants. |
 | `docs/cs/requirements.md` | CS requirements, conditions and limits extracted from the ATEKO study and the thesis, each with section and page; discrepancies between the sources; which model parameters trace to them. Start here for "where does this number come from". |
 | `docs/pf/requirements.md` | Same for PF: eight assemblies, 137 K vs 160 K start, 0.23 kg/s and 47.9 kW derived from the coil energies, PF3U-vs-PF4 worst case, pressure-drop and power gaps. |
+| `docs/{pf,tf}/run_simulation.md` | Simulation plans for PF and TF (like `docs/cs/run_simulation.md`): prerequisites, run matrix of algorithm switches, per-run question, what to extract, pass/fail table, saving. |
 | `docs/tf/requirements.md` | Same for TF and the support structure: 224 channels on 4 busses, 116 K start, 138.8 kW derived, the open split of the 1.3 kg/s, structure data the sources lack. |
 | `docs/cs/control-logic.md` | CS circuit: which algorithms it uses (linked by ID), their tier and default state, what differs in CS, and the CS-only algorithms (`CS-…`). |
 | `docs/pf/control-logic.md` | Same for PF (`PF-…`). |

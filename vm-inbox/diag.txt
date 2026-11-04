@@ -1,0 +1,4 @@
+Dymola version: Dymola Version 2020x (64-bit), 2019-10-10
+openModel ok: true
+checkModel ok: false
+last error log:

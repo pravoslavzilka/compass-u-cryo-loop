@@ -1,0 +1,11 @@
+﻿ = true
+Modelica.Utilities.Streams.print("Dymola version: " + DymolaVersion(), d);
+loaded := openModel("Z:/compass-u-cryo-loop/dymola-thermal-systems/CoilLoopCompassU/package.mo", mustRead=true);
+Declaring variable: Boolean loaded ;
+Modelica.Utilities.Streams.print("openModel ok: " + String(loaded), d);
+savelog("Z:/compass-u-cryo-loop/vm-inbox/diag_log.txt");
+ = true
+ok := checkModel("CoilLoopCompassU.PF.PFCircuit");
+Declaring variable: Boolean ok ;
+Modelica.Utilities.Streams.print("checkModel ok: " + String(ok), d);
+savelog("Z:/compass-u-cryo-loop/vm-inbox/diag_log.txt");
