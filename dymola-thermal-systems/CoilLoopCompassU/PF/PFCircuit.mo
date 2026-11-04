@@ -1,7 +1,35 @@
 within CoilLoopCompassU.PF;
 model  PFCircuit
   extends ThermalSystems.Internals.ClassTypes.ExampleModel;
-  parameter Real m_total = 0.1 "total flow from the pump, kg/s";
+  // ===========================================================================
+  // PF coil cooling loop -- 8 coil assemblies (PF1U..PF4L), helium at 36.5 bara.
+  // Sources and design basis: docs/pf/requirements.md, docs/pf/circulator-sizing.md;
+  // algorithms (the [ID] tags below): docs/pf/control-logic.md, docs/control-common.md.
+  //
+  // Flow path: circulator CC01 (fan2ndOrder, constant 200 Hz) -> sensor_m_flow ->
+  // junction5 -> PF_RV01 (circulator bypass) | Heater (EH01) -> junction7 ->
+  // evaporator bypass valve5 | junction6 -> valve6 -> tube1 (HE01, wall held at
+  // 77 K) -> valve3 -> mixing node junction23 (sensor_T) -> junction21 (valve4
+  // coil bypass, archived) -> supply header -> 8 assemblies (inlet ON/OFF valve
+  // each) -> return header -> junction20 -> junction4 -> circulator. junction22
+  // (pressure tee, RV07/RV08) hangs off junction6: the DISCHARGE side.
+  //
+  // Algorithms: [C-SPEED-a] constant speed; [C-PRES-b] PressureStabilizer
+  // (PI trim + feedforward pulse) on the discharge pressure via RV07/RV08;
+  // [C-RV01 power-cap a] PF_RV01 caps shaft power below 140 K (off by default);
+  // [C-TEMP-SR] split-range supply temperature (heater / valve6 / valve5);
+  // [C-TEMP-SP-a] setpoint = T_gas_out_max - 40 K; [C-ISO] per-assembly isolation
+  // 40 K / 35 K; [PF-LOWTEMP] absolute-threshold shut-off (off by default);
+  // [C-OVERCOOL] valve4 state machine, archived (both enable flags false).
+  // Not used: C-COLDSHUT, startup preparation, a loop-flow setpoint.
+  //
+  // Robustness measures (docs/control-common.md): [R-HYST] [R-SMOOTH] [R-FROZEN]
+  // [R-EVAPDECOUPLE] valve3, [R-ACTDELAY] controlActivationDelay, [R-WINDUP] on
+  // PID_pressure / PID_circulatorPower, [R-KVFLOOR] on valve6 (since 2026-11-04).
+  // Not used: R-BOTHENDS (coil valves at the inlet only, FIX-24).
+  // Open problems: docs/to-fix.md.
+  // ===========================================================================
+  parameter Real m_total = 0.1 "NOT USED by any controller. Documentation value only: the thesis calls the PF loop ~100 g/s (T S6.1); ATEKO S6.5.1 gives 0.23 kg/s design flow. kg/s";
   parameter Real u_dead = 1;
   parameter Real Kv_shut = 1e-4;
   parameter Real Kv_cool_max = 5000;
@@ -9,93 +37,93 @@ model  PFCircuit
   parameter Real Kv_gain = 100;
   parameter Real bypass_limit = 10;
   parameter Real hysteresisHalfWidth = 0.3
-    "Half-width of the ON/OFF gap around each PID.y switching threshold (heater/cooling/bypass), prevents state-event chattering when PID.y settles right on a threshold";
+    "[R-HYST] Half-width of the ON/OFF gap around each PID.y switching threshold (heater/cooling/bypass), prevents state-event chattering when PID.y settles right on a threshold";
   parameter Modelica.Units.SI.TemperatureDifference tempMargin=40
-    "Margin below the hottest coil-assembly gas outlet temperature";
+    "[C-TEMP-SP-a] Margin below the hottest coil-assembly gas outlet temperature";
   parameter Boolean enableOverCoolPrevention=false
-    "Master switch for valve4's overcool-prevention trigger (the first when-branch below, gated on overCoolReopenMargin). When false, valve4 never opens in response to overcooling risk -- it stays permanently shut, and enableOverCoolRecovery's hold logic never has anything to act on.";
+    "[C-OVERCOOL, archived] Master switch for valve4's overcool-prevention trigger (the first when-branch below, gated on overCoolReopenMargin). When false, valve4 never opens in response to overcooling risk -- it stays permanently shut, and enableOverCoolRecovery's hold logic never has anything to act on.";
   parameter Boolean enableOverCoolRecovery=false
-    "Master switch for valve4's stabilize-and-reclose logic (the three elsewhen-branches below, gated on overCoolShutMargin/overCoolStabilityBand/overCoolStabilizeDelay). When false, valve4 -- once opened by enableOverCoolPrevention -- never automatically recloses; the bypass stays open indefinitely. No effect if enableOverCoolPrevention is false.";
+    "[C-OVERCOOL, archived] Master switch for valve4's stabilize-and-reclose logic (the three elsewhen-branches below, gated on overCoolShutMargin/overCoolStabilityBand/overCoolStabilizeDelay). When false, valve4 -- once opened by enableOverCoolPrevention -- never automatically recloses; the bypass stays open indefinitely. No effect if enableOverCoolPrevention is false.";
   parameter Modelica.Units.SI.TemperatureDifference overCoolShutMargin=40
-    "Lower bound of valve4's settle band: T_ref - overCoolShutMargin (T_ref = T_gas_out_max snapshot recorded at the moment valve4 last reopened). sensor_T.sensorValue must sit at or above this (and at or below T_ref - overCoolShutMargin + overCoolStabilityBand, i.e. within the band) for overCoolStabilizeDelay seconds continuously before valve4 actually shuts.";
+    "[C-OVERCOOL, archived] Lower bound of valve4's settle band: T_ref - overCoolShutMargin (T_ref = T_gas_out_max snapshot recorded at the moment valve4 last reopened). sensor_T.sensorValue must sit at or above this (and at or below T_ref - overCoolShutMargin + overCoolStabilityBand, i.e. within the band) for overCoolStabilizeDelay seconds continuously before valve4 actually shuts.";
   parameter Modelica.Units.SI.TemperatureDifference overCoolReopenMargin=45
-    "valve4 reopens (and re-records T_ref = current T_gas_out_max) once T_gas_out_max - sensor_T.sensorValue exceeds this, while shut";
+    "[C-OVERCOOL, archived] valve4 reopens (and re-records T_ref = current T_gas_out_max) once T_gas_out_max - sensor_T.sensorValue exceeds this, while shut";
   parameter Modelica.Units.SI.TemperatureDifference overCoolStabilityBand=20
-    "Width of valve4's settle band above the lower bound (T_ref - overCoolShutMargin): sensor_T.sensorValue must stay within [T_ref - overCoolShutMargin, T_ref - overCoolShutMargin + overCoolStabilityBand] continuously -- e.g. cooling toward 120K with overCoolShutMargin=40/overCoolStabilityBand=20 means it needs to settle within [120,140]K, not just touch 120K once.";
+    "[C-OVERCOOL, archived] Width of valve4's settle band above the lower bound (T_ref - overCoolShutMargin): sensor_T.sensorValue must stay within [T_ref - overCoolShutMargin, T_ref - overCoolShutMargin + overCoolStabilityBand] continuously -- e.g. cooling toward 120K with overCoolShutMargin=40/overCoolStabilityBand=20 means it needs to settle within [120,140]K, not just touch 120K once.";
   parameter Modelica.Units.SI.Time overCoolStabilizeDelay=30
-    "sensor_T.sensorValue must stay continuously within valve4's settle band (see overCoolShutMargin/overCoolStabilityBand) for this long before valve4 actually closes -- lets the temperature genuinely settle before flow is pushed back through the coils. Any excursion out of the band (either side) before the delay elapses restarts the wait.";
+    "[C-OVERCOOL, archived] sensor_T.sensorValue must stay continuously within valve4's settle band (see overCoolShutMargin/overCoolStabilityBand) for this long before valve4 actually closes -- lets the temperature genuinely settle before flow is pushed back through the coils. Any excursion out of the band (either side) before the delay elapses restarts the wait.";
   parameter Integer nPF = 8 "Number of PF coil assemblies";
   parameter Boolean enableCoilIsolation = true
-    "Master switch for the per-assembly relative-margin isolation rule (coilIsolationCloseMargin/coilIsolationReopenMargin, in the combined when/elsewhen chain below). When false, this rule never closes or reopens coilOpen[i] -- only enableLowTempCoolantOptimization (if also true) can still act on the shared latch.";
+    "[C-ISO] Master switch for the per-assembly relative-margin isolation rule (coilIsolationCloseMargin/coilIsolationReopenMargin, in the combined when/elsewhen chain below). When false, this rule never closes or reopens coilOpen[i] -- only enableLowTempCoolantOptimization (if also true) can still act on the shared latch.";
   parameter Modelica.Units.SI.TemperatureDifference coilIsolationCloseMargin = 40
-    "Per-coil isolation valve closes once T_gas_out is this much colder than T_gas_out_max";
+    "[C-ISO] Per-coil isolation valve closes once T_gas_out is this much colder than T_gas_out_max";
   parameter Modelica.Units.SI.TemperatureDifference coilIsolationReopenMargin = 35
-    "Per-coil isolation valve reopens once within this much of T_gas_out_max";
+    "[C-ISO] Per-coil isolation valve reopens once within this much of T_gas_out_max";
   parameter Boolean enableLowTempCoolantOptimization = false
-    "Master switch for the absolute-threshold lowTempCoolantOptimization algorithm below. This flag only gates the when-clauses (coilOpen close/reopen, lowTempPending dwell) -- it does NOT gate lowTempOtherHotCount_PF's continuous comparison against lowTempCoolantOptimizationThreshold, which is evaluated every step regardless. Keep lowTempCoolantOptimizationThreshold at 0 (unreachable) while this is false, so that comparison never actually crosses and never generates a state event; only raise the threshold at the same time you set this true.";
+    "[PF-LOWTEMP] Master switch for the absolute-threshold lowTempCoolantOptimization algorithm below. This flag only gates the when-clauses (coilOpen close/reopen, lowTempPending dwell) -- it does NOT gate lowTempOtherHotCount_PF's continuous comparison against lowTempCoolantOptimizationThreshold, which is evaluated every step regardless. Keep lowTempCoolantOptimizationThreshold at 0 (unreachable) while this is false, so that comparison never actually crosses and never generates a state event; only raise the threshold at the same time you set this true.";
   parameter Modelica.Units.SI.Temperature lowTempCoolantOptimizationThreshold(
-      displayUnit="K")=0
+      displayUnit="[PF-LOWTEMP] K")=0
     "Absolute T_gas_out threshold (K, independent of coilIsolationCloseMargin's relative-to-max logic) for the lowTempCoolantOptimization algorithm: an assembly colder than this can be shut once enough other assemblies are still hotter than it. Must be raised (e.g. to 80) together with enableLowTempCoolantOptimization=true to actually take effect -- see enableLowTempCoolantOptimization's docstring for why leaving it at 0 matters even while disabled.";
   parameter Integer lowTempCoolantOptimizationMinHotOthers = 2
-    "Minimum number of OTHER assemblies that must have T_gas_out above lowTempCoolantOptimizationThreshold before a cold assembly is shut by lowTempCoolantOptimization";
+    "[PF-LOWTEMP] Minimum number of OTHER assemblies that must have T_gas_out above lowTempCoolantOptimizationThreshold before a cold assembly is shut by lowTempCoolantOptimization";
   parameter Modelica.Units.SI.Time lowTempCoolantOptimizationMinDuration = 10
-    "Assembly i's own T_gas_out must stay continuously below lowTempCoolantOptimizationThreshold (with lowTempOtherHotCount_PF[i] continuously >= lowTempCoolantOptimizationMinHotOthers) for this long before lowTempCoolantOptimization actually shuts it -- filters out a brief/noisy dip that shouldn't count as a real close decision. Any excursion out of that condition before the duration elapses cancels the pending close; the wait restarts on the next continuous entry.";
+    "[PF-LOWTEMP] Assembly i's own T_gas_out must stay continuously below lowTempCoolantOptimizationThreshold (with lowTempOtherHotCount_PF[i] continuously >= lowTempCoolantOptimizationMinHotOthers) for this long before lowTempCoolantOptimization actually shuts it -- filters out a brief/noisy dip that shouldn't count as a real close decision. Any excursion out of that condition before the duration elapses cancels the pending close; the wait restarts on the next continuous entry.";
   parameter Modelica.Units.SI.Time controlActivationDelay = 5
-    "Reopen logic (valve4 and per-coil isolation) and PF_RV01's circulator-power-limit trigger all stay disabled until this much simulated time has passed, so none of them react to unsettled startup temperatures (T_gas_out_max briefly reads the 80K junction initial condition for about the first 1.2s of every run, before the coils' true ~160K start temperature propagates through -- see debugging/result.mat)";
+    "[R-ACTDELAY] Reopen logic (valve4 and per-coil isolation) and PF_RV01's circulator-power-limit trigger all stay disabled until this much simulated time has passed, so none of them react to unsettled startup temperatures (T_gas_out_max briefly reads the 80K junction initial condition for about the first 1.2s of every run, before the coils' true ~160K start temperature propagates through -- see debugging/result.mat)";
   parameter Boolean enableCirculatorPowerOptimization=false
-    "Master switch for PF_RV01's circulator-power-limit PID (the trigger/PID_circulatorPower/PF_RV01Command block below). When false, PF_RV01 is forced to Kv_shut regardless of fan2ndOrder.P_shaft or T_gas_out_max, same 'both/all valves forced shut' contract as enablePressureControl.";
+    "[C-RV01 power-cap a] Master switch for PF_RV01's circulator-power-limit PID (the trigger/PID_circulatorPower/PF_RV01Command block below). When false, PF_RV01 is forced to Kv_shut regardless of fan2ndOrder.P_shaft or T_gas_out_max, same 'both/all valves forced shut' contract as enablePressureControl.";
   parameter Modelica.Units.SI.Power P_shaftLimit=50000
-    "Circulator shaft-power cap PF_RV01's power-limit PID trims fan2ndOrder.P_shaft toward once active, W. Sized from the 2026-09-02 baseline run (debugging/result.mat): P_shaft climbs from ~28kW (T_gas_out_max~160K) to ~58.6kW (T_gas_out_max~80K) at fixed circulator speed, because dp roughly doubles as the helium densifies while volumeFlowRate stays ~flat -- this cap is meant to claw back the back-loaded energy in that final stage by bleeding some flow through PF_RV01 instead of through the coils.";
+    "[C-RV01 power-cap a] Circulator shaft-power cap PF_RV01's power-limit PID trims fan2ndOrder.P_shaft toward once active, W. Sized from the 2026-09-02 baseline run (debugging/result.mat): P_shaft climbs from ~28kW (T_gas_out_max~160K) to ~58.6kW (T_gas_out_max~80K) at fixed circulator speed, because dp roughly doubles as the helium densifies while volumeFlowRate stays ~flat -- this cap is meant to claw back the back-loaded energy in that final stage by bleeding some flow through PF_RV01 instead of through the coils.";
   parameter Modelica.Units.SI.Temperature valve1PowerLimitTriggerTemp(
-      displayUnit="K")=140
-    "T_gas_out_max threshold below which PF_RV01's power-limit PID is allowed to open the valve (gated together with time>=controlActivationDelay, see its docstring). In the baseline run fan2ndOrder.P_shaft only crosses P_shaftLimit=40000 once T_gas_out_max drops to ~127K, so 140K gives the PID some room to start trimming gently before the cap would otherwise be exceeded, rather than starting from zero right at the limit.";
+      displayUnit="[C-RV01 power-cap a] K")=140
+    "T_gas_out_max threshold below which PF_RV01's power-limit PID is allowed to open the valve (gated together with time>=controlActivationDelay, see its docstring). In the baseline run (written for the old 40 kW limit; P_shaftLimit is now 50000) fan2ndOrder.P_shaft only crosses the limit once T_gas_out_max drops to ~127K, so 140K gives the PID some room to start trimming gently before the cap would otherwise be exceeded, rather than starting from zero right at the limit.";
   parameter Real kPowerLimitPID = 0.0005
-    "Gentle P gain for PID_circulatorPower, 1/W -- sized so the ~20kW worst-case overshoot above P_shaftLimit seen in the baseline run (P_shaft up to ~58.6kW) maps to the PID's full output swing, not an early saturation. Deliberately gentle (see kPowerLimitPID/TiPowerLimitPID/yMin docstrings collectively) so PF_RV01 eases open rather than snapping open and dragging P_shaft well below P_shaftLimit.";
+    "[C-RV01 power-cap a] Gentle P gain for PID_circulatorPower, 1/W -- sized so the ~20kW worst-case overshoot above P_shaftLimit seen in the baseline run (P_shaft up to ~58.6kW) maps to the PID's full output swing, not an early saturation. Deliberately gentle (see kPowerLimitPID/TiPowerLimitPID/yMin docstrings collectively) so PF_RV01 eases open rather than snapping open and dragging P_shaft well below P_shaftLimit.";
   parameter Modelica.Units.SI.Time TiPowerLimitPID = 60
-    "Integral time for PID_circulatorPower, s -- deliberately slow (vs. TiPressurePID=30 for the much faster suction-pressure loop) because the driver here is a slow, monotonic cooldown, not a fast transient; a slow integrator avoids winding up into an overcorrection that would pull P_shaft down well below P_shaftLimit.";
+    "[C-RV01 power-cap a] Integral time for PID_circulatorPower, s -- deliberately slow (vs. TiPressurePID=30 for the much faster discharge-pressure loop) because the driver here is a slow, monotonic cooldown, not a fast transient; a slow integrator avoids winding up into an overcorrection that would pull P_shaft down well below P_shaftLimit.";
   parameter Real KvGainPowerLimit = 50
-    "Converts PID_circulatorPower.y to a Kv command, so that y=yMin (-10) maps to exactly KvPowerLimitMax -- keeps the LimPID's own anti-windup bound sitting exactly at the downstream Kv clamp, same 'no windup headroom beyond what's usable' invariant PID_pressure/KvGainMakeup/KvGainRelief already use.";
+    "[C-RV01 power-cap a, R-WINDUP] Converts PID_circulatorPower.y to a Kv command, so that y=yMin (-10) maps to exactly KvPowerLimitMax -- keeps the LimPID's own anti-windup bound sitting exactly at the downstream Kv clamp, same 'no windup headroom beyond what's usable' invariant PID_pressure/KvGainMakeup/KvGainRelief already use.";
   parameter Real KvPowerLimitMax = 500
-    "Kv cap for PF_RV01's power-limit trim -- same order as this valve's old flow-trim limiter (uMax=500) and RV07/RV08's Kv range, well within the valve's characteristic range.";
+    "[C-RV01 power-cap a] Kv cap for PF_RV01's power-limit trim -- same order as this valve's old flow-trim limiter (uMax=500) and RV07/RV08's Kv range, well within the valve's characteristic range.";
 
   parameter Boolean enablePressureControl = true
-    "Master switch for the RV07 (make-up)/RV08 (relief) split-range pressure-control valve pair at the suction node. When false, both valves are forced to Kv_shut regardless of suction pressure.";
+    "[C-PRES-b] Master switch for the RV07 (make-up)/RV08 (relief) split-range pressure-control valve pair at junction22 (circulator discharge side, despite the old suction wording). When false, both valves are forced to Kv_shut regardless of the measured pressure.";
   parameter Modelica.Units.SI.AbsolutePressure pressureSetpoint=3650000
-    "Suction-node pressure setpoint held by the RV07/RV08 pair, Pa (35.5 barg abs) -- matches the old ideal boundary's pFixed.";
-  parameter Modelica.Units.SI.AbsolutePressure pMakeupOpen(displayUnit="bar")=
+    "[C-PRES-b] Discharge-side pressure setpoint held by the RV07/RV08 pair, Pa (36.5 bara = 35.5 barg, ATEKO S6.5.1) -- matches the old ideal boundary's pFixed.";
+  parameter Modelica.Units.SI.AbsolutePressure pMakeupOpen(displayUnit="[C-PRES-b] bar")=
     3400000
     "RV07 (make-up) hysteresis ON threshold, Pa (34 bar abs). makeupActive turns true (and a feedforward pulse starts, see makeupPulsing) the instant sensor_p_discharge drops to/below this.";
-  parameter Modelica.Units.SI.AbsolutePressure pMakeupClose(displayUnit="bar")=
+  parameter Modelica.Units.SI.AbsolutePressure pMakeupClose(displayUnit="[C-PRES-b] bar")=
     3500000
     "RV07 (make-up) hysteresis OFF threshold, Pa (35 bar abs). makeupActive turns false once sensor_p_discharge recovers to/above this -- must stay > pMakeupOpen so the band gives real chatter margin. 2026-09-01: this hysteresis band on its own still limit-cycled (bang-bang between pMakeupOpen/pMakeupClose, ~10s period observed) because RV07Limiter drove full trim authority (KvGainMakeup*PID_pressure.y, capped at KvMakeupMax) for the whole time makeupActive was true, so each opening still delivered far more mass than needed to just cross the band -- see the pulse-then-trim rewrite at makeupPulsing/KvMakeupPulse below, which fixes this by sizing the correction to the actual deviation instead of relying on the band width to absorb the overshoot.";
-  parameter Modelica.Units.SI.AbsolutePressure pReliefOpen(displayUnit="bar")=
+  parameter Modelica.Units.SI.AbsolutePressure pReliefOpen(displayUnit="[C-PRES-b] bar")=
     3900000
     "RV08 (relief) hysteresis ON threshold, Pa (39 bar abs). reliefActive turns true (and a feedforward pulse starts, see reliefPulsing) the instant sensor_p_discharge rises to/above this.";
-  parameter Modelica.Units.SI.AbsolutePressure pReliefClose(displayUnit="bar")=
+  parameter Modelica.Units.SI.AbsolutePressure pReliefClose(displayUnit="[C-PRES-b] bar")=
     3750000
     "RV08 (relief) hysteresis OFF threshold, Pa (37.5 bar abs). reliefActive turns false once sensor_p_discharge falls to/below this.";
   parameter Real kPressurePID=0.05
-    "PLACEHOLDER P gain for PID_pressure -- conservative starting value, tune after reviewing the baseline (ideal-boundary) run's pressure excursions.";
+    "[C-PRES-b] PLACEHOLDER P gain for PID_pressure -- conservative starting value, tune after reviewing the baseline (ideal-boundary) run's pressure excursions.";
   parameter Modelica.Units.SI.Time TiPressurePID=30
-    "PLACEHOLDER integral time for PID_pressure, s -- tune after baseline run.";
+    "[C-PRES-b] PLACEHOLDER integral time for PID_pressure, s -- tune after baseline run.";
   parameter Modelica.Units.SI.Volume V_loopEffective = 0.5
-    "PLACEHOLDER estimate of the compliant helium gas volume on the suction side that RV07/RV08 pressurize/vent (loop tubing + coil headers + junction22 -- NOT the reservoirs/buffers, which are on the other side of the valves). Used only for the feedforward pulse-mass estimate (ideal gas law, see makeupPulseTargetMass/reliefPulseTargetMass) added 2026-09-01. An inaccurate guess only makes the pulse over/undersized -- it does not affect correctness elsewhere, and the trim phase that follows every pulse (KvGainMakeup/KvGainRelief, now capped much lower than the pulse) absorbs whatever the pulse under/overshoots. REPLACE with the actual summed suction-side volume once known, to make the pulse land closer to pMakeupClose/pReliefClose in one shot.";
+    "[C-PRES-b] PLACEHOLDER estimate of the compliant helium gas volume on the circulator discharge side that RV07/RV08 pressurize/vent (loop tubing + coil headers + junction22 -- NOT the reservoirs/buffers, which are on the other side of the valves). Used only for the feedforward pulse-mass estimate (ideal gas law, see makeupPulseTargetMass/reliefPulseTargetMass) added 2026-09-01. An inaccurate guess only makes the pulse over/undersized -- it does not affect correctness elsewhere, and the trim phase that follows every pulse (KvGainMakeup/KvGainRelief, now capped much lower than the pulse) absorbs whatever the pulse under/overshoots. REPLACE with the actual summed suction-side volume once known, to make the pulse land closer to pMakeupClose/pReliefClose in one shot.";
   parameter Modelica.Units.SI.Temperature T_loopEstimate=80
-    "PLACEHOLDER constant gas temperature for the feedforward pulse-mass estimate (ideal gas law) -- matches TStorageReservoirs/valve TInitial elsewhere in this model as a representative cold-loop value. Same caveat as V_loopEffective: only affects pulse sizing, not correctness.";
+    "[C-PRES-b] PLACEHOLDER constant gas temperature for the feedforward pulse-mass estimate (ideal gas law) -- matches TStorageReservoirs/valve TInitial elsewhere in this model as a representative cold-loop value. Same caveat as V_loopEffective: only affects pulse sizing, not correctness.";
   parameter Real R_specificHelium = 2077.1
     "Specific gas constant for helium, J/(kg.K) (R_universal/M_He = 8314.46/4.0026) -- used only for the feedforward pulse-mass estimate.";
   parameter Real KvGainMakeup = 2
-    "PLACEHOLDER: maps PID_pressure.y (>0 when pressure below setpoint) to RV07's Kv command during the POST-PULSE TRIM phase only (pre(makeupActive) and not makeupPulsing -- see RV07Limiter). Tune together with kPressurePID/KvMakeupMax. Cut from an initial 50 -> 2 after the 2026-08-10 debugging runs: even Kv~15 (well under the old KvMakeupMax=500 cap) was enough to drag this loop's small internal volume up to within ~13000 Pa of the full pMakeupReservoir within the ~15s open dwell -- this loop has very little gas compliance relative to a reservoir-scale dp, so both gain and cap needed to come down together, not just the cap.";
+    "[C-PRES-b, R-WINDUP] PLACEHOLDER: maps PID_pressure.y (>0 when pressure below setpoint) to RV07's Kv command during the POST-PULSE TRIM phase only (pre(makeupActive) and not makeupPulsing -- see RV07Limiter). Tune together with kPressurePID/KvMakeupMax. Cut from an initial 50 -> 2 after the 2026-08-10 debugging runs: even Kv~15 (well under the old KvMakeupMax=500 cap) was enough to drag this loop's small internal volume up to within ~13000 Pa of the full pMakeupReservoir within the ~15s open dwell -- this loop has very little gas compliance relative to a reservoir-scale dp, so both gain and cap needed to come down together, not just the cap.";
   parameter Real KvMakeupMax = 15
-    "PLACEHOLDER Kv cap for RV07's POST-PULSE TRIM phase (see KvGainMakeup) -- REPLACE with a value sized to the peak make-up mass flow measured from the ideal-boundary baseline run (e.g. via sensor_m_flow during the largest cooldown/isolation transient). Cut from an initial 500 -> 5 for the same reason as KvGainMakeup above -- this is a deliberately weak trim valve until real sizing data is available, not yet sized to correct a real deficit quickly. Raised 5 -> 15 on 2026-09-01 as a first incremental step back up (see the 2026-09-01 migration-notes entry on RV07/RV08 capacity) paired with makeupBuffer's volume increase 1e-3 -> 1e-2 -- re-check dslog.txt for corrector-step collapse before raising further; the 2026-08-10 runs showed even Kv~15 alone (without the larger buffer) was enough to nearly equalize the loop with the reservoir in one dwell window. Since the 2026-09-01 pulse-then-trim rewrite this is no longer the value that does the bulk of the correction -- KvMakeupPulse is.";
+    "[C-PRES-b] PLACEHOLDER Kv cap for RV07's POST-PULSE TRIM phase (see KvGainMakeup) -- REPLACE with a value sized to the peak make-up mass flow measured from the ideal-boundary baseline run (e.g. via sensor_m_flow during the largest cooldown/isolation transient). Cut from an initial 500 -> 5 for the same reason as KvGainMakeup above -- this is a deliberately weak trim valve until real sizing data is available, not yet sized to correct a real deficit quickly. Raised 5 -> 15 on 2026-09-01 as a first incremental step back up (see the 2026-09-01 migration-notes entry on RV07/RV08 capacity) paired with makeupBuffer's volume increase 1e-3 -> 1e-2 -- re-check dslog.txt for corrector-step collapse before raising further; the 2026-08-10 runs showed even Kv~15 alone (without the larger buffer) was enough to nearly equalize the loop with the reservoir in one dwell window. Since the 2026-09-01 pulse-then-trim rewrite this is no longer the value that does the bulk of the correction -- KvMakeupPulse is.";
   parameter Real KvMakeupPulse = 60
-    "PLACEHOLDER fixed (non-PID) Kv commanded during RV07's feedforward pulse (makeupPulsing=true), added 2026-09-01. Deliberately much larger than KvMakeupMax's trim authority -- an oversized value here only shortens the pulse (it's cut off by makeupDeliveredMass reaching makeupPulseTargetMass, or by sensor_p_discharge reaching pMakeupClose, whichever comes first), it does not cause overshoot the way running full trim authority for the whole open window did under the pure-hysteresis design (see pMakeupClose's docstring). REPLACE once real make-up flow requirements are known -- this is a first guess, not sized.";
+    "[C-PRES-b] PLACEHOLDER fixed (non-PID) Kv commanded during RV07's feedforward pulse (makeupPulsing=true), added 2026-09-01. Deliberately much larger than KvMakeupMax's trim authority -- an oversized value here only shortens the pulse (it's cut off by makeupDeliveredMass reaching makeupPulseTargetMass, or by sensor_p_discharge reaching pMakeupClose, whichever comes first), it does not cause overshoot the way running full trim authority for the whole open window did under the pure-hysteresis design (see pMakeupClose's docstring). REPLACE once real make-up flow requirements are known -- this is a first guess, not sized.";
   parameter Real KvGainRelief = 2
-    "PLACEHOLDER: maps -PID_pressure.y (>0 when pressure above setpoint) to RV08's Kv command during the POST-PULSE TRIM phase only (pre(reliefActive) and not reliefPulsing -- see RV08Limiter). Tune together with kPressurePID/KvReliefMax. Cut from an initial 50 -> 2, same reasoning as KvGainMakeup. PID_pressure.yMax/yMin must stay at >= KvReliefMax/KvMakeupMax divided by this gain, or PID_pressure's own output saturation becomes the binding cap instead of KvReliefMax/KvMakeupMax -- see PID_pressure's yMax/yMin docstring.";
+    "[C-PRES-b, R-WINDUP] PLACEHOLDER: maps -PID_pressure.y (>0 when pressure above setpoint) to RV08's Kv command during the POST-PULSE TRIM phase only (pre(reliefActive) and not reliefPulsing -- see RV08Limiter). Tune together with kPressurePID/KvReliefMax. Cut from an initial 50 -> 2, same reasoning as KvGainMakeup. PID_pressure.yMax/yMin must stay at >= KvReliefMax/KvMakeupMax divided by this gain, or PID_pressure's own output saturation becomes the binding cap instead of KvReliefMax/KvMakeupMax -- see PID_pressure's yMax/yMin docstring.";
   parameter Real KvReliefMax = 15
-    "PLACEHOLDER Kv cap for RV08's POST-PULSE TRIM phase (see KvGainRelief) -- REPLACE with a value sized to the peak relief mass flow measured from the ideal-boundary baseline run. Cut from an initial 500 -> 5, same reasoning as KvMakeupMax. Raised 5 -> 15 on 2026-09-01, same reasoning as KvMakeupMax. Since the 2026-09-01 pulse-then-trim rewrite this is no longer the value that does the bulk of the correction -- KvReliefPulse is.";
+    "[C-PRES-b] PLACEHOLDER Kv cap for RV08's POST-PULSE TRIM phase (see KvGainRelief) -- REPLACE with a value sized to the peak relief mass flow measured from the ideal-boundary baseline run. Cut from an initial 500 -> 5, same reasoning as KvMakeupMax. Raised 5 -> 15 on 2026-09-01, same reasoning as KvMakeupMax. Since the 2026-09-01 pulse-then-trim rewrite this is no longer the value that does the bulk of the correction -- KvReliefPulse is.";
   parameter Real KvReliefPulse = 60
-    "PLACEHOLDER fixed (non-PID) Kv commanded during RV08's feedforward pulse (reliefPulsing=true) -- mirror of KvMakeupPulse, see its docstring.";
+    "[C-PRES-b] PLACEHOLDER fixed (non-PID) Kv commanded during RV08's feedforward pulse (reliefPulsing=true) -- mirror of KvMakeupPulse, see its docstring.";
   parameter Modelica.Units.SI.AbsolutePressure pMakeupReservoir=4500000
     "Make-up storage reservoir pressure (ideal p,T boundary feeding RV07), Pa. Above pressureSetpoint so RV07 can admit helium when the loop runs low.";
   parameter Modelica.Units.SI.AbsolutePressure pReliefReservoir=3000000
@@ -103,49 +131,49 @@ model  PFCircuit
   parameter Modelica.Units.SI.Temperature TStorageReservoirs=80
     "Temperature of both storage reservoir boundaries, K.";
   parameter Modelica.Units.SI.Time valveRampTime=3
-    "FirstOrder smoothing time constant on RV07/RV08's Kv command -- opening ramp, same anti-chatter role as firstOrder/firstOrder2 on valve6/valve5 (avoids instantaneous Kv steps). Raised from an initial 2s to 8s after the 2026-08-10 debugging run: RV08 crashed the solver (corrector step collapsed to ~6e-13 at t=24.6s, 'the corrector could not converge') while ramping open from Kv_shut_pressureValves, the same '6-decade Kv collapse' class of failure firstOrderCoilKv above documents -- worse here because RV07/RV08 ramp against a fixed, zero-compliance ideal-boundary dp (reservoir) rather than a compliant junction volume, so needs more margin than firstOrderCoilKv's T=3 precedent. Briefly lowered 8 -> 3 on 2026-09-01 to try to shrink the RV07/RV08 ramp-overlap window in the post-relocation oscillation; reverted the same day -- confirmed worse on every measure (state events 836->1007, CPU 743s->1190s, oscillation period 17.7s->a tighter 14.6s, and 3 genuine 'Failed to solve nonlinear system using Newton solver' warnings appeared that were not present at 8s). The ramp speed was never the actual driver -- it just let the same excess valve authority (KvReliefMax/KvMakeupMax) get applied faster, shortening the bang-bang cycle instead of damping it. Superseded by the 2026-09-01 hysteresis rewrite (see pMakeupOpen/pMakeupClose/pReliefOpen/pReliefClose) which addresses the cycle at its source instead of tuning around it.";
+    "[C-PRES-b, R-SMOOTH] FirstOrder smoothing time constant on RV07/RV08's Kv command -- opening ramp, same anti-chatter role as firstOrder/firstOrder2 on valve6/valve5 (avoids instantaneous Kv steps). Raised from an initial 2s to 8s after the 2026-08-10 debugging run: RV08 crashed the solver (corrector step collapsed to ~6e-13 at t=24.6s, 'the corrector could not converge') while ramping open from Kv_shut_pressureValves, the same '6-decade Kv collapse' class of failure firstOrderCoilKv above documents -- worse here because RV07/RV08 ramp against a fixed, zero-compliance ideal-boundary dp (reservoir) rather than a compliant junction volume, so needs more margin than firstOrderCoilKv's T=3 precedent. Briefly lowered 8 -> 3 on 2026-09-01 to try to shrink the RV07/RV08 ramp-overlap window in the post-relocation oscillation; reverted the same day -- confirmed worse on every measure (state events 836->1007, CPU 743s->1190s, oscillation period 17.7s->a tighter 14.6s, and 3 genuine 'Failed to solve nonlinear system using Newton solver' warnings appeared that were not present at 8s). The ramp speed was never the actual driver -- it just let the same excess valve authority (KvReliefMax/KvMakeupMax) get applied faster, shortening the bang-bang cycle instead of damping it. Superseded by the 2026-09-01 hysteresis rewrite (see pMakeupOpen/pMakeupClose/pReliefOpen/pReliefClose) which addresses the cycle at its source instead of tuning around it.";
   parameter Real Kv_shut_pressureValves = 1e-2
-    "RV07/RV08's shut-state Kv -- deliberately less extreme than the shared Kv_shut (1e-4) used elsewhere in this model. Same 2026-08-10 debugging fix as valveRampTime above: RV07/RV08 ramp against a fixed ideal-boundary dp (reservoir), so the full 1e-4-to-open span was numerically harsher than the coil case Kv_shut is tuned for; backing the shut value off by two decades shortens the stiff part of the ramp without meaningfully changing the 'closed' leak flow. Since the 2026-09-01 split-range rewrite (see RV07Limiter/RV08Limiter) this is no longer selected just because makeupActive/reliefActive is false -- RV07/RV08 now always run at least their small PID trim while enablePressureControl is true. It's still reachable, though: it's what both Limiters fall back to whenever the enablePressureControl master switch itself is false, preserving that switch's 'both valves forced shut' contract.";
+    "[C-PRES-b] RV07/RV08's shut-state Kv -- deliberately less extreme than the shared Kv_shut (1e-4) used elsewhere in this model. Same 2026-08-10 debugging fix as valveRampTime above: RV07/RV08 ramp against a fixed ideal-boundary dp (reservoir), so the full 1e-4-to-open span was numerically harsher than the coil case Kv_shut is tuned for; backing the shut value off by two decades shortens the stiff part of the ramp without meaningfully changing the 'closed' leak flow. Since the 2026-09-01 split-range rewrite (see RV07Limiter/RV08Limiter) this is no longer selected just because makeupActive/reliefActive is false -- RV07/RV08 now always run at least their small PID trim while enablePressureControl is true. It's still reachable, though: it's what both Limiters fall back to whenever the enablePressureControl master switch itself is false, preserving that switch's 'both valves forced shut' contract.";
 
   Real T_ref(start=0, fixed=true)
-    "T_gas_out_max snapshot for valve4's own control logic only (PID/wanted_temp are unaffected) -- re-recorded every time valve4 reopens, held constant otherwise";
+    "[C-OVERCOOL, archived] T_gas_out_max snapshot for valve4's own control logic only (PID/wanted_temp are unaffected) -- re-recorded every time valve4 reopens, held constant otherwise";
   Boolean valve4Open(start=false, fixed=true)
-    "true -> valve4 Kv=5000 (open), false -> valve4 Kv=0.001 (shut)";
+    "[C-OVERCOOL, archived] true -> valve4 Kv=5000 (open), false -> valve4 Kv=0.001 (shut)";
   Boolean overCoolRecovering(start=false, fixed=true)
-    "True while sensor_T is inside valve4's settle band ([T_ref - overCoolShutMargin, T_ref - overCoolShutMargin + overCoolStabilityBand]) but hasn't stayed there continuously for overCoolStabilizeDelay yet -- valve4 stays open (bypass still flowing) during this hold. Reset to false the instant sensor_T leaves the band on either side, so the wait restarts on the next continuous stay.";
+    "[C-OVERCOOL, archived] True while sensor_T is inside valve4's settle band ([T_ref - overCoolShutMargin, T_ref - overCoolShutMargin + overCoolStabilityBand]) but hasn't stayed there continuously for overCoolStabilizeDelay yet -- valve4 stays open (bypass still flowing) during this hold. Reset to false the instant sensor_T leaves the band on either side, so the wait restarts on the next continuous stay.";
   Real overCoolRecoveredAt(start=0, fixed=true)
-    "Time sensor_T most recently entered valve4's settle band during the current valve4-open episode -- gates the overCoolStabilizeDelay hold before valve4 actually closes.";
+    "[C-OVERCOOL, archived] Time sensor_T most recently entered valve4's settle band during the current valve4-open episode -- gates the overCoolStabilizeDelay hold before valve4 actually closes.";
   Boolean coilOpen[nPF](start=fill(true, nPF), fixed=fill(true, nPF))
-    "Per-assembly isolation valve latch, order: PF1U,PF1L,PF2U,PF2L,PF3U,PF3L,PF4U,PF4L -- closed by EITHER the relative-margin coilIsolation* rule or the absolute-threshold lowTempCoolantOptimization rule (see the combined when/elsewhen chain below); a single shared latch, not two separate ones, so it stays the same array Dymola already solves cleanly for this model.";
+    "[C-ISO, PF-LOWTEMP] Per-assembly isolation valve latch, order: PF1U,PF1L,PF2U,PF2L,PF3U,PF3L,PF4U,PF4L -- closed by EITHER the relative-margin coilIsolation* rule or the absolute-threshold lowTempCoolantOptimization rule (see the combined when/elsewhen chain below); a single shared latch, not two separate ones, so it stays the same array Dymola already solves cleanly for this model.";
   Real T_gas_out_frozen[nPF](each start=0, each fixed=true)
-    "Snapshot of T_gas_out_PF[i] taken the instant coilOpen[i] closes (by either rule) -- held constant while closed, re-recorded every closing edge";
+    "[R-FROZEN] Snapshot of T_gas_out_PF[i] taken the instant coilOpen[i] closes (by either rule) -- held constant while closed, re-recorded every closing edge";
   Boolean lowTempPending[nPF](start=fill(false, nPF), fixed=fill(false, nPF))
-    "True while assembly i's T_gas_out is below lowTempCoolantOptimizationThreshold with enough hot others (lowTempOtherHotCount_PF[i] >= lowTempCoolantOptimizationMinHotOthers) but hasn't stayed there continuously for lowTempCoolantOptimizationMinDuration yet -- gates the dwell before lowTempCoolantOptimization actually closes coilOpen[i]. Reset to false the instant either condition breaks, so the wait restarts on the next continuous entry.";
+    "[PF-LOWTEMP] True while assembly i's T_gas_out is below lowTempCoolantOptimizationThreshold with enough hot others (lowTempOtherHotCount_PF[i] >= lowTempCoolantOptimizationMinHotOthers) but hasn't stayed there continuously for lowTempCoolantOptimizationMinDuration yet -- gates the dwell before lowTempCoolantOptimization actually closes coilOpen[i]. Reset to false the instant either condition breaks, so the wait restarts on the next continuous entry.";
   Real lowTempPendingSince[nPF](each start=0, each fixed=true)
-    "Time assembly i most recently entered the lowTempCoolantOptimization pending state -- gates the lowTempCoolantOptimizationMinDuration hold.";
+    "[PF-LOWTEMP] Time assembly i most recently entered the lowTempCoolantOptimization pending state -- gates the lowTempCoolantOptimizationMinDuration hold.";
 
   Boolean makeupActive(start=sensor_p_discharge.sensorValue <= pMakeupOpen, fixed=true)
-    "RV07's pulse-arming latch. As of the 2026-09-01 split-range rewrite this no longer gates RV07's Kv directly (RV07Limiter runs its small PID trim continuously regardless of makeupActive -- see RV07Limiter's docstring); makeupActive's only remaining job is to arm/cool down the large feedforward PULSE: turns true the instant sensor_p_discharge drops to/below pMakeupOpen (arming a pulse, see makeupPulsing), turns false once it recovers to/above pMakeupClose, and a new pulse can't be armed again until that recovery happens -- this is what stops the pulse from re-firing repeatedly while pressure lingers just below pMakeupOpen. This design was arrived at by observing an actual bug: a 2026-09-01 run where makeupActive got stuck true (a when/elsewhen collision, since fixed -- see the git history right above the when-blocks below) accidentally left RV07 running this same always-on continuous trim for the whole run, and that run was dead stable/non-oscillating specifically because a continuously-modulated valve has no discrete state to hunt between, unlike the old hysteresis-gated on/off design. This rewrite makes that behavior deliberate. start is evaluated from the live sensor rather than hardcoded false, so a model that initializes already below pMakeupOpen still latches active instead of the when-clause's crossing edge being missed at t=0 -- see the 2026-09-01 migration-notes entry for why a hardcoded false previously silently disabled RV07/RV08 for an entire run.";
+    "[C-PRES-b] RV07's pulse-arming latch. As of the 2026-09-01 split-range rewrite this no longer gates RV07's Kv directly (RV07Limiter runs its small PID trim continuously regardless of makeupActive -- see RV07Limiter's docstring); makeupActive's only remaining job is to arm/cool down the large feedforward PULSE: turns true the instant sensor_p_discharge drops to/below pMakeupOpen (arming a pulse, see makeupPulsing), turns false once it recovers to/above pMakeupClose, and a new pulse can't be armed again until that recovery happens -- this is what stops the pulse from re-firing repeatedly while pressure lingers just below pMakeupOpen. This design was arrived at by observing an actual bug: a 2026-09-01 run where makeupActive got stuck true (a when/elsewhen collision, since fixed -- see the git history right above the when-blocks below) accidentally left RV07 running this same always-on continuous trim for the whole run, and that run was dead stable/non-oscillating specifically because a continuously-modulated valve has no discrete state to hunt between, unlike the old hysteresis-gated on/off design. This rewrite makes that behavior deliberate. start is evaluated from the live sensor rather than hardcoded false, so a model that initializes already below pMakeupOpen still latches active instead of the when-clause's crossing edge being missed at t=0 -- see the 2026-09-01 migration-notes entry for why a hardcoded false previously silently disabled RV07/RV08 for an entire run.";
   Boolean makeupPulsing(start=false, fixed=true)
-    "True for the first part of a makeupActive episode: RV07 commanded to a large fixed Kv (KvMakeupPulse, not PID-moderated) to deliver makeupPulseTargetMass quickly, added 2026-09-01 to replace running full trim authority for the whole open window (see pMakeupClose's docstring for why that limit-cycled). Set true on the same edge that sets makeupActive; cleared (see the when-clause below) once makeupDeliveredMass reaches makeupPulseTargetMass or sensor_p_discharge already reached pMakeupClose, whichever comes first -- after that RV07Limiter drops back to its normal small PID-moderated trim (KvGainMakeup/KvMakeupMax), the same trim that's running continuously at all other times too (see RV07Limiter's docstring).";
+    "[C-PRES-b] True for the first part of a makeupActive episode: RV07 commanded to a large fixed Kv (KvMakeupPulse, not PID-moderated) to deliver makeupPulseTargetMass quickly, added 2026-09-01 to replace running full trim authority for the whole open window (see pMakeupClose's docstring for why that limit-cycled). Set true on the same edge that sets makeupActive; cleared (see the when-clause below) once makeupDeliveredMass reaches makeupPulseTargetMass or sensor_p_discharge already reached pMakeupClose, whichever comes first -- after that RV07Limiter drops back to its normal small PID-moderated trim (KvGainMakeup/KvMakeupMax), the same trim that's running continuously at all other times too (see RV07Limiter's docstring).";
   Real makeupPulseTargetMass(start=0, fixed=true)
-    "Estimated helium mass, kg, to admit during the current pulse to bring sensor_p_discharge from its value at the triggering instant up to pMakeupClose -- ideal gas law: (pMakeupClose - p_trigger)*V_loopEffective/(R_specificHelium*T_loopEstimate). Recomputed only on the makeupPulsing rising edge (frozen for the rest of the episode); an estimate, not exact -- see V_loopEffective's docstring for why that's fine (the trim phase that follows absorbs the error).";
+    "[C-PRES-b] Estimated helium mass, kg, to admit during the current pulse to bring sensor_p_discharge from its value at the triggering instant up to pMakeupClose -- ideal gas law: (pMakeupClose - p_trigger)*V_loopEffective/(R_specificHelium*T_loopEstimate). Recomputed only on the makeupPulsing rising edge (frozen for the rest of the episode); an estimate, not exact -- see V_loopEffective's docstring for why that's fine (the trim phase that follows absorbs the error).";
   Real makeupDeliveredMass(start=0, fixed=true)
-    "Integral of the actual RV07 loop-side mass flow (abs(RV07.summary.m_flow_gas_B)) since the current pulse started -- see the equation-section der()/reinit pair. Compared against makeupPulseTargetMass to decide when to end the pulse; using the model's own simulated flow (not the Kv/dp estimate that sized the pulse) makes the pulse cutoff self-correcting even if KvMakeupPulse or V_loopEffective/T_loopEstimate are inaccurate.";
+    "[C-PRES-b] Integral of the actual RV07 loop-side mass flow (abs(RV07.summary.m_flow_gas_B)) since the current pulse started -- see the equation-section der()/reinit pair. Compared against makeupPulseTargetMass to decide when to end the pulse; using the model's own simulated flow (not the Kv/dp estimate that sized the pulse) makes the pulse cutoff self-correcting even if KvMakeupPulse or V_loopEffective/T_loopEstimate are inaccurate.";
 
   Boolean reliefActive(start=sensor_p_discharge.sensorValue >= pReliefOpen, fixed=true)
-    "RV08's pulse-arming latch -- mirror of makeupActive, see its docstring for the full 2026-09-01 split-range rationale. No longer gates RV08's Kv directly; only arms/cools down the feedforward pulse (reliefPulsing). Turns true the instant sensor_p_discharge rises to/above pReliefOpen, turns false once it falls to/below pReliefClose.";
+    "[C-PRES-b] RV08's pulse-arming latch -- mirror of makeupActive, see its docstring for the full 2026-09-01 split-range rationale. No longer gates RV08's Kv directly; only arms/cools down the feedforward pulse (reliefPulsing). Turns true the instant sensor_p_discharge rises to/above pReliefOpen, turns false once it falls to/below pReliefClose.";
   Boolean reliefPulsing(start=false, fixed=true)
-    "Mirror of makeupPulsing for RV08/reliefActive -- see its docstring.";
+    "[C-PRES-b] Mirror of makeupPulsing for RV08/reliefActive -- see its docstring.";
   Real reliefPulseTargetMass(start=0, fixed=true)
-    "Estimated helium mass, kg, to vent during the current pulse to bring sensor_p_discharge from its value at the triggering instant down to pReliefClose: (p_trigger - pReliefClose)*V_loopEffective/(R_specificHelium*T_loopEstimate). Mirror of makeupPulseTargetMass -- see its docstring.";
+    "[C-PRES-b] Estimated helium mass, kg, to vent during the current pulse to bring sensor_p_discharge from its value at the triggering instant down to pReliefClose: (p_trigger - pReliefClose)*V_loopEffective/(R_specificHelium*T_loopEstimate). Mirror of makeupPulseTargetMass -- see its docstring.";
   Real reliefDeliveredMass(start=0, fixed=true)
-    "Integral of the actual RV08 loop-side mass flow (abs(RV08.summary.m_flow_gas_A)) since the current pulse started. Mirror of makeupDeliveredMass -- see its docstring.";
+    "[C-PRES-b] Integral of the actual RV08 loop-side mass flow (abs(RV08.summary.m_flow_gas_A)) since the current pulse started. Mirror of makeupDeliveredMass -- see its docstring.";
 
   output Modelica.Units.SI.Temperature T_gas_out_max = max(T_gas_out_compare_PF)
-    "Hottest coil-assembly gas outlet temperature -- uses each coil's live reading while open, frozen closing-time snapshot while isolated, so a closed coil's post-isolation reheating can't distort this (or wanted_temp/other coils' close decisions)";
+    "[C-TEMP-SP-a, R-FROZEN] Hottest coil-assembly gas outlet temperature -- uses each coil's live reading while open, frozen closing-time snapshot while isolated, so a closed coil's post-isolation reheating can't distort this (or wanted_temp/other coils' close decisions)";
   output Modelica.Units.SI.Temperature wanted_temp = T_gas_out_max - tempMargin
-    "PID setpoint: hottest coil outlet minus margin, revalued continuously";
+    "[C-TEMP-SP-a] PID setpoint: hottest coil outlet minus margin, revalued continuously";
   output Modelica.Units.SI.Temperature sensor_T_filtered = sensorTFiltered.y
     "Low-pass-filtered copy of sensor_T.sensorValue, reporting only";
   Real T_gas_out_PF[nPF] = {PF1U.T_gas_out, PF1L.T_gas_out, PF2U.T_gas_out,
@@ -156,12 +184,12 @@ model  PFCircuit
       PF3L.valveKvNominal, PF4U.valveKvNominal, PF4L.valveKvNominal}
     "Each assembly's own fully-open Kv, same order as coilOpen";
   Real kvTarget_PF[nPF]
-    "Commanded Kv per assembly before smoothing: valveKvNominal_PF when open, Kv_shut when closed";
+    "[C-ISO] Commanded Kv per assembly before smoothing: valveKvNominal_PF when open, Kv_shut when closed";
   Real T_gas_out_compare_PF[nPF]
-    "T_gas_out_PF[i] while open (live), T_gas_out_frozen[i] while closed -- what the close/reopen decision is evaluated against";
+    "[R-FROZEN] T_gas_out_PF[i] while open (live), T_gas_out_frozen[i] while closed -- what the close/reopen decision is evaluated against";
   Integer lowTempOtherHotCount_PF[nPF] = {sum(if (j <> i and T_gas_out_compare_PF[j] >
     lowTempCoolantOptimizationThreshold) then 1 else 0 for j in 1:nPF) for i in 1:nPF}
-    "Per-assembly count of OTHER assemblies currently above lowTempCoolantOptimizationThreshold -- feeds the lowTempCoolantOptimization close condition (see lowTempCoolantOptimizationMinHotOthers)";
+    "[PF-LOWTEMP] Per-assembly count of OTHER assemblies currently above lowTempCoolantOptimizationThreshold -- feeds the lowTempCoolantOptimization close condition (see lowTempCoolantOptimizationMinHotOthers)";
 
   inner ThermalSystems.SystemInformationManager sim(
       generateEventsAtFlowReversalGas=false,
@@ -460,8 +488,8 @@ model  PFCircuit
   Modelica.Blocks.Continuous.FirstOrder sensorTFiltered(T=3,
       initType=Modelica.Blocks.Types.Init.SteadyState)
     "Reporting-only low-pass filter on sensor_T's raw reading -- does NOT
-    feed PID.u_m (line 693) or the valve4Open algorithm block (lines
-    525/529), both of which keep reading sensor_T.sensorValue directly.
+    feed PID.u_m or the valve4Open algorithm block (when-blocks in the
+    algorithm section), both of which keep reading sensor_T.sensorValue directly.
     T=3s mirrors the 2026-07-27 firstOrderCoilKv precedent; raise toward
     5-10s if scatter persists, but not so high it visibly lags real
     transients (heater on/off, coil isolation events)."
@@ -474,13 +502,13 @@ model  PFCircuit
     yMin=-10,
     initType=Modelica.Blocks.Types.Init.InitialOutput,
     y_start=0)
-    "u_s=P_shaftLimit, u_m=fan2ndOrder.P_shaft, e=u_s-u_m: y<0 when shaft power is above the limit (feeds PF_RV01Command via -y, same direct/relief convention as PID_pressure/RV08Limiter above), y sits saturated at yMax>0 whenever P_shaft is comfortably under the limit (most of the run, including the whole pre-trigger phase) -- that's an idle saturation with anti-windup, not a knife-edge boundary, so it doesn't chatter. yMin=-10 is sized (via KvGainPowerLimit=50) to land exactly on KvPowerLimitMax, same no-windup-headroom-beyond-what's-usable invariant as PID_pressure."
+    "[C-RV01 power-cap a] u_s=P_shaftLimit, u_m=fan2ndOrder.P_shaft, e=u_s-u_m: y<0 when shaft power is above the limit (feeds PF_RV01Command via -y, same direct/relief convention as PID_pressure/RV08Limiter above), y sits saturated at yMax>0 whenever P_shaft is comfortably under the limit (most of the run, including the whole pre-trigger phase) -- that's an idle saturation with anti-windup, not a knife-edge boundary, so it doesn't chatter. yMin=-10 is sized (via KvGainPowerLimit=50) to land exactly on KvPowerLimitMax, same no-windup-headroom-beyond-what's-usable invariant as PID_pressure."
     annotation (Placement(transformation(extent={{-178,174},{-158,194}})));
   Modelica.Blocks.Sources.RealExpression PF_RV01Command(y=if not
         enableCirculatorPowerOptimization then Kv_shut else if not (time >=
         controlActivationDelay and T_gas_out_max <= valve1PowerLimitTriggerTemp)
          then Kv_shut else max(-PID_circulatorPower.y, 0)*KvGainPowerLimit)
-    "PF_RV01's final Kv command: master switch first (enableCirculatorPowerOptimization,
+    "[C-RV01 power-cap a] PF_RV01's final Kv command: master switch first (enableCirculatorPowerOptimization,
     same 'forced shut regardless of everything else' contract as enablePressureControl);
     otherwise forced fully shut (Kv_shut) until the
     circulator-power-limit trigger gates on (time>=controlActivationDelay and
@@ -494,6 +522,7 @@ model  PFCircuit
   Modelica.Blocks.Continuous.FirstOrder firstOrderPF_RV01(T=valveRampTime)
     "Opening/closing ramp for PF_RV01's power-limit command -- same anti-chatter role as firstOrderRV07/firstOrderRV08."
     annotation (Placement(transformation(extent={{-118,174},{-98,194}})));
+  // [R-EVAPDECOUPLE] fixed valve between evaporator and mixing node
   ThermalSystems.GasComponents.Valves.Valve valve3(
     valveFlowVariableType=ThermalSystems.Internals.ValveFlowVariableType.KvValue,
     use_effectiveFlowAreaInput=false,
@@ -520,6 +549,7 @@ model  PFCircuit
     annotation (Placement(transformation(extent={{-4,-4},{4,4}},
         rotation=0,
         origin={12,20})));
+  // [C-OVERCOOL, archived] coil bypass valve
   ThermalSystems.GasComponents.Valves.Valve valve4(
     valveFlowVariableType=ThermalSystems.Internals.ValveFlowVariableType.KvValue,
     use_effectiveFlowAreaInput=false,
@@ -531,12 +561,14 @@ model  PFCircuit
   Modelica.Blocks.Logical.Hysteresis heaterHysteresis(uLow=u_dead -
         hysteresisHalfWidth, uHigh=u_dead + hysteresisHalfWidth)
     annotation (Placement(transformation(extent={{-330,54},{-310,74}})));
+  // [C-TEMP-SR] heater command
   Modelica.Blocks.Sources.RealExpression HeaterLimiter(y=if heaterHysteresis.y
          then PID.y*heater_gain else 0)
     annotation (Placement(transformation(extent={{-298,30},{-278,50}})));
   Modelica.Blocks.Logical.Hysteresis coolingHysteresis(uLow=-u_dead -
         hysteresisHalfWidth, uHigh=-u_dead + hysteresisHalfWidth)
     annotation (Placement(transformation(extent={{-258,-78},{-238,-58}})));
+  // [C-TEMP-SR, R-KVFLOOR] valve6 cooling command
   Modelica.Blocks.Sources.RealExpression CoolingLimiter1(y=if
         coolingHysteresis.y then max(min(-PID.y*Kv_gain, Kv_cool_max), Kv_shut) else
         Kv_shut)
@@ -609,11 +641,13 @@ model  PFCircuit
   Modelica.Blocks.Logical.Hysteresis bypassHysteresis(uLow=bypass_limit -
         hysteresisHalfWidth, uHigh=bypass_limit + hysteresisHalfWidth)
     annotation (Placement(transformation(extent={{-274,-26},{-254,-6}})));
+  // [C-TEMP-SR] valve5 evaporator-bypass command
   Modelica.Blocks.Sources.RealExpression BypassLimiter(y=if bypassHysteresis.y
          then max(500 + (PID.y*10), Kv_shut) else 500)
     annotation (Placement(transformation(extent={{-242,-2},{-222,18}})));
   Modelica.Blocks.Continuous.FirstOrder firstOrder2(T=1)
     annotation (Placement(transformation(extent={{-192,-2},{-172,18}})));
+  // [C-OVERCOOL, archived] valve4 command
   Modelica.Blocks.Sources.RealExpression bypassRegulatorOverCool(y=if
         valve4Open then 5000 else 0.001)
     annotation (Placement(transformation(extent={{-54,60},{-34,80}})));
@@ -630,7 +664,7 @@ model  PFCircuit
     pInitial=3650000,
     fixedInitialPressure=false,
     TInitial(displayUnit="K") = 120)
-    "Tee at the suction node occupying junction6's old boundary.port slot -- portA to junction6.portB (unchanged coil-return topology), portB to RV07 (make-up), portC to RV08 (relief)."
+    "[C-PRES-b] Pressure tee on the circulator DISCHARGE side (it hangs off junction6, the evaporator inlet tee after the heater; not the suction node despite the old wording) -- portA to junction6.portB, portB to RV07 (make-up), portC to RV08 (relief)."
     annotation (Placement(transformation(extent={{-4,4},{4,-4}},
         rotation=90,
         origin={-2,156})));
@@ -671,7 +705,7 @@ model  PFCircuit
     use_effectiveFlowAreaInput=false,
     use_KvValueInput=true,
     KvValueFixed=Kv_shut_pressureValves)
-    "Make-up valve: makeupReservoir -> junction22. Opens proportionally (RV07Limiter/firstOrderRV07, PID-moderated) once suction pressure drops to/below pMakeupOpen (32 bar); stays open, still PID-moderated, until pressure recovers to/above pMakeupClose (35 bar) -- see makeupActive's hysteresis docstring."
+    "[C-PRES-b] Make-up valve: makeupReservoir -> junction22. Opens proportionally (RV07Limiter/firstOrderRV07, PID-moderated) once the discharge pressure drops to/below pMakeupOpen (34 bar); keeps trimming (PID-moderated, never fully shut) and the pulse re-arms only after pressure recovers to/above pMakeupClose (35 bar) -- see makeupActive's hysteresis docstring."
     annotation (Placement(transformation(extent={{6,-3},{-6,3}},
         rotation=0,
         origin={16,180})));
@@ -680,12 +714,12 @@ model  PFCircuit
     use_effectiveFlowAreaInput=false,
     use_KvValueInput=true,
     KvValueFixed=Kv_shut_pressureValves)
-    "Relief valve: junction22 -> reliefReservoir. Opens proportionally (RV08Limiter/firstOrderRV08, PID-moderated) once suction pressure rises to/above pReliefOpen (37 bar); stays open, still PID-moderated, until pressure falls to/below pReliefClose (35 bar) -- see reliefActive's hysteresis docstring."
+    "[C-PRES-b] Relief valve: junction22 -> reliefReservoir. Opens proportionally (RV08Limiter/firstOrderRV08, PID-moderated) once the discharge pressure rises to/above pReliefOpen (39 bar); keeps trimming (PID-moderated, never fully shut) and the pulse re-arms only after pressure falls to/below pReliefClose (37.5 bar) -- see reliefActive's hysteresis docstring."
     annotation (Placement(transformation(extent={{6,-3},{-6,3}},
         rotation=0,
         origin={-8,204})));
   ThermalSystems.GasComponents.Sensors.Sensor_p sensor_p_discharge
-    "Suction-node pressure sensor -- CLASS NAME ASSUMED by analogy with Sensor_T/Sensor_m_flow (no pressure sensor existed anywhere in this model before; the ThermalSystems library isn't vendored in this repo so this couldn't be confirmed against source -- verify at translate-check, fix the class path here if Dymola reports it unresolved)."
+    "Discharge-side pressure sensor on junction22 (renamed from sensor_p_suction, FIX-17). Sensor_p translates in the current runs; the old CLASS NAME ASSUMED note is obsolete."
     annotation (Placement(transformation(extent={{58,134},{66,142}})));
   Modelica.Blocks.Sources.RealExpression pressureSetpointSource(y=
         pressureSetpoint)
@@ -698,13 +732,13 @@ model  PFCircuit
     yMin=-7.5,
     initType=Modelica.Blocks.Types.Init.InitialOutput,
     y_start=0)
-    "u_s=pressureSetpoint, u_m=sensor_p_discharge.sensorValue, e=u_s-u_m: y>0 when suction pressure is below setpoint (feeds RV07Limiter), y<0 when above (feeds RV08Limiter via -y). Same LimPID class/PI form as PID (temperature loop) above; k/Ti are still placeholders, tune together with KvGainMakeup/KvGainRelief. yMax/yMin tightened from a placeholder +-1e5 to +-2.5 (2026-08-31, diagnosing an enableOverCoolPrevention=true run that hard-failed at t=37.86s with 'corrector could not converge') -- 2.5 was exactly where RV07Limiter/RV08Limiter's own min(...,KvMakeupMax)/(KvGainMakeup) downstream clamp already saturated at the time, so anything y accumulated past that was pure integrator windup with no effect on the commanded Kv. End-state dump from that failed run showed PID_pressure.I.y=-199708, ~2x past even the old yMin -- this bound stops that windup at the DAE level instead of letting it grow unchecked until a valve4-triggered pressure transient (e.g. overcool-bypass opening) forces a slow unwind that compounds with the transient's own stiffness. Raised 2.5 -> 7.5 on 2026-09-01 in lockstep with KvMakeupMax/KvReliefMax 5 -> 15 (7.5*KvGainMakeup/KvGainRelief=2 = 15), preserving the same 'yMax sits exactly at the downstream Kv clamp, no windup headroom beyond what's usable' invariant the 2026-08-31 fix established -- do not raise KvMakeupMax/KvReliefMax again without moving this in the same proportion, or the 2026-08-31 windup failure mode is back in play."
+    "[C-PRES-b] u_s=pressureSetpoint, u_m=sensor_p_discharge.sensorValue, e=u_s-u_m: y>0 when the discharge pressure is below setpoint (feeds RV07Limiter), y<0 when above (feeds RV08Limiter via -y). Same LimPID class/PI form as PID (temperature loop) above; k/Ti are still placeholders, tune together with KvGainMakeup/KvGainRelief. yMax/yMin tightened from a placeholder +-1e5 to +-2.5 (2026-08-31, diagnosing an enableOverCoolPrevention=true run that hard-failed at t=37.86s with 'corrector could not converge') -- 2.5 was exactly where RV07Limiter/RV08Limiter's own min(...,KvMakeupMax)/(KvGainMakeup) downstream clamp already saturated at the time, so anything y accumulated past that was pure integrator windup with no effect on the commanded Kv. End-state dump from that failed run showed PID_pressure.I.y=-199708, ~2x past even the old yMin -- this bound stops that windup at the DAE level instead of letting it grow unchecked until a valve4-triggered pressure transient (e.g. overcool-bypass opening) forces a slow unwind that compounds with the transient's own stiffness. Raised 2.5 -> 7.5 on 2026-09-01 in lockstep with KvMakeupMax/KvReliefMax 5 -> 15 (7.5*KvGainMakeup/KvGainRelief=2 = 15), preserving the same 'yMax sits exactly at the downstream Kv clamp, no windup headroom beyond what's usable' invariant the 2026-08-31 fix established -- do not raise KvMakeupMax/KvReliefMax again without moving this in the same proportion, or the 2026-08-31 windup failure mode is back in play."
     annotation (Placement(transformation(extent={{120,160},{140,180}})));
   Modelica.Blocks.Sources.RealExpression RV07Limiter(y=if not
         enablePressureControl then Kv_shut_pressureValves else if
         makeupPulsing then KvMakeupPulse else min(max(PID_pressure.y, 0)*
         KvGainMakeup, KvMakeupMax))
-    "RV07 Kv command, 2026-09-01 split-range trim (made permanent/deliberate, see makeupActive's docstring): Kv_shut_pressureValves only while the enablePressureControl master switch is off (preserves its documented 'both valves forced shut' contract); otherwise fixed KvMakeupPulse (feedforward burst, not PID) while makeupPulsing, else PID-proportional trim (min(PID_pressure.y*KvGainMakeup, KvMakeupMax)) at ALL times whether or not makeupActive -- RV07 never fully closes just because makeupActive is false, it just trims toward ~0 on its own once PID_pressure.y<=0 (pressure at/above setpoint)."
+    "[C-PRES-b] RV07 Kv command, 2026-09-01 split-range trim (made permanent/deliberate, see makeupActive's docstring): Kv_shut_pressureValves only while the enablePressureControl master switch is off (preserves its documented 'both valves forced shut' contract); otherwise fixed KvMakeupPulse (feedforward burst, not PID) while makeupPulsing, else PID-proportional trim (min(PID_pressure.y*KvGainMakeup, KvMakeupMax)) at ALL times whether or not makeupActive -- RV07 never fully closes just because makeupActive is false, it just trims toward ~0 on its own once PID_pressure.y<=0 (pressure at/above setpoint)."
     annotation (Placement(transformation(extent={{-40,258},{-20,278}})));
   Modelica.Blocks.Continuous.FirstOrder firstOrderRV07(T=valveRampTime)
     "Opening ramp for RV07 -- same anti-chatter role as firstOrder/firstOrder2 on valve6/valve5."
@@ -713,7 +747,7 @@ model  PFCircuit
         enablePressureControl then Kv_shut_pressureValves else if
         reliefPulsing then KvReliefPulse else min(max(-PID_pressure.y, 0)*
         KvGainRelief, KvReliefMax))
-    "RV08 Kv command, 2026-09-01 split-range trim (made permanent/deliberate, see reliefActive's docstring): Kv_shut_pressureValves only while the enablePressureControl master switch is off (preserves its documented 'both valves forced shut' contract); otherwise fixed KvReliefPulse (feedforward burst, not PID) while reliefPulsing, else PID-proportional trim (min(-PID_pressure.y*KvGainRelief, KvReliefMax)) at ALL times whether or not reliefActive -- RV08 never fully closes just because reliefActive is false, it just trims toward ~0 on its own once -PID_pressure.y<=0 (pressure at/below setpoint)."
+    "[C-PRES-b] RV08 Kv command, 2026-09-01 split-range trim (made permanent/deliberate, see reliefActive's docstring): Kv_shut_pressureValves only while the enablePressureControl master switch is off (preserves its documented 'both valves forced shut' contract); otherwise fixed KvReliefPulse (feedforward burst, not PID) while reliefPulsing, else PID-proportional trim (min(-PID_pressure.y*KvGainRelief, KvReliefMax)) at ALL times whether or not reliefActive -- RV08 never fully closes just because reliefActive is false, it just trims toward ~0 on its own once -PID_pressure.y<=0 (pressure at/below setpoint)."
     annotation (Placement(transformation(extent={{-80,220},{-60,240}})));
   Modelica.Blocks.Continuous.FirstOrder firstOrderRV08(T=valveRampTime)
     "Opening ramp for RV08 -- same anti-chatter role as firstOrder/firstOrder2 on valve6/valve5."
@@ -750,6 +784,7 @@ equation
   PF4L.KvValue_in1 = firstOrderCoilKv[8].y;
 
 algorithm
+  // [C-OVERCOOL] valve4 state machine (archived, both enable flags false)
   when enableOverCoolPrevention and time >= controlActivationDelay and T_gas_out_max - sensor_T.sensorValue > overCoolReopenMargin
       and not pre(valve4Open) then
     T_ref := T_gas_out_max;
@@ -778,6 +813,8 @@ algorithm
     overCoolRecovering := false;
   end when;
 
+  // [PF-LOWTEMP] dwell timer and [C-ISO] close/reopen share one coilOpen[i]
+  // latch (FIX-23: known conflict when both are enabled)
   for i in 1:nPF loop
     // lowTempCoolantOptimization dwell timer: track how long assembly i has
     // been continuously below the threshold with enough hot others, before
