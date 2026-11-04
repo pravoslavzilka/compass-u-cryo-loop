@@ -231,8 +231,8 @@ model  PFCircuit
     m_flowStart=0.003,
     pInitial=3650000,
     fixedInitialPressure=false,
-    TInitial(displayUnit="K") = 80,
-    TInitialWall(displayUnit="K") = 80)
+    TInitial(displayUnit="K") = 120,
+    TInitialWall(displayUnit="K") = 120)
     annotation (Placement(transformation(extent={{-8,-2},{8,2}},
         rotation=0,
         origin={-50,-60})));
@@ -241,7 +241,7 @@ model  PFCircuit
     m_flowStart=1e-5,
     pInitial=3650000,
     fixedInitialPressure=false,
-    TInitial(displayUnit="K") = 80)
+    TInitial(displayUnit="K") = 120)
     annotation (Placement(transformation(extent={{-4,-4},{4,4}},
         rotation=90,
         origin={60,60})));
@@ -250,7 +250,7 @@ model  PFCircuit
     m_flowStart=1e-5,
     pInitial=3650000,
     fixedInitialPressure=false,
-    TInitial(displayUnit="K") = 80)
+    TInitial(displayUnit="K") = 120)
     annotation (Placement(transformation(extent={{-4,-4},{4,4}},
         rotation=-90,
         origin={140,80})));
@@ -267,7 +267,7 @@ model  PFCircuit
     m_flowStart=1e-5,
     pInitial=3650000,
     fixedInitialPressure=false,
-    TInitial(displayUnit="K") = 80)
+    TInitial(displayUnit="K") = 120)
     annotation (Placement(transformation(extent={{-4,-4},{4,4}},
         rotation=180,
         origin={-20,120})));
@@ -276,7 +276,7 @@ model  PFCircuit
     m_flowStart=1e-5,
     pInitial=3650000,
     fixedInitialPressure=false,
-    TInitial(displayUnit="K") = 80)
+    TInitial(displayUnit="K") = 120)
     annotation (Placement(transformation(extent={{-4,-4},{4,4}},
         rotation=270,
         origin={-112,100})));
@@ -285,7 +285,7 @@ model  PFCircuit
     m_flowStart=1e-5,
     pInitial=3650000,
     fixedInitialPressure=false,
-    TInitial(displayUnit="K") = 80)
+    TInitial(displayUnit="K") = 120)
     annotation (Placement(transformation(extent={{-4,-4},{4,4}},
         rotation=90,
         origin={80,80})));
@@ -294,7 +294,7 @@ model  PFCircuit
     m_flowStart=1e-5,
     pInitial=3650000,
     fixedInitialPressure=false,
-    TInitial(displayUnit="K") = 80)
+    TInitial(displayUnit="K") = 120)
     annotation (Placement(transformation(extent={{-4,-4},{4,4}},
         rotation=-90,
         origin={140,40})));
@@ -303,7 +303,7 @@ model  PFCircuit
     m_flowStart=1e-5,
     pInitial=3650000,
     fixedInitialPressure=false,
-    TInitial(displayUnit="K") = 80)
+    TInitial(displayUnit="K") = 120)
     annotation (Placement(transformation(extent={{-4,-4},{4,4}},
         rotation=90,
         origin={80,40})));
@@ -312,7 +312,7 @@ model  PFCircuit
     m_flowStart=1e-5,
     pInitial=3650000,
     fixedInitialPressure=false,
-    TInitial(displayUnit="K") = 80)
+    TInitial(displayUnit="K") = 120)
     annotation (Placement(transformation(extent={{-4,-4},{4,4}},
         rotation=-90,
         origin={160,60})));
@@ -373,7 +373,7 @@ model  PFCircuit
     m_flowStart=1e-5,
     pInitial=3650000,
     fixedInitialPressure=false,
-    TInitial(displayUnit="K") = 80)
+    TInitial(displayUnit="K") = 120)
     annotation (Placement(transformation(extent={{-4,-4},{4,4}},
         rotation=90,
         origin={60,-20})));
@@ -382,7 +382,7 @@ model  PFCircuit
     m_flowStart=1e-5,
     pInitial=3650000,
     fixedInitialPressure=false,
-    TInitial(displayUnit="K") = 80)
+    TInitial(displayUnit="K") = 120)
     annotation (Placement(transformation(extent={{-4,-4},{4,4}},
         rotation=90,
         origin={80,0})));
@@ -391,7 +391,7 @@ model  PFCircuit
     m_flowStart=1e-5,
     pInitial=3650000,
     fixedInitialPressure=false,
-    TInitial(displayUnit="K") = 80)
+    TInitial(displayUnit="K") = 120)
     annotation (Placement(transformation(extent={{-4,-4},{4,4}},
         rotation=90,
         origin={80,-40})));
@@ -400,7 +400,7 @@ model  PFCircuit
     m_flowStart=1e-5,
     pInitial=3650000,
     fixedInitialPressure=false,
-    TInitial(displayUnit="K") = 80)
+    TInitial(displayUnit="K") = 120)
     annotation (Placement(transformation(extent={{-4,-4},{4,4}},
         rotation=-90,
         origin={140,0})));
@@ -409,7 +409,7 @@ model  PFCircuit
     m_flowStart=1e-5,
     pInitial=3650000,
     fixedInitialPressure=false,
-    TInitial(displayUnit="K") = 80)
+    TInitial(displayUnit="K") = 120)
     annotation (Placement(transformation(extent={{-4,-4},{4,4}},
         rotation=-90,
         origin={140,-40})));
@@ -418,7 +418,7 @@ model  PFCircuit
     m_flowStart=1e-5,
     pInitial=3650000,
     fixedInitialPressure=false,
-    TInitial(displayUnit="K") = 80)
+    TInitial(displayUnit="K") = 120)
     annotation (Placement(transformation(extent={{-4,-4},{4,4}},
         rotation=-90,
         origin={160,-20})));
@@ -427,7 +427,7 @@ model  PFCircuit
     m_flowStart=1e-5,
     pInitial=3650000,
     fixedInitialPressure=false,
-    TInitial(displayUnit="K") = 80)
+    TInitial(displayUnit="K") = 120)
     annotation (Placement(transformation(extent={{-4,-4},{4,4}},
         rotation=-90,
         origin={180,20})));
@@ -436,7 +436,7 @@ model  PFCircuit
     m_flowStart=1e-5,
     pInitial=3650000,
     fixedInitialPressure=false,
-    TInitial(displayUnit="K") = 80)
+    TInitial(displayUnit="K") = 120)
     annotation (Placement(transformation(extent={{-4,-4},{4,4}},
         rotation=90,
         origin={40,20})));
@@ -449,7 +449,7 @@ model  PFCircuit
     yMax=60,
     yMin=-60,
     initType=Modelica.Blocks.Types.Init.InitialOutput,
-    y_start=5)
+    y_start=0)
             annotation (Placement(transformation(extent={{-10,10},{10,-10}},
         rotation=-90,
         origin={-70,50})));
@@ -507,7 +507,7 @@ model  PFCircuit
     m_flowStart=1e-5,
     pInitial=3650000,
     fixedInitialPressure=false,
-    TInitial(displayUnit="K") = 80)
+    TInitial(displayUnit="K") = 120)
     annotation (Placement(transformation(extent={{-4,-4},{4,4}},
         rotation=180,
         origin={12,120})));
@@ -516,7 +516,7 @@ model  PFCircuit
     m_flowStart=1e-5,
     pInitial=3650000,
     fixedInitialPressure=false,
-    TInitial(displayUnit="K") = 80)
+    TInitial(displayUnit="K") = 120)
     annotation (Placement(transformation(extent={{-4,-4},{4,4}},
         rotation=0,
         origin={12,20})));
@@ -538,7 +538,7 @@ model  PFCircuit
         hysteresisHalfWidth, uHigh=-u_dead + hysteresisHalfWidth)
     annotation (Placement(transformation(extent={{-258,-78},{-238,-58}})));
   Modelica.Blocks.Sources.RealExpression CoolingLimiter1(y=if
-        coolingHysteresis.y then min(-PID.y*Kv_gain, Kv_cool_max) else
+        coolingHysteresis.y then max(min(-PID.y*Kv_gain, Kv_cool_max), Kv_shut) else
         Kv_shut)
     annotation (Placement(transformation(extent={{-226,-54},{-206,-34}})));
   ThermalSystems.GasComponents.JunctionElements.VolumeJunction junction7(
@@ -546,7 +546,7 @@ model  PFCircuit
     m_flowStart=1e-5,
     pInitial=3650000,
     fixedInitialPressure=false,
-    TInitial(displayUnit="K") = 80)
+    TInitial(displayUnit="K") = 120)
     annotation (Placement(transformation(extent={{-4,-4},{4,4}},
         rotation=270,
         origin={-112,-6})));
@@ -571,7 +571,7 @@ model  PFCircuit
     m_flowStart=1e-5,
     pInitial=3650000,
     fixedInitialPressure=false,
-    TInitial(displayUnit="K") = 80)
+    TInitial(displayUnit="K") = 120)
     annotation (Placement(transformation(extent={{-4,4},{4,-4}},
         rotation=270,
         origin={-12,-6})));
@@ -597,8 +597,8 @@ model  PFCircuit
     m_flowStart=0.003,
     pInitial=3650000,
     fixedInitialPressure=false,
-    TInitial(displayUnit="K") = 80,
-    TInitialWall(displayUnit="K") = 80) annotation (Placement(transformation(
+    TInitial(displayUnit="K") = 120,
+    TInitialWall(displayUnit="K") = 120) annotation (Placement(transformation(
         extent={{8,-2},{-8,2}},
         rotation=90,
         origin={-112,40})));
@@ -629,7 +629,7 @@ model  PFCircuit
     m_flowStart=1e-5,
     pInitial=3650000,
     fixedInitialPressure=false,
-    TInitial(displayUnit="K") = 80)
+    TInitial(displayUnit="K") = 120)
     "Tee at the suction node occupying junction6's old boundary.port slot -- portA to junction6.portB (unchanged coil-return topology), portB to RV07 (make-up), portC to RV08 (relief)."
     annotation (Placement(transformation(extent={{-4,4},{4,-4}},
         rotation=90,
@@ -723,7 +723,7 @@ model  PFCircuit
     m_flowStart=1e-5,
     pInitial=3650000,
     fixedInitialPressure=false,
-    TInitial(displayUnit="K") = 80)
+    TInitial(displayUnit="K") = 120)
     annotation (Placement(transformation(extent={{-4,-4},{4,4}},
         rotation=90,
         origin={-112,-24})));

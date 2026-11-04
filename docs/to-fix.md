@@ -13,9 +13,9 @@ structure.
 
 | ID | Circuit | Problem | Prio | Status |
 |---|---|---|---|---|
-| [FIX-01](#fix-01) | TF, PF | Coils meet 80 K gas at 137 K (TF) / 160 K (PF): 40 K rule broken at startup | P1 | open |
+| [FIX-01](#fix-01) | TF, PF | Coils meet 80 K gas at 137 K (TF) / 160 K (PF): 40 K rule broken at startup | P1 | open; PF quick fix (loop gas 120 K) applied 2026-11-04, not simulated |
 | [FIX-02](#fix-02) | TF | Pressure PI saturates at 150 Pa error (CS found ringing with the same gain) | P1 | open |
-| [FIX-03](#fix-03) | TF, PF | valve6 Kv negative for 0 < PID.y < 0.7 (no R-KVFLOOR) | P2 | open |
+| [FIX-03](#fix-03) | TF, PF | valve6 Kv negative for 0 < PID.y < 0.7 (no R-KVFLOOR) | P2 | TF open; PF **done** 2026-11-04 (not yet simulated) |
 | [FIX-04](#fix-04) | TF, CS | Cold shut-off overwrites a frozen temperature with the raw stagnant one | P2 | **done** 2026-11-03 (not yet simulated) |
 | [FIX-05](#fix-05) | TF, PF | Isolation close not gated by the activation delay | P3 | open |
 | [FIX-06](#fix-06) | TF | PID_pressure limits don't match the Kv clamp (no R-WINDUP) | P3 | open |
@@ -23,7 +23,7 @@ structure.
 | [FIX-08](#fix-08) | TF, PF | No LIN supply cap on the evaporator (CS has one) | P3 | open |
 | [FIX-09](#fix-09) | TF, PF | C-SPEED-a has no soft start | P3 | open |
 | [FIX-10](#fix-10) | TF, PF, CS | C-OVERCOOL archived everywhere but still in all three `.mo` | P3 | open |
-| [FIX-11](#fix-11) | PF | `PID.y_start` = 5 switches the heater on at startup | P2 | open |
+| [FIX-11](#fix-11) | PF | `PID.y_start` = 5 switches the heater on at startup | P2 | **done** 2026-11-04 (not yet simulated) |
 | [FIX-12](#fix-12) | PF | Setpoint is C-TEMP-SP-a (gas outlet, no floor) | P2 | open, decision |
 | [FIX-13](#fix-13) | PF | valve5 throttles only below PID.y = −10.3 | P2 | open |
 | [FIX-14](#fix-14) | CS | C-RV01 power mode never run, all four parameters guessed | P2 | open |
@@ -40,7 +40,7 @@ structure.
 | [FIX-25](#fix-25) | PF | Evaporator modelled as one well-mixed cell, likely oversized | P2 | open |
 | [FIX-26](#fix-26) | PF | Power-cap PI integrates while its gate is shut | P3 | open |
 | [FIX-27](#fix-27) | CS | Recoverable Newton-solver failure at T~4.85s, every run since commit 13c9717 | P2 | open |
-| [FIX-28](#fix-28) | CS, TF | Setpoint, release-all and CS-PREP still read the wall temperature, which the plant can't measure | P2 | open, decision |
+| [FIX-28](#fix-28) | CS, TF | Setpoint and release-all still read the wall temperature, which the plant can't measure (CS-PREP no longer does) | P2 | open, decision |
 
 ---
 
@@ -195,19 +195,18 @@ the other wall readers are FIX-28.
 <a id="fix-28"></a>
 ### FIX-28 — Algorithms still read the wall temperature (P2, decision)
 
-**Where:** CS and TF: `T_wallHotCooled`/`wanted_temp` (C-TEMP-SP-b),
-`T_wallHotLive` (C-COLDSHUT release-all), `T_prepTarget` (CS-PREP, shut
-coils, no outlet signal). PF's C-TEMP-SP-a already uses the outlet.
+**Where:** CS and TF: `T_wallHotCooled`/`wanted_temp` (C-TEMP-SP-b) and
+`T_wallHotLive` (C-COLDSHUT release-all). PF's C-TEMP-SP-a already uses the
+outlet. CS-PREP stopped reading the wall on 2026-11-03 (it latches the outlet
+temperature at the end of a small-flow probe, `T_probe`).
 **Problem:** after FIX-16 the rule is that algorithms use outlet
-temperatures, since the plant cannot measure the wall. These three still
+temperatures, since the plant cannot measure the wall. These two still
 use `T_wall_max`, so the supply setpoint and the release time assume
 information the plant doesn't have.
 **Fix:** first run the outlet-vs-wall check on CS Runs 1–5
 (reading-simulations.md §5). If the offset is small, switch the setpoint and
 release rules to the outlet signal (`T_gas_out_max` plus a margin for the
-offset) and re-run. CS-PREP needs a different signal while the coils are
-shut, e.g. the small-flow return reading of thesis §6.2. Update
-control-common.md C-TEMP-SP when done.
+offset) and re-run. Update control-common.md C-TEMP-SP when done.
 
 <a id="fix-17"></a>
 ### FIX-17 — `sensor_p_suction` measures the discharge side (P3, ask first) — done

@@ -19,7 +19,7 @@ cooled to 80 K by helium at 82 bara.
 |[C-RV01](../control-common.md#c-rv01) power mode|Power budget → extra flow, flow floor kept|Secondary|off (`rv01Goal = Flow`)|Circulator energy (ATEKO S3.2 idle: "circulation optimized to save power")|
 |[C-TEMP-SR](../control-common.md#c-temp-sr)|Split-range supply temperature|Baseline|on|—|
 |[C-TEMP-SP-b](../control-common.md#c-temp-sp)|`wanted\_temp` = hottest cooled wall − 40 K, ≥ 77 K|Primary|on|ATEKO S3.2, S3.4|
-|[CS-PREP](#cs-prep)|Startup coolant preparation through valve4|Primary|on|ATEKO S3.2, S3.4 (40 K at first contact)|
+|[CS-PREP](#cs-prep)|Startup probe (small flow, read outlet), warm-up through valve4, flush|Primary|on|ATEKO S3.2, S3.4 (40 K once the coils see working coolant)|
 |[CS-FLOW-SP](#cs-flow-sp)|Flow setpoint 0.0214 kg/s per open channel|Primary|on|ATEKO S5.1 / Tab.5, S6.5.2|
 |[C-ISO](../control-common.md#c-iso)|Per-coil isolation 40 K / 35 K|Primary|on|ATEKO S6.1, S3.2; IPP coil-to-coil ≤ 40 K|
 |[C-COLDSHUT](../control-common.md#c-coldshut)|Shut-off at 80 K + release-all|Secondary|on|Cooldown time of the slowest coil|
@@ -61,45 +61,94 @@ FM01 = `sensor\_m\_flow`.
 
 <a id="cs-prep"></a>
 
-### CS-PREP — Startup coolant preparation
+### CS-PREP — Startup coolant preparation (probe, warm-up, flush)
 
-**Tier:** Primary. **Requirement:** ATEKO S3.2 (`T\_object − T\_coolant ≤ 40 K`) and S3.4 (at most 40 K inlet → outlet) from the first moment the
-coils see coolant.
-**Components:** `coolantReady`, `prepBandEnteredAt`, `coolantReadySince`
+**Tier:** Primary. **Requirement:** ATEKO S3.2 (`T\_object − T\_coolant ≤ 40 K`) and S3.4 (at most 40 K inlet → outlet) once the
+coils see the working coolant.
+**Components:** `prepProbing`, `T\_probe`, `prepFlushing`, `sensor\_T\_header`, `coolantReady`, `prepBandEnteredAt`, `coolantReadySince`
 → `bypassRegulatorOverCool` (valve4), `coilFlowing\[]` (coil valves),
-`m\_flow\_set`.
+`m\_flow\_set`, `wanted\_temp`.
 
-The coils start at 137.5 K. Opening them straight onto a cold supply
-breaks the 40 K rule (the 2026-10-07 run started the loop at 80 K and was
-over the inlet–outlet limit for 31 s). So the loop first circulates with
-the coils shut:
+After a discharge the loop sits at 80 K (idle) and the coils at 137.5 K
+(`T\_loopInitial` = 80 K since 2026-11-03; before that the loop started at
+97.5 K, i.e. already prepared). The plant has no coil sensors, only the
+outlet thermometers (thesis §6.2; `docs/reading-simulations.md` §2), so
+the coil temperature is first *measured* with a small flow, then the
+coolant is brought to a safe temperature:
 
-1. **Preparation.** All coil valves at `Kv\_shut`; valve4 at
-`Kv\_prepBypass` = 1, about the coils' own resistance (\~10 bar at
-0.17 kg/s), so the circulator runs near its design point and RV01
-hardly moves at the hand-over. C-TEMP-SR brings the supply to
-`T\_prepTarget = max(max(T\_wall\_max\_CS) − 40 K, 77 K)`. This is the
-C-TEMP-SP rule over all coils, without reading the isolation latches
-(reading them formed a Boolean algebraic loop with the algorithm).
-The loop gas outside the coils already starts at `T\_loopInitial` =
-137.5 − 40 = 97.5 K.
-2. **In band:** `prepInBand` = t ≥ 10 s **and** |T\_supply − T\_prepTarget|
-< `prepTempBand` (2 K) **and** `m\_flow\_loop` > `prepFlowFraction` (0.9)
-× 0.17 kg/s. Entering the band stamps `prepBandEnteredAt`.
-3. **Hand-over:** `coolantReady` latches when the band has held for
-`prepHoldTime` (10 s), or at `prepMaxTime` (300 s) as a fallback. The
-coils open (3 s ramp), valve4 goes to 0.001, `m\_flow\_set` switches to
-per-channel flow.
-4. `controlsActive` = `coolantReady` and 10 s since the coils opened
+1. **Probe** (`prepProbing`, 0 … `prepProbeTime` = 15 s). The coil valves open
+(3 s valve lag) with a small flow: the flow setpoint is
+`prepProbeFlowFraction` (0.1) × 0.17 kg/s, held by the normal flow regulator
+(PID\_RV01), which starts at a **calculated** RV01 opening and only trims it:
+`Kv\_RV01Probe = (m\_circStart − m\_probe) / (K\_valveRV01 · √(ρ · Δp))` =
+(0.31 − 0.017) / (0.0086 · √(48 · 4.5)) ≈ 2.3 (RV01 passes the circulator
+flow minus the probe flow; the valve law `m = K·Kv·√(ρ·Δp)` fits the
+2026-11-03 run within 2 %; the circulator flow, density and Δp are assumed
+from that run). The flow setpoint also starts at the probe value. The
+PI alone had reached only Kv 1.75 after 15 s and left 0.14 kg/s through the
+coils instead of 0.017. valve4 is shut.
+The gas passing a coil takes the coil's temperature, so the outlet reads
+the coil. At the end of the probe the hottest outlet is latched:
+`T\_probe = max(T\_gas\_out\_CS)`, and the coils shut again. `wanted\_temp`
+holds `T\_loopInitial` (80 K) meanwhile.
+2. **Warm-up** (coils shut, valve4 at `Kv\_prepBypass` = 1, the full 0.17 kg/s
+through valve4, so the circulator runs near its design point).
+The supply is heated by the normal split-range control (C-TEMP-SR) to
+`T\_prepAim = T\_prepTarget + prepAimOffset` (+5 K), with
+`T\_prepTarget = max(T\_probe − 40 K, 77 K)`.
+3. **Release band.** `prepInBand` = probe finished **and**
+`T\_prepTarget ≤ T\_header ≤ T\_prepTarget + prepWarmBand` (+10 K) **and**
+`m\_flow\_loop` > `prepFlowFraction` (0.9) × 0.17 kg/s. `T\_header` is
+`sensor\_T\_header`, the gas entering the coil supply header (tee
+`junction21`, coil side); the supply control itself still reads `sensor\_T`
+(`junction7`). Not too cold (that would break the 40 K rule); a bit warmer
+is fine and needs no precision. Entering the band stamps `prepBandEnteredAt`.
+4. **Flush** (`prepFlushing`, `prepFlushTime` = 60 s). When the band has held
+for `prepHoldTime` (10 s) the coils open with `prepFlushFlowFraction` (0.3) ×
+0.17 kg/s, held by PID\_RV01, valve4 shut. The dead-end header (4 × 10 l) and
+the coil feed lines still hold gas from the idle loop temperature, because
+warm-up flows only through the tee and valve4; the flush pushes that gas
+through the coils with warm supply gas behind it. (2026-11-03 run without a
+flush: the coil inlet stayed at 81–94 K for 80–180 s after the release while
+the supply sensor read 100–108 K.)
+5. **Hand-over:** at the end of the flush, or at `prepMaxTime` (300 s) from any
+phase as a fallback, `coolantReady` latches. The coils open fully (3 s ramp),
+valve4 goes to 0.001, `m\_flow\_set` switches to per-channel flow, and
+`wanted\_temp` becomes the normal C-TEMP-SP-b value (hottest cooled wall −
+40 K, ≥ 77 K), so the PID takes the supply down to the 40 K difference as
+before.
+6. `controlsActive` = `coolantReady` and 10 s since the coils opened
 (`controlActivationDelay`) — the 88 m channels hold \~5 s of gas at
 design flow. C-ISO, C-COLDSHUT and C-OVERCOOL only run after that.
 
 `coolantReady` never resets: preparation runs once per simulation.
 
+**Known cost of the probe:** while the 80 K loop gas passes the 137.5 K
+coils, the coil gas inlet–outlet difference is ~57 K for a few seconds
+(over S3.4's 40 K), and the supply is 57 K below the wall. It is a
+small flow for 15 s, the same measurement the real plant makes (thesis
+§6.2), but check the result: time with inlet–outlet > 40 K during the
+probe, and how far the walls cool in those seconds.
+
+**Signals:** the probe uses the **outlet** temperature, as the real plant
+must; the release target no longer reads the wall (this closes the
+CS-PREP part of FIX-28). The setpoint after the hand-over (C-TEMP-SP-b)
+still reads the wall.
+
 **Switch:** `enableCSPrep` (default `true`). `false` starts `coolantReady`
-latched true, so the coils open at t = 0 as if no preparation had run —
-used for the Run\_6 ablation in `run_simulation.md` (is CS-PREP needed to
-meet the 40 K rule at first contact?).
+latched true and `prepProbing` false, so the coils open at t = 0 with the
+loop at `T\_loopInitial` as if no preparation had run — used for the
+Run\_6 ablation in `run_simulation.md`.
+
+**Revision history:** 2026-11-03 rewritten: probe + warm-up replaces
+"warm the supply to wall − 40 K with the coils shut"; `T\_loopInitial`
+97.5 K → 80 K; `prepTempBand` (2 K band) replaced by
+`prepAimOffset`/`prepWarmBand`. Same day, after the first run: the probe
+flow starts at a calculated RV01 opening instead of 0.5, release test
+moved to the coil header (`sensor\_T\_header`), a 60 s flush phase added
+before the hand-over, and the supply tee `junction21` reduced from 200 l to
+10 l (it was a 10 kg mixing volume copied from TF/PF with no stated basis).
+Not yet simulated.
 
 <a id="cs-flow-sp"></a>
 
@@ -111,11 +160,11 @@ S6.5.2: 0.17 kg/s total minimal flow (8 channels).
 **Output:** `m\_flow\_set` → `firstOrderMflowSet` (5 s) → C-RV01.
 
 ```
-m\_flow\_set = 0.17 kg/s × ( coolantReady ? max(openChannelFraction, 1/8) : 1 )
+m\_flow\_set = 0.17 kg/s × ( prepProbing ? 0.1 : coolantReady ? max(openChannelFraction, 1/8) : 1 )
 openChannelFraction = Σ nChannels\_CS\[i] over coilFlowing\[i] / 8
 ```
 
-During preparation the full 0.17 kg/s circulates through valve4. After
+During the CS-PREP probe 10 % of it goes through the coils, then during warm-up the full 0.17 kg/s circulates through valve4. After
 it, each open channel gets 0.0214 kg/s and the surplus of the
 fixed-speed circulator goes back to suction through CS\_RV01. At least
 one channel's worth always circulates.
@@ -147,8 +196,9 @@ Hz, costing \~125 solver steps per simulated second (2026-10-08).
 ### C-RV01 — flow mode (implemented)
 
 * `PID\_RV01`: PI, k = 3 Kv per kg/s, Ti = 10 s, y ∈ \[−5, 0]
-(`Kv\_RV01Max` = 5), start −0.5 (`Kv\_RV01Start`: \~0.1 kg/s back to
-suction during preparation).
+(`Kv\_RV01Max` = 5), start −`Kv\_RV01Start`: the calculated probe opening
+≈ 2.3 with CS-PREP (see CS-PREP step 1), −0.5 (\~0.1 kg/s back to suction)
+without it.
 * `firstOrderRV01`: 2 s actuator lag.
 * `u\_m = m\_flow\_loop = Heater.portA.m\_flow`, downstream of the RV01 tee.
 FM01 (`sensor\_m\_flow`) sits upstream and reads loop + bypass; it is

@@ -56,9 +56,10 @@ the outlet is a good enough stand-in (§5).
 | `T_wall_max_CS[i]` / `T_wall_max` | Hottest wall cell of coil *i* | **No** (model only) | Checking; see the caveat below |
 | `T_wallHotCooled`, `T_wallHotLive` | Hottest wall cell over the coils being cooled | **No** | Checking; see the caveat below |
 
-**Caveat (open, FIX-28):** in CS and TF the setpoint rule C-TEMP-SP-b,
-the release-all rule of C-COLDSHUT, and CS-PREP's target still read the
-*wall* temperature, which the plant cannot measure. C-ISO already uses
+**Caveat (open, FIX-28):** in CS and TF the setpoint rule C-TEMP-SP-b
+and the release-all rule of C-COLDSHUT still read the *wall* temperature,
+which the plant cannot measure. (CS-PREP no longer does: since 2026-11-03 it
+measures the coil with a small-flow probe and reads the outlet.) C-ISO already uses
 outlets. Until FIX-28 is closed, those algorithms are an idealisation:
 results that depend on them (supply setpoint, release time) assume
 perfect knowledge of the wall.
@@ -154,9 +155,10 @@ CS Runs 1–5.
   coil-to-coil algorithms (C-ISO, C-COLDSHUT) have little to do. An
   asymmetric start is a stronger test of both the algorithms and of the
   outlet-as-proxy assumption.
-- The outlet reading is a mixed-mean of the channel flow; during
-  preparation (coils shut) there is no meaningful outlet, so CS-PREP uses
-  the wall (see the FIX-28 caveat).
+- The outlet reading is a mixed-mean of the channel flow; while the coils
+  are shut there is no meaningful outlet. CS-PREP therefore takes one
+  reading at the end of a short small-flow probe (`T_probe`) and uses
+  that.
 - Open numerical issue FIX-27 changes cost (CPU, steps) between runs
   compiled before and after commit `13c9717`; compare numerics only
   between like runs.
