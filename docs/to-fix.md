@@ -13,23 +13,23 @@ structure.
 
 | ID | Circuit | Problem | Prio | Status |
 |---|---|---|---|---|
-| [FIX-01](#fix-01) | TF, PF | Coils meet 80 K gas at 137 K (TF) / 160 K (PF): 40 K rule broken at startup | P1 | open |
+| [FIX-01](#fix-01) | TF, PF | Coils meet 80 K gas at 137 K (TF) / 160 K (PF): 40 K rule broken at startup | P1 | open; PF quick fix (loop gas 120 K) applied 2026-11-04, not simulated |
 | [FIX-02](#fix-02) | TF | Pressure PI saturates at 150 Pa error (CS found ringing with the same gain) | P1 | open |
-| [FIX-03](#fix-03) | TF, PF | valve6 Kv negative for 0 < PID.y < 0.7 (no R-KVFLOOR) | P2 | open |
-| [FIX-04](#fix-04) | TF, CS | Cold shut-off overwrites a frozen temperature with the raw stagnant one | P2 | open |
+| [FIX-03](#fix-03) | TF, PF | valve6 Kv negative for 0 < PID.y < 0.7 (no R-KVFLOOR) | P2 | TF open; PF **done** 2026-11-04 (not yet simulated) |
+| [FIX-04](#fix-04) | TF, CS | Cold shut-off overwrites a frozen temperature with the raw stagnant one | P2 | **done** 2026-11-03 (not yet simulated) |
 | [FIX-05](#fix-05) | TF, PF | Isolation close not gated by the activation delay | P3 | open |
 | [FIX-06](#fix-06) | TF | PID_pressure limits don't match the Kv clamp (no R-WINDUP) | P3 | open |
 | [FIX-07](#fix-07) | TF | No flow control: coil flow is whatever the fixed-speed fan gives | P2 | open, check PFD |
 | [FIX-08](#fix-08) | TF, PF | No LIN supply cap on the evaporator (CS has one) | P3 | open |
 | [FIX-09](#fix-09) | TF, PF | C-SPEED-a has no soft start | P3 | open |
 | [FIX-10](#fix-10) | TF, PF, CS | C-OVERCOOL archived everywhere but still in all three `.mo` | P3 | open |
-| [FIX-11](#fix-11) | PF | `PID.y_start` = 5 switches the heater on at startup | P2 | open |
+| [FIX-11](#fix-11) | PF | `PID.y_start` = 5 switches the heater on at startup | P2 | **done** 2026-11-04 (not yet simulated) |
 | [FIX-12](#fix-12) | PF | Setpoint is C-TEMP-SP-a (gas outlet, no floor) | P2 | open, decision |
 | [FIX-13](#fix-13) | PF | valve5 throttles only below PID.y = −10.3 | P2 | open |
 | [FIX-14](#fix-14) | CS | C-RV01 power mode never run, all four parameters guessed | P2 | open |
 | [FIX-15](#fix-15) | CS | RV01 flow PI reads a loop-side flow the plant doesn't measure | P2 | open, plant |
-| [FIX-16](#fix-16) | all | C-ISO 40 K coil-to-coil: source unknown; outlet vs wall undecided | P2 | open, decision |
-| [FIX-17](#fix-17) | all | `sensor_p_suction` measures the discharge side | P3 | open, ask first |
+| [FIX-16](#fix-16) | all | C-ISO 40 K coil-to-coil: source (thesis §6.2) found; coil temperature = outlet | P2 | **done** 2026-11-03 |
+| [FIX-17](#fix-17) | all | `sensor_p_suction` measures the discharge side: renamed `sensor_p_discharge` | P3 | **done** 2026-11-03 (not yet simulated) |
 | [FIX-18](#fix-18) | PF | `.mo` not tagged with algorithm IDs; stale docstrings (thresholds, suction, line numbers) | P3 | open |
 | [FIX-19](#fix-19) | PF | `pressureSetpoint` docstring says 35.5 barg for 36.5 bara | P3 | open |
 | [FIX-20](#fix-20) | all | Coil-sequencing rules share latches but are separate algorithms | P3 | proposal |
@@ -40,6 +40,7 @@ structure.
 | [FIX-25](#fix-25) | PF | Evaporator modelled as one well-mixed cell, likely oversized | P2 | open |
 | [FIX-26](#fix-26) | PF | Power-cap PI integrates while its gate is shut | P3 | open |
 | [FIX-27](#fix-27) | CS | Recoverable Newton-solver failure at T~4.85s, every run since commit 13c9717 | P2 | open |
+| [FIX-28](#fix-28) | CS, TF | Setpoint and release-all still read the wall temperature, which the plant can't measure (CS-PREP no longer does) | P2 | open, decision |
 
 ---
 
@@ -89,7 +90,14 @@ command is negative: reverse evaporator flow (16k Newton failures in CS).
 one-token fix in `PFCircuit.mo`.
 
 <a id="fix-04"></a>
-### FIX-04 — Cold shut-off overwrites the frozen temperature (P2, also CS)
+### FIX-04 — Cold shut-off overwrites the frozen temperature (P2, also CS) — done
+
+**Done** 2026-11-03 in `CSCircuit.mo` and `TFCircuit.mo`: the `[C-COLDSHUT]`
+when-block now re-freezes `T_gas_out_frozen[i]` only if the coil/bus is flowing
+(`coilFlowing[i]` in CS; `(pre(allReleased) and isCoil_TF[i]) or pre(coilOpen[i])`
+in TF). Not yet translated or simulated; check that a CS and a TF run still
+translate and that Runs 2/4 are unchanged (the case never triggers in the
+symmetric runs). Original entry follows.
 
 **Where:** algorithm section, `[C-COLDSHUT]` when-block:
 `T_gas_out_frozen[i] := T_gas_out_TF[i]`.
@@ -168,18 +176,47 @@ and drop only the state machine; otherwise remove it from TF/PF and record
 the last commit containing it in the Archived row.
 
 <a id="fix-16"></a>
-### FIX-16 — C-ISO requirement and measured quantity (P2, decision)
+### FIX-16 — C-ISO requirement and measured quantity (P2) — done
 
-**Problem:** C-ISO is tiered Primary on "hottest and coldest coil may not
-differ by more than 40 K", cited as an IPP requirement; ATEKO doesn't state
-it (only S3.2 "temperature homogeneity", S6.1 ON/OFF valves). The source
-document is still missing. Second: all three circuits compare gas
-**outlet** temperatures; if the requirement is on the coil, the test should
-use `T_wall_max`.
-**Fix:** get the source; settle outlet vs wall.
+**Done** 2026-11-03 (docs only, no `.mo` change).
+**Source found:** the thesis (`thesis_sis.pdf`) §6.1–6.2: coils are judged by
+their return temperature; every coil more than 40 K cooler than the hottest
+is isolated, and reopened as the hottest comes within the 40 K difference.
+ATEKO does not state it (only S3.2 "temperature homogeneity", S6.1 ON/OFF
+valves). The thesis also says there are no internal coil sensors, which
+decides the second point.
+**Decision:** the coil temperature used by the algorithms is the **gas
+outlet** temperature, the only signal the real plant has. The wall
+temperature stays in the model as ground truth, and every run is checked for
+whether the outlet tracks it: see
+[reading-simulations.md](reading-simulations.md) §5. C-ISO already complied;
+the other wall readers are FIX-28.
+
+<a id="fix-28"></a>
+### FIX-28 — Algorithms still read the wall temperature (P2, decision)
+
+**Where:** CS and TF: `T_wallHotCooled`/`wanted_temp` (C-TEMP-SP-b) and
+`T_wallHotLive` (C-COLDSHUT release-all). PF's C-TEMP-SP-a already uses the
+outlet. CS-PREP stopped reading the wall on 2026-11-03 (it latches the outlet
+temperature at the end of a small-flow probe, `T_probe`).
+**Problem:** after FIX-16 the rule is that algorithms use outlet
+temperatures, since the plant cannot measure the wall. These two still
+use `T_wall_max`, so the supply setpoint and the release time assume
+information the plant doesn't have.
+**Fix:** first run the outlet-vs-wall check on CS Runs 1–5
+(reading-simulations.md §5). If the offset is small, switch the setpoint and
+release rules to the outlet signal (`T_gas_out_max` plus a margin for the
+offset) and re-run. Update control-common.md C-TEMP-SP when done.
 
 <a id="fix-17"></a>
-### FIX-17 — `sensor_p_suction` measures the discharge side (P3, ask first)
+### FIX-17 — `sensor_p_suction` measures the discharge side (P3, ask first) — done
+
+**Done** 2026-11-03: renamed to `sensor_p_discharge` in `CSCircuit.mo`,
+`PFCircuit.mo`, `TFCircuit.mo` and the current docs. Not yet translated.
+Result files, `dsin.txt` files and `debugging/` build output from before the
+rename keep the old name (they record what was simulated); scripts reading old
+results must use `sensor_p_suction`. `migration-notes.md` is left as the
+historical log. Original entry follows.
 
 **Problem:** in CS, PF and TF it reads `junction22`, which hangs off the
 evaporator inlet tee after the heater, i.e. the circulator discharge. The
@@ -266,7 +303,7 @@ valve5 fully open while the supply sat 7–14 K above setpoint.
   topology" — it hangs off `junction6`, the evaporator inlet tee
   (discharge side). Same "suction" wording in `enablePressureControl`,
   `pressureSetpoint`, `PID_pressure`, `V_loopEffective`.
-- `sensor_p_suction`: "CLASS NAME ASSUMED … verify at translate-check".
+- `sensor_p_discharge` (was `sensor_p_suction`): "CLASS NAME ASSUMED … verify at translate-check".
 - `sensorTFiltered`: cites "line 693", "lines 525/529" — no longer match.
 - `valve1PowerLimitTriggerTemp`: reasons from `P_shaftLimit=40000`; the
   value is now 50 kW. The name says `valve1`, the valve is `PF_RV01`.
@@ -381,7 +418,8 @@ untuned ASSUMED values, which is the original ask this item is tracking.
 downstream of the RV01 tee. FM01 (`sensor_m_flow`) sits upstream on PFD
 22178 and reads loop + bypass.
 **Fix:** a meter on the loop side, or FM01 minus an RV01 flow estimate.
-Raise it with the PFD owner.
+Raise it with the PFD owner. Tracked as PLANT-01 in
+[plant-design-requests.md](plant-design-requests.md).
 
 <a id="fix-27"></a>
 ### FIX-27 — Recoverable Newton-solver failure at T~4.85s since commit 13c9717 (P2)

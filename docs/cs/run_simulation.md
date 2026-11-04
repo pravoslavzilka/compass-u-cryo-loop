@@ -3,6 +3,15 @@
 Model: `CoilLoopCompassU.CS.CSCircuit`. Every run uses the same StopTime, solver,
 tolerance and initial conditions; only the settings below change.
 
+**2026-11-03 change:** CS-PREP was redesigned (small-flow probe of the coil
+outlet temperature, then warm-up to probe − 40 K, see `control-logic.md`) and
+the loop gas now starts at 80 K (`T_loopInitial`; it was 97.5 K, already
+prepared). Runs saved before that date (`data/CS/paper/Run_1 … Run_6`) used the
+previous CS-PREP and the 97.5 K start, so they are not comparable with new
+runs and every run below has to be repeated. Run\_6 (CS-PREP off) becomes
+meaningful only now: with the loop at 80 K it shows what happens without
+preparation.
+
 Reference = Baseline + Primary tier on, Secondary tier off, Archived off.
 Each run changes one thing against Run\_1, except Run\_4, which turns on both
 secondary algorithms.

@@ -64,16 +64,16 @@ model  PFCircuit
     "Suction-node pressure setpoint held by the RV07/RV08 pair, Pa (35.5 barg abs) -- matches the old ideal boundary's pFixed.";
   parameter Modelica.Units.SI.AbsolutePressure pMakeupOpen(displayUnit="bar")=
     3400000
-    "RV07 (make-up) hysteresis ON threshold, Pa (34 bar abs). makeupActive turns true (and a feedforward pulse starts, see makeupPulsing) the instant sensor_p_suction drops to/below this.";
+    "RV07 (make-up) hysteresis ON threshold, Pa (34 bar abs). makeupActive turns true (and a feedforward pulse starts, see makeupPulsing) the instant sensor_p_discharge drops to/below this.";
   parameter Modelica.Units.SI.AbsolutePressure pMakeupClose(displayUnit="bar")=
     3500000
-    "RV07 (make-up) hysteresis OFF threshold, Pa (35 bar abs). makeupActive turns false once sensor_p_suction recovers to/above this -- must stay > pMakeupOpen so the band gives real chatter margin. 2026-09-01: this hysteresis band on its own still limit-cycled (bang-bang between pMakeupOpen/pMakeupClose, ~10s period observed) because RV07Limiter drove full trim authority (KvGainMakeup*PID_pressure.y, capped at KvMakeupMax) for the whole time makeupActive was true, so each opening still delivered far more mass than needed to just cross the band -- see the pulse-then-trim rewrite at makeupPulsing/KvMakeupPulse below, which fixes this by sizing the correction to the actual deviation instead of relying on the band width to absorb the overshoot.";
+    "RV07 (make-up) hysteresis OFF threshold, Pa (35 bar abs). makeupActive turns false once sensor_p_discharge recovers to/above this -- must stay > pMakeupOpen so the band gives real chatter margin. 2026-09-01: this hysteresis band on its own still limit-cycled (bang-bang between pMakeupOpen/pMakeupClose, ~10s period observed) because RV07Limiter drove full trim authority (KvGainMakeup*PID_pressure.y, capped at KvMakeupMax) for the whole time makeupActive was true, so each opening still delivered far more mass than needed to just cross the band -- see the pulse-then-trim rewrite at makeupPulsing/KvMakeupPulse below, which fixes this by sizing the correction to the actual deviation instead of relying on the band width to absorb the overshoot.";
   parameter Modelica.Units.SI.AbsolutePressure pReliefOpen(displayUnit="bar")=
     3900000
-    "RV08 (relief) hysteresis ON threshold, Pa (39 bar abs). reliefActive turns true (and a feedforward pulse starts, see reliefPulsing) the instant sensor_p_suction rises to/above this.";
+    "RV08 (relief) hysteresis ON threshold, Pa (39 bar abs). reliefActive turns true (and a feedforward pulse starts, see reliefPulsing) the instant sensor_p_discharge rises to/above this.";
   parameter Modelica.Units.SI.AbsolutePressure pReliefClose(displayUnit="bar")=
     3750000
-    "RV08 (relief) hysteresis OFF threshold, Pa (37.5 bar abs). reliefActive turns false once sensor_p_suction falls to/below this.";
+    "RV08 (relief) hysteresis OFF threshold, Pa (37.5 bar abs). reliefActive turns false once sensor_p_discharge falls to/below this.";
   parameter Real kPressurePID=0.05
     "PLACEHOLDER P gain for PID_pressure -- conservative starting value, tune after reviewing the baseline (ideal-boundary) run's pressure excursions.";
   parameter Modelica.Units.SI.Time TiPressurePID=30
@@ -89,7 +89,7 @@ model  PFCircuit
   parameter Real KvMakeupMax = 15
     "PLACEHOLDER Kv cap for RV07's POST-PULSE TRIM phase (see KvGainMakeup) -- REPLACE with a value sized to the peak make-up mass flow measured from the ideal-boundary baseline run (e.g. via sensor_m_flow during the largest cooldown/isolation transient). Cut from an initial 500 -> 5 for the same reason as KvGainMakeup above -- this is a deliberately weak trim valve until real sizing data is available, not yet sized to correct a real deficit quickly. Raised 5 -> 15 on 2026-09-01 as a first incremental step back up (see the 2026-09-01 migration-notes entry on RV07/RV08 capacity) paired with makeupBuffer's volume increase 1e-3 -> 1e-2 -- re-check dslog.txt for corrector-step collapse before raising further; the 2026-08-10 runs showed even Kv~15 alone (without the larger buffer) was enough to nearly equalize the loop with the reservoir in one dwell window. Since the 2026-09-01 pulse-then-trim rewrite this is no longer the value that does the bulk of the correction -- KvMakeupPulse is.";
   parameter Real KvMakeupPulse = 60
-    "PLACEHOLDER fixed (non-PID) Kv commanded during RV07's feedforward pulse (makeupPulsing=true), added 2026-09-01. Deliberately much larger than KvMakeupMax's trim authority -- an oversized value here only shortens the pulse (it's cut off by makeupDeliveredMass reaching makeupPulseTargetMass, or by sensor_p_suction reaching pMakeupClose, whichever comes first), it does not cause overshoot the way running full trim authority for the whole open window did under the pure-hysteresis design (see pMakeupClose's docstring). REPLACE once real make-up flow requirements are known -- this is a first guess, not sized.";
+    "PLACEHOLDER fixed (non-PID) Kv commanded during RV07's feedforward pulse (makeupPulsing=true), added 2026-09-01. Deliberately much larger than KvMakeupMax's trim authority -- an oversized value here only shortens the pulse (it's cut off by makeupDeliveredMass reaching makeupPulseTargetMass, or by sensor_p_discharge reaching pMakeupClose, whichever comes first), it does not cause overshoot the way running full trim authority for the whole open window did under the pure-hysteresis design (see pMakeupClose's docstring). REPLACE once real make-up flow requirements are known -- this is a first guess, not sized.";
   parameter Real KvGainRelief = 2
     "PLACEHOLDER: maps -PID_pressure.y (>0 when pressure above setpoint) to RV08's Kv command during the POST-PULSE TRIM phase only (pre(reliefActive) and not reliefPulsing -- see RV08Limiter). Tune together with kPressurePID/KvReliefMax. Cut from an initial 50 -> 2, same reasoning as KvGainMakeup. PID_pressure.yMax/yMin must stay at >= KvReliefMax/KvMakeupMax divided by this gain, or PID_pressure's own output saturation becomes the binding cap instead of KvReliefMax/KvMakeupMax -- see PID_pressure's yMax/yMin docstring.";
   parameter Real KvReliefMax = 15
@@ -124,21 +124,21 @@ model  PFCircuit
   Real lowTempPendingSince[nPF](each start=0, each fixed=true)
     "Time assembly i most recently entered the lowTempCoolantOptimization pending state -- gates the lowTempCoolantOptimizationMinDuration hold.";
 
-  Boolean makeupActive(start=sensor_p_suction.sensorValue <= pMakeupOpen, fixed=true)
-    "RV07's pulse-arming latch. As of the 2026-09-01 split-range rewrite this no longer gates RV07's Kv directly (RV07Limiter runs its small PID trim continuously regardless of makeupActive -- see RV07Limiter's docstring); makeupActive's only remaining job is to arm/cool down the large feedforward PULSE: turns true the instant sensor_p_suction drops to/below pMakeupOpen (arming a pulse, see makeupPulsing), turns false once it recovers to/above pMakeupClose, and a new pulse can't be armed again until that recovery happens -- this is what stops the pulse from re-firing repeatedly while pressure lingers just below pMakeupOpen. This design was arrived at by observing an actual bug: a 2026-09-01 run where makeupActive got stuck true (a when/elsewhen collision, since fixed -- see the git history right above the when-blocks below) accidentally left RV07 running this same always-on continuous trim for the whole run, and that run was dead stable/non-oscillating specifically because a continuously-modulated valve has no discrete state to hunt between, unlike the old hysteresis-gated on/off design. This rewrite makes that behavior deliberate. start is evaluated from the live sensor rather than hardcoded false, so a model that initializes already below pMakeupOpen still latches active instead of the when-clause's crossing edge being missed at t=0 -- see the 2026-09-01 migration-notes entry for why a hardcoded false previously silently disabled RV07/RV08 for an entire run.";
+  Boolean makeupActive(start=sensor_p_discharge.sensorValue <= pMakeupOpen, fixed=true)
+    "RV07's pulse-arming latch. As of the 2026-09-01 split-range rewrite this no longer gates RV07's Kv directly (RV07Limiter runs its small PID trim continuously regardless of makeupActive -- see RV07Limiter's docstring); makeupActive's only remaining job is to arm/cool down the large feedforward PULSE: turns true the instant sensor_p_discharge drops to/below pMakeupOpen (arming a pulse, see makeupPulsing), turns false once it recovers to/above pMakeupClose, and a new pulse can't be armed again until that recovery happens -- this is what stops the pulse from re-firing repeatedly while pressure lingers just below pMakeupOpen. This design was arrived at by observing an actual bug: a 2026-09-01 run where makeupActive got stuck true (a when/elsewhen collision, since fixed -- see the git history right above the when-blocks below) accidentally left RV07 running this same always-on continuous trim for the whole run, and that run was dead stable/non-oscillating specifically because a continuously-modulated valve has no discrete state to hunt between, unlike the old hysteresis-gated on/off design. This rewrite makes that behavior deliberate. start is evaluated from the live sensor rather than hardcoded false, so a model that initializes already below pMakeupOpen still latches active instead of the when-clause's crossing edge being missed at t=0 -- see the 2026-09-01 migration-notes entry for why a hardcoded false previously silently disabled RV07/RV08 for an entire run.";
   Boolean makeupPulsing(start=false, fixed=true)
-    "True for the first part of a makeupActive episode: RV07 commanded to a large fixed Kv (KvMakeupPulse, not PID-moderated) to deliver makeupPulseTargetMass quickly, added 2026-09-01 to replace running full trim authority for the whole open window (see pMakeupClose's docstring for why that limit-cycled). Set true on the same edge that sets makeupActive; cleared (see the when-clause below) once makeupDeliveredMass reaches makeupPulseTargetMass or sensor_p_suction already reached pMakeupClose, whichever comes first -- after that RV07Limiter drops back to its normal small PID-moderated trim (KvGainMakeup/KvMakeupMax), the same trim that's running continuously at all other times too (see RV07Limiter's docstring).";
+    "True for the first part of a makeupActive episode: RV07 commanded to a large fixed Kv (KvMakeupPulse, not PID-moderated) to deliver makeupPulseTargetMass quickly, added 2026-09-01 to replace running full trim authority for the whole open window (see pMakeupClose's docstring for why that limit-cycled). Set true on the same edge that sets makeupActive; cleared (see the when-clause below) once makeupDeliveredMass reaches makeupPulseTargetMass or sensor_p_discharge already reached pMakeupClose, whichever comes first -- after that RV07Limiter drops back to its normal small PID-moderated trim (KvGainMakeup/KvMakeupMax), the same trim that's running continuously at all other times too (see RV07Limiter's docstring).";
   Real makeupPulseTargetMass(start=0, fixed=true)
-    "Estimated helium mass, kg, to admit during the current pulse to bring sensor_p_suction from its value at the triggering instant up to pMakeupClose -- ideal gas law: (pMakeupClose - p_trigger)*V_loopEffective/(R_specificHelium*T_loopEstimate). Recomputed only on the makeupPulsing rising edge (frozen for the rest of the episode); an estimate, not exact -- see V_loopEffective's docstring for why that's fine (the trim phase that follows absorbs the error).";
+    "Estimated helium mass, kg, to admit during the current pulse to bring sensor_p_discharge from its value at the triggering instant up to pMakeupClose -- ideal gas law: (pMakeupClose - p_trigger)*V_loopEffective/(R_specificHelium*T_loopEstimate). Recomputed only on the makeupPulsing rising edge (frozen for the rest of the episode); an estimate, not exact -- see V_loopEffective's docstring for why that's fine (the trim phase that follows absorbs the error).";
   Real makeupDeliveredMass(start=0, fixed=true)
     "Integral of the actual RV07 loop-side mass flow (abs(RV07.summary.m_flow_gas_B)) since the current pulse started -- see the equation-section der()/reinit pair. Compared against makeupPulseTargetMass to decide when to end the pulse; using the model's own simulated flow (not the Kv/dp estimate that sized the pulse) makes the pulse cutoff self-correcting even if KvMakeupPulse or V_loopEffective/T_loopEstimate are inaccurate.";
 
-  Boolean reliefActive(start=sensor_p_suction.sensorValue >= pReliefOpen, fixed=true)
-    "RV08's pulse-arming latch -- mirror of makeupActive, see its docstring for the full 2026-09-01 split-range rationale. No longer gates RV08's Kv directly; only arms/cools down the feedforward pulse (reliefPulsing). Turns true the instant sensor_p_suction rises to/above pReliefOpen, turns false once it falls to/below pReliefClose.";
+  Boolean reliefActive(start=sensor_p_discharge.sensorValue >= pReliefOpen, fixed=true)
+    "RV08's pulse-arming latch -- mirror of makeupActive, see its docstring for the full 2026-09-01 split-range rationale. No longer gates RV08's Kv directly; only arms/cools down the feedforward pulse (reliefPulsing). Turns true the instant sensor_p_discharge rises to/above pReliefOpen, turns false once it falls to/below pReliefClose.";
   Boolean reliefPulsing(start=false, fixed=true)
     "Mirror of makeupPulsing for RV08/reliefActive -- see its docstring.";
   Real reliefPulseTargetMass(start=0, fixed=true)
-    "Estimated helium mass, kg, to vent during the current pulse to bring sensor_p_suction from its value at the triggering instant down to pReliefClose: (p_trigger - pReliefClose)*V_loopEffective/(R_specificHelium*T_loopEstimate). Mirror of makeupPulseTargetMass -- see its docstring.";
+    "Estimated helium mass, kg, to vent during the current pulse to bring sensor_p_discharge from its value at the triggering instant down to pReliefClose: (p_trigger - pReliefClose)*V_loopEffective/(R_specificHelium*T_loopEstimate). Mirror of makeupPulseTargetMass -- see its docstring.";
   Real reliefDeliveredMass(start=0, fixed=true)
     "Integral of the actual RV08 loop-side mass flow (abs(RV08.summary.m_flow_gas_A)) since the current pulse started. Mirror of makeupDeliveredMass -- see its docstring.";
 
@@ -231,8 +231,8 @@ model  PFCircuit
     m_flowStart=0.003,
     pInitial=3650000,
     fixedInitialPressure=false,
-    TInitial(displayUnit="K") = 80,
-    TInitialWall(displayUnit="K") = 80)
+    TInitial(displayUnit="K") = 120,
+    TInitialWall(displayUnit="K") = 120)
     annotation (Placement(transformation(extent={{-8,-2},{8,2}},
         rotation=0,
         origin={-50,-60})));
@@ -241,7 +241,7 @@ model  PFCircuit
     m_flowStart=1e-5,
     pInitial=3650000,
     fixedInitialPressure=false,
-    TInitial(displayUnit="K") = 80)
+    TInitial(displayUnit="K") = 120)
     annotation (Placement(transformation(extent={{-4,-4},{4,4}},
         rotation=90,
         origin={60,60})));
@@ -250,7 +250,7 @@ model  PFCircuit
     m_flowStart=1e-5,
     pInitial=3650000,
     fixedInitialPressure=false,
-    TInitial(displayUnit="K") = 80)
+    TInitial(displayUnit="K") = 120)
     annotation (Placement(transformation(extent={{-4,-4},{4,4}},
         rotation=-90,
         origin={140,80})));
@@ -267,7 +267,7 @@ model  PFCircuit
     m_flowStart=1e-5,
     pInitial=3650000,
     fixedInitialPressure=false,
-    TInitial(displayUnit="K") = 80)
+    TInitial(displayUnit="K") = 120)
     annotation (Placement(transformation(extent={{-4,-4},{4,4}},
         rotation=180,
         origin={-20,120})));
@@ -276,7 +276,7 @@ model  PFCircuit
     m_flowStart=1e-5,
     pInitial=3650000,
     fixedInitialPressure=false,
-    TInitial(displayUnit="K") = 80)
+    TInitial(displayUnit="K") = 120)
     annotation (Placement(transformation(extent={{-4,-4},{4,4}},
         rotation=270,
         origin={-112,100})));
@@ -285,7 +285,7 @@ model  PFCircuit
     m_flowStart=1e-5,
     pInitial=3650000,
     fixedInitialPressure=false,
-    TInitial(displayUnit="K") = 80)
+    TInitial(displayUnit="K") = 120)
     annotation (Placement(transformation(extent={{-4,-4},{4,4}},
         rotation=90,
         origin={80,80})));
@@ -294,7 +294,7 @@ model  PFCircuit
     m_flowStart=1e-5,
     pInitial=3650000,
     fixedInitialPressure=false,
-    TInitial(displayUnit="K") = 80)
+    TInitial(displayUnit="K") = 120)
     annotation (Placement(transformation(extent={{-4,-4},{4,4}},
         rotation=-90,
         origin={140,40})));
@@ -303,7 +303,7 @@ model  PFCircuit
     m_flowStart=1e-5,
     pInitial=3650000,
     fixedInitialPressure=false,
-    TInitial(displayUnit="K") = 80)
+    TInitial(displayUnit="K") = 120)
     annotation (Placement(transformation(extent={{-4,-4},{4,4}},
         rotation=90,
         origin={80,40})));
@@ -312,7 +312,7 @@ model  PFCircuit
     m_flowStart=1e-5,
     pInitial=3650000,
     fixedInitialPressure=false,
-    TInitial(displayUnit="K") = 80)
+    TInitial(displayUnit="K") = 120)
     annotation (Placement(transformation(extent={{-4,-4},{4,4}},
         rotation=-90,
         origin={160,60})));
@@ -373,7 +373,7 @@ model  PFCircuit
     m_flowStart=1e-5,
     pInitial=3650000,
     fixedInitialPressure=false,
-    TInitial(displayUnit="K") = 80)
+    TInitial(displayUnit="K") = 120)
     annotation (Placement(transformation(extent={{-4,-4},{4,4}},
         rotation=90,
         origin={60,-20})));
@@ -382,7 +382,7 @@ model  PFCircuit
     m_flowStart=1e-5,
     pInitial=3650000,
     fixedInitialPressure=false,
-    TInitial(displayUnit="K") = 80)
+    TInitial(displayUnit="K") = 120)
     annotation (Placement(transformation(extent={{-4,-4},{4,4}},
         rotation=90,
         origin={80,0})));
@@ -391,7 +391,7 @@ model  PFCircuit
     m_flowStart=1e-5,
     pInitial=3650000,
     fixedInitialPressure=false,
-    TInitial(displayUnit="K") = 80)
+    TInitial(displayUnit="K") = 120)
     annotation (Placement(transformation(extent={{-4,-4},{4,4}},
         rotation=90,
         origin={80,-40})));
@@ -400,7 +400,7 @@ model  PFCircuit
     m_flowStart=1e-5,
     pInitial=3650000,
     fixedInitialPressure=false,
-    TInitial(displayUnit="K") = 80)
+    TInitial(displayUnit="K") = 120)
     annotation (Placement(transformation(extent={{-4,-4},{4,4}},
         rotation=-90,
         origin={140,0})));
@@ -409,7 +409,7 @@ model  PFCircuit
     m_flowStart=1e-5,
     pInitial=3650000,
     fixedInitialPressure=false,
-    TInitial(displayUnit="K") = 80)
+    TInitial(displayUnit="K") = 120)
     annotation (Placement(transformation(extent={{-4,-4},{4,4}},
         rotation=-90,
         origin={140,-40})));
@@ -418,7 +418,7 @@ model  PFCircuit
     m_flowStart=1e-5,
     pInitial=3650000,
     fixedInitialPressure=false,
-    TInitial(displayUnit="K") = 80)
+    TInitial(displayUnit="K") = 120)
     annotation (Placement(transformation(extent={{-4,-4},{4,4}},
         rotation=-90,
         origin={160,-20})));
@@ -427,7 +427,7 @@ model  PFCircuit
     m_flowStart=1e-5,
     pInitial=3650000,
     fixedInitialPressure=false,
-    TInitial(displayUnit="K") = 80)
+    TInitial(displayUnit="K") = 120)
     annotation (Placement(transformation(extent={{-4,-4},{4,4}},
         rotation=-90,
         origin={180,20})));
@@ -436,7 +436,7 @@ model  PFCircuit
     m_flowStart=1e-5,
     pInitial=3650000,
     fixedInitialPressure=false,
-    TInitial(displayUnit="K") = 80)
+    TInitial(displayUnit="K") = 120)
     annotation (Placement(transformation(extent={{-4,-4},{4,4}},
         rotation=90,
         origin={40,20})));
@@ -449,7 +449,7 @@ model  PFCircuit
     yMax=60,
     yMin=-60,
     initType=Modelica.Blocks.Types.Init.InitialOutput,
-    y_start=5)
+    y_start=0)
             annotation (Placement(transformation(extent={{-10,10},{10,-10}},
         rotation=-90,
         origin={-70,50})));
@@ -507,7 +507,7 @@ model  PFCircuit
     m_flowStart=1e-5,
     pInitial=3650000,
     fixedInitialPressure=false,
-    TInitial(displayUnit="K") = 80)
+    TInitial(displayUnit="K") = 120)
     annotation (Placement(transformation(extent={{-4,-4},{4,4}},
         rotation=180,
         origin={12,120})));
@@ -516,7 +516,7 @@ model  PFCircuit
     m_flowStart=1e-5,
     pInitial=3650000,
     fixedInitialPressure=false,
-    TInitial(displayUnit="K") = 80)
+    TInitial(displayUnit="K") = 120)
     annotation (Placement(transformation(extent={{-4,-4},{4,4}},
         rotation=0,
         origin={12,20})));
@@ -538,7 +538,7 @@ model  PFCircuit
         hysteresisHalfWidth, uHigh=-u_dead + hysteresisHalfWidth)
     annotation (Placement(transformation(extent={{-258,-78},{-238,-58}})));
   Modelica.Blocks.Sources.RealExpression CoolingLimiter1(y=if
-        coolingHysteresis.y then min(-PID.y*Kv_gain, Kv_cool_max) else
+        coolingHysteresis.y then max(min(-PID.y*Kv_gain, Kv_cool_max), Kv_shut) else
         Kv_shut)
     annotation (Placement(transformation(extent={{-226,-54},{-206,-34}})));
   ThermalSystems.GasComponents.JunctionElements.VolumeJunction junction7(
@@ -546,7 +546,7 @@ model  PFCircuit
     m_flowStart=1e-5,
     pInitial=3650000,
     fixedInitialPressure=false,
-    TInitial(displayUnit="K") = 80)
+    TInitial(displayUnit="K") = 120)
     annotation (Placement(transformation(extent={{-4,-4},{4,4}},
         rotation=270,
         origin={-112,-6})));
@@ -571,7 +571,7 @@ model  PFCircuit
     m_flowStart=1e-5,
     pInitial=3650000,
     fixedInitialPressure=false,
-    TInitial(displayUnit="K") = 80)
+    TInitial(displayUnit="K") = 120)
     annotation (Placement(transformation(extent={{-4,4},{4,-4}},
         rotation=270,
         origin={-12,-6})));
@@ -597,8 +597,8 @@ model  PFCircuit
     m_flowStart=0.003,
     pInitial=3650000,
     fixedInitialPressure=false,
-    TInitial(displayUnit="K") = 80,
-    TInitialWall(displayUnit="K") = 80) annotation (Placement(transformation(
+    TInitial(displayUnit="K") = 120,
+    TInitialWall(displayUnit="K") = 120) annotation (Placement(transformation(
         extent={{8,-2},{-8,2}},
         rotation=90,
         origin={-112,40})));
@@ -629,7 +629,7 @@ model  PFCircuit
     m_flowStart=1e-5,
     pInitial=3650000,
     fixedInitialPressure=false,
-    TInitial(displayUnit="K") = 80)
+    TInitial(displayUnit="K") = 120)
     "Tee at the suction node occupying junction6's old boundary.port slot -- portA to junction6.portB (unchanged coil-return topology), portB to RV07 (make-up), portC to RV08 (relief)."
     annotation (Placement(transformation(extent={{-4,4},{4,-4}},
         rotation=90,
@@ -684,7 +684,7 @@ model  PFCircuit
     annotation (Placement(transformation(extent={{6,-3},{-6,3}},
         rotation=0,
         origin={-8,204})));
-  ThermalSystems.GasComponents.Sensors.Sensor_p sensor_p_suction
+  ThermalSystems.GasComponents.Sensors.Sensor_p sensor_p_discharge
     "Suction-node pressure sensor -- CLASS NAME ASSUMED by analogy with Sensor_T/Sensor_m_flow (no pressure sensor existed anywhere in this model before; the ThermalSystems library isn't vendored in this repo so this couldn't be confirmed against source -- verify at translate-check, fix the class path here if Dymola reports it unresolved)."
     annotation (Placement(transformation(extent={{58,134},{66,142}})));
   Modelica.Blocks.Sources.RealExpression pressureSetpointSource(y=
@@ -698,7 +698,7 @@ model  PFCircuit
     yMin=-7.5,
     initType=Modelica.Blocks.Types.Init.InitialOutput,
     y_start=0)
-    "u_s=pressureSetpoint, u_m=sensor_p_suction.sensorValue, e=u_s-u_m: y>0 when suction pressure is below setpoint (feeds RV07Limiter), y<0 when above (feeds RV08Limiter via -y). Same LimPID class/PI form as PID (temperature loop) above; k/Ti are still placeholders, tune together with KvGainMakeup/KvGainRelief. yMax/yMin tightened from a placeholder +-1e5 to +-2.5 (2026-08-31, diagnosing an enableOverCoolPrevention=true run that hard-failed at t=37.86s with 'corrector could not converge') -- 2.5 was exactly where RV07Limiter/RV08Limiter's own min(...,KvMakeupMax)/(KvGainMakeup) downstream clamp already saturated at the time, so anything y accumulated past that was pure integrator windup with no effect on the commanded Kv. End-state dump from that failed run showed PID_pressure.I.y=-199708, ~2x past even the old yMin -- this bound stops that windup at the DAE level instead of letting it grow unchecked until a valve4-triggered pressure transient (e.g. overcool-bypass opening) forces a slow unwind that compounds with the transient's own stiffness. Raised 2.5 -> 7.5 on 2026-09-01 in lockstep with KvMakeupMax/KvReliefMax 5 -> 15 (7.5*KvGainMakeup/KvGainRelief=2 = 15), preserving the same 'yMax sits exactly at the downstream Kv clamp, no windup headroom beyond what's usable' invariant the 2026-08-31 fix established -- do not raise KvMakeupMax/KvReliefMax again without moving this in the same proportion, or the 2026-08-31 windup failure mode is back in play."
+    "u_s=pressureSetpoint, u_m=sensor_p_discharge.sensorValue, e=u_s-u_m: y>0 when suction pressure is below setpoint (feeds RV07Limiter), y<0 when above (feeds RV08Limiter via -y). Same LimPID class/PI form as PID (temperature loop) above; k/Ti are still placeholders, tune together with KvGainMakeup/KvGainRelief. yMax/yMin tightened from a placeholder +-1e5 to +-2.5 (2026-08-31, diagnosing an enableOverCoolPrevention=true run that hard-failed at t=37.86s with 'corrector could not converge') -- 2.5 was exactly where RV07Limiter/RV08Limiter's own min(...,KvMakeupMax)/(KvGainMakeup) downstream clamp already saturated at the time, so anything y accumulated past that was pure integrator windup with no effect on the commanded Kv. End-state dump from that failed run showed PID_pressure.I.y=-199708, ~2x past even the old yMin -- this bound stops that windup at the DAE level instead of letting it grow unchecked until a valve4-triggered pressure transient (e.g. overcool-bypass opening) forces a slow unwind that compounds with the transient's own stiffness. Raised 2.5 -> 7.5 on 2026-09-01 in lockstep with KvMakeupMax/KvReliefMax 5 -> 15 (7.5*KvGainMakeup/KvGainRelief=2 = 15), preserving the same 'yMax sits exactly at the downstream Kv clamp, no windup headroom beyond what's usable' invariant the 2026-08-31 fix established -- do not raise KvMakeupMax/KvReliefMax again without moving this in the same proportion, or the 2026-08-31 windup failure mode is back in play."
     annotation (Placement(transformation(extent={{120,160},{140,180}})));
   Modelica.Blocks.Sources.RealExpression RV07Limiter(y=if not
         enablePressureControl then Kv_shut_pressureValves else if
@@ -723,7 +723,7 @@ model  PFCircuit
     m_flowStart=1e-5,
     pInitial=3650000,
     fixedInitialPressure=false,
-    TInitial(displayUnit="K") = 80)
+    TInitial(displayUnit="K") = 120)
     annotation (Placement(transformation(extent={{-4,-4},{4,4}},
         rotation=90,
         origin={-112,-24})));
@@ -867,34 +867,34 @@ algorithm
   // into independent when-blocks means each fires on its own edge
   // regardless of what else is true at that instant, so this collision
   // can't happen again.
-  when enablePressureControl and sensor_p_suction.sensorValue <= pMakeupOpen
+  when enablePressureControl and sensor_p_discharge.sensorValue <= pMakeupOpen
       and not pre(makeupActive) then
     makeupActive := true;
     makeupPulsing := true;
-    makeupPulseTargetMass := (pMakeupClose - sensor_p_suction.sensorValue)*
+    makeupPulseTargetMass := (pMakeupClose - sensor_p_discharge.sensorValue)*
       V_loopEffective/(R_specificHelium*T_loopEstimate);
   end when;
   when pre(makeupPulsing) and (makeupDeliveredMass >= makeupPulseTargetMass
-      or sensor_p_suction.sensorValue >= pMakeupClose) then
+      or sensor_p_discharge.sensorValue >= pMakeupClose) then
     makeupPulsing := false;
   end when;
-  when pre(makeupActive) and sensor_p_suction.sensorValue >= pMakeupClose then
+  when pre(makeupActive) and sensor_p_discharge.sensorValue >= pMakeupClose then
     makeupActive := false;
     makeupPulsing := false;
   end when;
 
-  when enablePressureControl and sensor_p_suction.sensorValue >= pReliefOpen
+  when enablePressureControl and sensor_p_discharge.sensorValue >= pReliefOpen
       and not pre(reliefActive) then
     reliefActive := true;
     reliefPulsing := true;
-    reliefPulseTargetMass := (sensor_p_suction.sensorValue - pReliefClose)*
+    reliefPulseTargetMass := (sensor_p_discharge.sensorValue - pReliefClose)*
       V_loopEffective/(R_specificHelium*T_loopEstimate);
   end when;
   when pre(reliefPulsing) and (reliefDeliveredMass >= reliefPulseTargetMass
-      or sensor_p_suction.sensorValue <= pReliefClose) then
+      or sensor_p_discharge.sensorValue <= pReliefClose) then
     reliefPulsing := false;
   end when;
-  when pre(reliefActive) and sensor_p_suction.sensorValue <= pReliefClose then
+  when pre(reliefActive) and sensor_p_discharge.sensorValue <= pReliefClose then
     reliefActive := false;
     reliefPulsing := false;
   end when;
@@ -905,14 +905,14 @@ equation
   // pulse-start event so each episode's pulse is measured from zero.
   der(makeupDeliveredMass) = if makeupPulsing then abs(RV07.summary.m_flow_gas_B)
     else 0;
-  when enablePressureControl and sensor_p_suction.sensorValue <= pMakeupOpen
+  when enablePressureControl and sensor_p_discharge.sensorValue <= pMakeupOpen
       and not pre(makeupActive) then
     reinit(makeupDeliveredMass, 0);
   end when;
 
   der(reliefDeliveredMass) = if reliefPulsing then abs(RV08.summary.m_flow_gas_A)
     else 0;
-  when enablePressureControl and sensor_p_suction.sensorValue >= pReliefOpen
+  when enablePressureControl and sensor_p_discharge.sensorValue >= pReliefOpen
       and not pre(reliefActive) then
     reinit(reliefDeliveredMass, 0);
   end when;
@@ -1166,13 +1166,13 @@ equation
       points={{-32,182.225},{-32,178},{-20,178}},
       color={255,153,0},
       thickness=0.5));
-  connect(sensor_p_suction.port, junction22.portA) annotation (Line(
+  connect(sensor_p_discharge.port, junction22.portA) annotation (Line(
       points={{62,134},{62,130},{-2,130},{-2,152}},
       color={255,153,0},
       thickness=0.5));
   connect(pressureSetpointSource.y, PID_pressure.u_s) annotation (Line(
       points={{101,170},{118,170}}, color={0,0,127}));
-  connect(sensor_p_suction.sensorValue, PID_pressure.u_m) annotation (Line(
+  connect(sensor_p_discharge.sensorValue, PID_pressure.u_m) annotation (Line(
       points={{62,140},{62,148},{130,148},{130,158}},
                                             color={0,0,127}));
   connect(RV07Limiter.y, firstOrderRV07.u) annotation (Line(

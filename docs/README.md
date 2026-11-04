@@ -5,12 +5,15 @@
 | Path | Content |
 |---|---|
 | `docs/control-common.md` | Control algorithms shared by more than one circuit, each with a stable ID (`C-…`), plus shared robustness measures (`R-…`). Definitions only: what the algorithm does, its parameters, its variants. |
+| `docs/cs/requirements.md` | CS requirements, conditions and limits extracted from the ATEKO study and the thesis, each with section and page; discrepancies between the sources; which model parameters trace to them. Start here for "where does this number come from". |
 | `docs/cs/control-logic.md` | CS circuit: which algorithms it uses (linked by ID), their tier and default state, what differs in CS, and the CS-only algorithms (`CS-…`). |
 | `docs/pf/control-logic.md` | Same for PF (`PF-…`). |
 | `docs/tf/control-logic.md` | Same for TF (`TF-…`). |
 | `docs/{cs,pf,tf}/circulator-sizing.md` | Circulator sizing derivations (design basis), numbers tagged [FROM SOURCE] / [CALCULATED] / [ASSUMED]. |
 | `docs/pf/pf_circulator_sizing.py` | Reproduces the PF sizing numbers from a result file. |
 | `docs/pf/pid-sensitivity-report.md` | One-off PF investigation report (mass-flow/pressure sensitivity to PID and isolation tuning). |
+| `docs/reading-simulations.md` | How to read a run, which signals the real plant has (outlet only) vs model-only (wall), the requirements, and the mandatory outlet-vs-wall check after every run. Start here for results. |
+| `docs/plant-design-requests.md` | What the controls need that the real plant design (PFDs) lacks, e.g. a loop-side flow meter. Requests to the PFD owner, with IDs (`PLANT-…`). |
 | `docs/to-fix.md` | Open problems found in reviews, all circuits, with IDs (`FIX-…`) and status. Close an item by marking it done with the commit, not by deleting it. |
 | `docs/migration-notes.md` | Chronological troubleshooting log (bugs, root causes), all circuits. |
 

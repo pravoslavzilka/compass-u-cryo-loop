@@ -16,11 +16,19 @@ model CSCircuit
   // header -> 5 coils, each with ON/OFF valves at both ends (CS_V01..V05) ->
   // return header -> junction20 -> junction4 -> circulator.
   //
-  // Startup: the coils start shut, at 137.5K wall and gas (ATEKO Tab.5, no
-  // heat pulse). The loop first circulates through the coil bypass valve4
-  // (throttled to the coils' own resistance) while the temperature control
-  // brings the supply to T_wall_max - 40K; once it has held there for
-  // prepHoldTime, the coils open and valve4 closes (coolantReady).
+  // Startup [CS-PREP]: the loop gas starts at 80K (idle), the coils at 137.5K wall
+  // and gas (ATEKO Tab.5, no heat pulse). 1) Probe: for prepProbeTime the coil
+  // valves open with only a little flow (the RV01 flow regulator holds
+  // prepProbeFlowFraction of the design flow); the hottest coil outlet temperature
+  // at the end is latched as T_probe (the only coil signal the plant has) and the
+  // coils shut again. 2) Warm-up: the loop circulates through the coil bypass
+  // valve4 while the temperature control heats the supply to T_probe - 40K plus
+  // prepAimOffset; once the gas entering the coil header (sensor_T_header) has held
+  // in [T_probe - 40K, + prepWarmBand] for prepHoldTime, 3) Flush: the coils open
+  // with prepFlushFlowFraction of the design flow for prepFlushTime, pushing the
+  // cold gas that sat in the dead-end header and coil feed lines through, then the
+  // coils open fully and valve4 closes (coolantReady), and the normal C-TEMP-SP-b
+  // setpoint takes the supply down to the 40K difference.
   //
   // Anti-chatter measures carried from TF/PF: valve3 decouples the near-zero-
   // flow evaporator from the supply junctions; heater/cooling/bypass split
@@ -50,17 +58,27 @@ model CSCircuit
     "Lower bound on wanted_temp -- 77K LIN evaporation temperature (ATEKO S3.4 minimum target), same as TF.";
 
   // --- startup coolant preparation through the coil bypass valve4 [CS-PREP] ---
-  parameter Boolean enableCSPrep = false
-    "Master switch for CS-PREP. On by default (baseline): coils stay shut and the loop circulates through valve4 until the supply settles, avoiding the 40K first-contact violation (FIX-01). Off: coolantReady starts true, so the coils open at t=0 as if no preparation had run -- currently set for Run_6's ablation (docs/cs/run_simulation.md), which asks whether CS-PREP is needed to meet the 40K rule at first coolant contact; set to true for every other run.";
+  parameter Boolean enableCSPrep = true
+    "Master switch for CS-PREP (probe + warm-up, see the header). On by default (baseline). Off: coolantReady starts true and prepProbing false, so the coils open at t=0 with the loop at T_loopInitial as if no preparation had run -- for Run_6's ablation (docs/cs/run_simulation.md).";
   parameter Real Kv_prepBypass = 1
     "valve4 Kv during preparation: ~10 bar at 0.17 kg/s of 97.5K/82 bar helium, about the coils' own loss, so the circulator runs near its design point and RV01 hardly moves at the hand-over.";
-  parameter Modelica.Units.SI.TemperatureDifference prepTempBand = 2
-    "Preparation is done once the supply temperature is within this band of wanted_temp (T_wall_max - 40K) ...";
+  parameter Modelica.Units.SI.Time prepProbeTime = 15
+    "[CS-PREP] Probe length: coil valves open (3 s valve lag included) with a small flow, then the hottest coil outlet temperature is latched as T_probe and the coils shut.";
+  parameter Real prepProbeFlowFraction = 0.1
+    "[CS-PREP] Probe flow as a share of m_flow_design, held by PID_RV01 (the setpoint decays to it through firstOrderMflowSet, T=5 s).";
+  parameter Modelica.Units.SI.TemperatureDifference prepAimOffset = 5
+    "[CS-PREP] The supply is aimed this far above T_probe - 40K (a bit warmer coolant is safe, a colder one is not).";
+  parameter Modelica.Units.SI.TemperatureDifference prepWarmBand = 10
+    "[CS-PREP] The coils are released once the supply is in [T_probe - 40K, T_probe - 40K + this] ...";
   parameter Real prepFlowFraction = 0.9 "... with at least this fraction of m_flow_design circulating ...";
-  parameter Modelica.Units.SI.Time prepHoldTime = 10 "... continuously for this long.";
+  parameter Modelica.Units.SI.Time prepHoldTime = 10 "... continuously for this long, measured at the coil header (sensor_T_header), then the flush starts.";
+  parameter Modelica.Units.SI.Time prepFlushTime = 60
+    "[CS-PREP] Flush length: coils open with prepFlushFlowFraction of the design flow. The dead-end header (4 x 10 l) and the coil feed lines hold gas from the idle loop temperature that warm-up through valve4 does not reach; ~2.5 kg at ~0.05 kg/s takes about 50 s.";
+  parameter Real prepFlushFlowFraction = 0.3
+    "[CS-PREP] Flush flow as a share of m_flow_design, held by PID_RV01 (valve4 shut).";
   parameter Modelica.Units.SI.Time prepMaxTime = 300 "Fallback: the coils open at this time even if the supply never settled.";
-  parameter Modelica.Units.SI.Temperature T_loopInitial(displayUnit="K") = TInitialCoil - tempMargin
-    "Initial gas temperature in the loop outside the coils and the evaporator -- the prepared supply temperature, so the first gas the coils see already meets the 40K rule (the 2026-10-07 run started it at 80K and broke S3.4's inlet-outlet limit for 31s).";
+  parameter Modelica.Units.SI.Temperature T_loopInitial(displayUnit="K") = 80
+    "Initial gas temperature in the loop outside the coils and the evaporator: the idle loop temperature (ATEKO 80K target). Until 2026-11-03 this was TInitialCoil - tempMargin = 97.5K, i.e. the loop started already prepared; CS-PREP now does the preparation (probe + warm-up).";
 
   parameter Boolean enableOverCoolPrevention = false "valve4 coil-bypass trigger after startup -- copied from TF/PF, off by default.";
   parameter Boolean enableOverCoolRecovery = false "valve4 stabilize-and-reclose logic -- copied from TF/PF, off by default.";
@@ -114,8 +132,18 @@ model CSCircuit
   parameter Modelica.Units.SI.Time Ti_RV01PID = 10;
   parameter Real Kv_RV01Max = 5
     "RV01 full-open Kv: 0.3 kg/s at 8 bar/47 kg/m3 (one coil channel left open at the cold end) needs Kv ~1.8.";
-  parameter Real Kv_RV01Start = 0.5
-    "RV01 Kv at t=0: ~0.1 kg/s of the circulator's ~0.28 kg/s (97.5K gas) back to suction during preparation.";
+  parameter Real K_valveRV01 = 0.0086
+    "[CS-PREP] RV01 flow law m = K*Kv*sqrt(rho*dp) (m kg/s, rho kg/m3, dp bar). Fitted on the 2026-11-03 run: 0.0081-0.0087 over Kv 0.1-1.8 (the incompressible value is sqrt(1000)/3600 = 0.0088).";
+  parameter Modelica.Units.SI.MassFlowRate m_circStart = 0.31
+    "[CS-PREP] ASSUMED circulator mass flow at the start (fixed speed, so nearly constant): 0.29-0.32 kg/s in the 2026-11-03 run, FM01 on the PFD.";
+  parameter Real d_RV01Start(unit="kg/m3") = 48
+    "[CS-PREP] ASSUMED gas density at RV01 at the start: 80K, 82 bar -> 49 kg/m3 at t=0, 47.6 at 3.6 s in the 2026-11-03 run.";
+  parameter Real dp_RV01Start = 4.5
+    "[CS-PREP] ASSUMED pressure drop over RV01 (bar) while it passes the surplus at the start: 3.4-4.6 bar in the 2026-11-03 run.";
+  parameter Real Kv_RV01Probe = (m_circStart - m_flow_design*prepProbeFlowFraction)/(K_valveRV01*sqrt(d_RV01Start*dp_RV01Start))
+    "[CS-PREP] RV01 Kv that passes the circulator flow minus the probe flow (valve law above). Set as the starting opening of the flow PI, which then only trims it; the PI alone reached only Kv 1.75 in the 15 s probe and left the coils at 0.14 kg/s instead of the 0.017 intended.";
+  parameter Real Kv_RV01Start = if enableCSPrep then Kv_RV01Probe else 0.5
+    "RV01 Kv at t=0. With CS-PREP: the calculated probe opening Kv_RV01Probe. Without it: 0.5, ~0.1 kg/s of the circulator's ~0.28 kg/s back to suction.";
   parameter Modelica.Units.SI.Time T_RV01 = 2 "RV01 actuator lag (first order).";
 
   // --- C-RV01 goal: flow (m_flow_set) or power (P_shaftLimit with m_flow_set as floor) -- docs/control-common.md ---
@@ -169,15 +197,25 @@ model CSCircuit
     "RV07/RV08 command lag (was valveRampTime=8); with kPressurePID it sets the pressure loop damping.";
 
   Boolean coolantReady(start=not enableCSPrep, fixed=true)
-    "False during startup preparation (coils shut, flow through valve4); latched true once the supply has settled. Starts true when enableCSPrep is false, skipping preparation entirely.";
+    "False during startup preparation (probe, then warm-up with the coils shut and the flow through valve4); latched true once the supply is in the release band. Starts true when enableCSPrep is false, skipping preparation entirely.";
   Real coolantReadySince(start=0, fixed=true) "Time the coils were opened.";
+  Boolean prepProbing(start=enableCSPrep, fixed=true)
+    "[CS-PREP] True during the probe: coil valves open with a small flow. Starts false when enableCSPrep is false.";
+  Boolean prepFlushing(start=false, fixed=true)
+    "[CS-PREP] True during the flush: coil valves open with prepFlushFlowFraction of the design flow, valve4 shut.";
+  Real prepFlushStartedAt(start=0, fixed=true) "[CS-PREP] Time the flush started.";
+  Real T_probe(start=0, fixed=true)
+    "[CS-PREP] Hottest coil outlet temperature at the end of the probe -- the coil temperature the plant can see. 0 until the probe has ended.";
   Real prepBandEnteredAt(start=0, fixed=true) "Time the supply last entered the preparation band.";
-  Modelica.Units.SI.Temperature T_prepTarget = max(max(T_wall_max_CS) - tempMargin, T_supplyFloor)
-    "Supply target during preparation = wanted_temp with all coils counted, but without reading the isolation latches (that formed a Boolean algebraic loop with the algorithm).";
-  Boolean prepInBand = time >= controlActivationDelay
-    and abs(sensor_T.sensorValue - T_prepTarget) < prepTempBand
+  Modelica.Units.SI.Temperature T_prepTarget = max(pre(T_probe) - tempMargin, T_supplyFloor)
+    "[CS-PREP] Coldest acceptable supply: probe temperature - 40K, floored at 77K. pre(): read by the algorithm that sets T_probe, so a plain read would form an algebraic loop.";
+  Modelica.Units.SI.Temperature T_prepAim = T_prepTarget + prepAimOffset
+    "[CS-PREP] Supply setpoint during warm-up.";
+  Boolean prepInBand = not pre(prepProbing)
+    and sensor_T_header.sensorValue >= T_prepTarget
+    and sensor_T_header.sensorValue <= T_prepTarget + prepWarmBand
     and m_flow_loop > prepFlowFraction*m_flow_design
-    "Supply prepared: at the target temperature and with design flow circulating.";
+    "Supply prepared: the gas entering the coil header is in [T_prepTarget, T_prepTarget + prepWarmBand] with design flow circulating, after the probe.";
   Boolean controlsActive = pre(coolantReady) and time >= pre(coolantReadySince) + controlActivationDelay
     "Isolation, shut-off, release and valve4 logic run only after the coils have been open for controlActivationDelay. pre(): read by the algorithm that sets coolantReady.";
 
@@ -191,7 +229,7 @@ model CSCircuit
   Real T_wall_max_CS[nCS] = {CS1.T_wall_max, CS2U.T_wall_max, CS2L.T_wall_max, CS3U.T_wall_max, CS3L.T_wall_max}
     "Hottest wall cell per coil.";
   Real valveKvNominal_CS[nCS] = {CS1.valveKvNominal, CS2U.valveKvNominal, CS2L.valveKvNominal, CS3U.valveKvNominal, CS3L.valveKvNominal};
-  Boolean coilFlowing[nCS] = {pre(coolantReady) and (pre(allReleased) or (pre(coilOpen[i]) and not pre(coldShut[i]))) for i in 1:nCS}
+  Boolean coilFlowing[nCS] = {(pre(coolantReady) and (pre(allReleased) or (pre(coilOpen[i]) and not pre(coldShut[i])))) or pre(prepProbing) or pre(prepFlushing) for i in 1:nCS}
     "Coil i is commanded open. pre(): the latches are set by the algorithm that reads this; event iteration settles it at the same instant.";
   Real kvTarget_CS[nCS] "Commanded Kv per coil before smoothing.";
   Real T_gas_out_compare_CS[nCS]
@@ -211,14 +249,17 @@ model CSCircuit
   Modelica.Units.SI.Temperature T_wallHotCooled = max({if allReleased or (coilOpen[i] and not coldShut[i])
       then T_wall_max_CS[i] else 0 for i in 1:nCS})
     "Hottest wall cell over the coils receiving coolant -- T_object of ATEKO's 40K rule.";
-  output Modelica.Units.SI.Temperature wanted_temp = max(T_wallHotCooled - tempMargin, T_supplyFloor)
-    "[C-TEMP-SP-b] Supply temperature setpoint: hottest cooled wall cell - 40K, floored at 77K (same as TF).";
+  output Modelica.Units.SI.Temperature wanted_temp = if prepProbing then T_loopInitial
+      elseif not coolantReady then T_prepAim
+      else max(T_wallHotCooled - tempMargin, T_supplyFloor)
+    "Supply temperature setpoint. [CS-PREP] probe: hold the idle loop temperature; warm-up: T_probe - 40K + prepAimOffset. [C-TEMP-SP-b] after release: hottest cooled wall cell - 40K, floored at 77K (same as TF).";
 
   Real openChannelFraction = sum({if coilFlowing[i] then nChannels_CS[i] else 0 for i in 1:nCS})/sum(nChannels_CS)
     "Share of the 8 channels commanded open.";
-  output Modelica.Units.SI.MassFlowRate m_flow_set = m_flow_design*(if coolantReady
-      then max(openChannelFraction, 1/sum(nChannels_CS)) else 1)
-    "[CS-FLOW-SP] Coil-loop flow setpoint: 0.0214 kg/s per open channel (ATEKO Tab.5), full design flow through valve4 during preparation.";
+  output Modelica.Units.SI.MassFlowRate m_flow_set = m_flow_design*(if prepProbing then prepProbeFlowFraction
+      elseif prepFlushing then prepFlushFlowFraction
+      elseif coolantReady then max(openChannelFraction, 1/sum(nChannels_CS)) else 1)
+    "[CS-FLOW-SP] Coil-loop flow setpoint: 0.0214 kg/s per open channel (ATEKO Tab.5); [CS-PREP] a small probe flow while probing, full design flow through valve4 during warm-up, prepFlushFlowFraction while flushing.";
   Modelica.Units.SI.MassFlowRate m_flow_loop = Heater.portA.m_flow
     "Flow to the loop, downstream of the CS_RV01 tee -- what RV01 controls. FM01 sits upstream of the tee (PFD) and reads the circulator flow, loop + bypass; the plant needs a meter here or FM01 minus an RV01 flow estimate.";
 
@@ -294,7 +335,8 @@ model CSCircuit
     "Flow target for PID_RV01: m_flow_set, plus the power-mode surplus (>= 0, so m_flow_set stays the floor)."
     annotation (Placement(transformation(extent={{-230,174},{-210,194}})));
   Modelica.Blocks.Continuous.FirstOrder firstOrderMflowSet(T=5,
-    initType=Modelica.Blocks.Types.Init.InitialOutput, y_start=m_flow_design)
+    initType=Modelica.Blocks.Types.Init.InitialOutput,
+    y_start=if enableCSPrep then m_flow_design*prepProbeFlowFraction else m_flow_design)
     "Smooths the setpoint steps when coils shut or reopen."
     annotation (Placement(transformation(extent={{-204,174},{-184,194}})));
   Modelica.Blocks.Continuous.LimPID PID_RV01(
@@ -428,6 +470,9 @@ model CSCircuit
   ThermalSystems.GasComponents.Sensors.Sensor_T sensor_T
     "Supply temperature after the heater/evaporator mixing node."
     annotation (Placement(transformation(extent={{-16,40},{-8,48}})));
+  ThermalSystems.GasComponents.Sensors.Sensor_T sensor_T_header
+    "Temperature of the gas entering the coil supply header (tee junction21, coil side). [CS-PREP] release test; the supply control still reads sensor_T."
+    annotation (Placement(transformation(extent={{20,28},{28,36}})));
   Modelica.Blocks.Logical.Hysteresis heaterHysteresis(uLow=u_dead -
         hysteresisHalfWidth, uHigh=u_dead + hysteresisHalfWidth)
     annotation (Placement(transformation(extent={{-330,54},{-310,74}})));
@@ -477,9 +522,9 @@ model CSCircuit
 
   // --- coil bypass: startup preparation and overcool protection ---
   ThermalSystems.GasComponents.JunctionElements.VolumeJunction junction21(
-    volume(displayUnit="l") = 0.2, m_flowStart=1e-5, pInitial=8200000,
+    volume(displayUnit="l") = 0.01, m_flowStart=1e-5, pInitial=8200000,
     fixedInitialPressure=false, TInitial(displayUnit="K") = T_loopInitial)
-    "Supply tee: portA from junction7, portC to the coil supply header, portB to the coil bypass valve4 -- from TF/PF."
+    "Supply tee: portA from junction7, portC to the coil supply header, portB to the coil bypass valve4. 10 l like the header junctions; it was 200 l (copied from TF/PF, no stated basis), a 10 kg mixing volume that kept the coil inlet at the idle loop temperature for minutes after the coils opened (2026-11-03 run)."
     annotation (Placement(transformation(extent={{-4,-4},{4,4}}, rotation=0, origin={12,20})));
   ThermalSystems.GasComponents.Valves.Valve valve4(
     valveFlowVariableType=ThermalSystems.Internals.ValveFlowVariableType.KvValue,
@@ -493,13 +538,13 @@ model CSCircuit
     fixedInitialPressure=false, TInitial(displayUnit="K") = T_loopInitial)
     "Return tee: portA from the coil return header, portB from valve4, portC to junction4 -- from TF/PF."
     annotation (Placement(transformation(extent={{-4,-4},{4,4}}, rotation=180, origin={12,120})));
-  Modelica.Blocks.Sources.RealExpression bypassRegulatorOverCool(y=if not
-        coolantReady then Kv_prepBypass else if valve4Open then Kv_coilBypassOpen
+  Modelica.Blocks.Sources.RealExpression bypassRegulatorOverCool(y=if prepProbing or prepFlushing then 0.001
+        elseif not coolantReady then Kv_prepBypass else if valve4Open then Kv_coilBypassOpen
          else 0.001)
     annotation (Placement(transformation(extent={{-54,60},{-34,80}})));
   Modelica.Blocks.Continuous.FirstOrder firstOrder3(T=3,
     initType=Modelica.Blocks.Types.Init.InitialOutput,
-    y_start=if enableCSPrep then Kv_prepBypass else 0.001)
+    y_start=0.001)
     annotation (Placement(transformation(extent={{-20,60},{0,80}})));
 
   // --- supply header (CS1, CS2U, CS2L, CS3U, CS3L) ---
@@ -577,8 +622,8 @@ model CSCircuit
     fixedInitialPressure=false, TInitial(displayUnit="K") = T_loopInitial)
     "Pressure-control node: portA from junction1, portB to RV07 (make-up), portC to RV08 (relief)."
     annotation (Placement(transformation(extent={{-4,4},{4,-4}}, rotation=90, origin={-2,156})));
-  ThermalSystems.GasComponents.Sensors.Sensor_p sensor_p_suction
-    "Name kept from PF/TF; measures the controlled node junction22 (circulator discharge side), not the suction."
+  ThermalSystems.GasComponents.Sensors.Sensor_p sensor_p_discharge
+    "Measures the controlled node junction22 (circulator discharge side). Renamed from sensor_p_suction (FIX-17)."
     annotation (Placement(transformation(extent={{58,134},{66,142}})));
   Modelica.Blocks.Sources.RealExpression pressureSetpointSource(y=pressureSetpoint)
     annotation (Placement(transformation(extent={{80,160},{100,180}})));
@@ -647,14 +692,29 @@ equation
   end for;
 
 algorithm
-  // [CS-PREP] Startup coolant preparation: the coils stay shut and the whole flow runs
-  // through valve4 until the supply has held within prepTempBand of
-  // wanted_temp for prepHoldTime (or prepMaxTime has passed).
+  // [CS-PREP] 1) Probe: at the end of prepProbeTime the hottest coil outlet temperature
+  // is latched and the coils shut (coilFlowing drops with prepProbing).
+  when pre(prepProbing) and time >= prepProbeTime then
+    prepProbing := false;
+    T_probe := max(T_gas_out_CS);
+  end when;
+
+  // [CS-PREP] 2) Warm-up: the coils stay shut and the whole flow runs
+  // through valve4 until the supply has held in the release band
+  // [T_prepTarget, T_prepTarget + prepWarmBand] for prepHoldTime (or prepMaxTime has passed).
   when prepInBand and not pre(coolantReady) then
     prepBandEnteredAt := time;
   end when;
-  when not pre(coolantReady) and ((prepInBand and time >= prepBandEnteredAt + prepHoldTime)
-      or time >= prepMaxTime) then
+  // [CS-PREP] 3) Flush: after the hold the coils open at a reduced flow for prepFlushTime.
+  when not pre(coolantReady) and not pre(prepProbing) and not pre(prepFlushing)
+      and prepInBand and time >= prepBandEnteredAt + prepHoldTime then
+    prepFlushing := true;
+    prepFlushStartedAt := time;
+  end when;
+  // [CS-PREP] Hand-over: end of the flush, or the prepMaxTime fallback from any phase.
+  when (pre(prepFlushing) and time >= prepFlushStartedAt + prepFlushTime)
+      or (not pre(coolantReady) and time >= prepMaxTime) then
+    prepFlushing := false;
     coolantReady := true;
     coolantReadySince := time;
   end when;
@@ -699,10 +759,14 @@ algorithm
     end when;
 
     // [C-COLDSHUT] Permanent "cooled down" shut-off, same as TF's upper limb.
+    // Re-freeze only if the coil is flowing: for a coil already isolated by C-ISO the raw
+    // outlet is stagnant, and the frozen value must stay (R-FROZEN, FIX-04).
     when shutWhenCold_CS[i] and controlsActive
         and T_gas_out_compare_CS[i] <= T_coldShut and not pre(coldShut[i]) then
       coldShut[i] := true;
-      T_gas_out_frozen[i] := T_gas_out_CS[i];
+      if coilFlowing[i] then
+        T_gas_out_frozen[i] := T_gas_out_CS[i];
+      end if;
     end when;
   end for;
 
@@ -802,6 +866,8 @@ equation
     annotation (Line(points={{1,70},{4,70},{4,65},{8.25,65}}, color={0,0,127}));
   connect(junction21.portC, junctionS2.portB)
     annotation (Line(points={{16,20},{36,20}}, color={255,153,0}, thickness=0.5));
+  connect(junction21.portC, sensor_T_header.port)
+    annotation (Line(points={{16,20},{24,20},{24,28}}, color={255,153,0}, thickness=0.5));
 
   // --- supply header: S2 -> S3 (CS1, CS2U), S2 -> S4 -> S5 (CS2L, CS3U), S4 -> CS3L ---
   connect(junctionS2.portC, junctionS3.portB)
@@ -859,7 +925,7 @@ equation
   connect(junction1.portB, junction22.portA)
     annotation (Line(points={{-116,-24},{-120,-24},{-120,158},{-12,158},{-12,148},{-2,148},{-2,152}},
       color={255,153,0}, thickness=0.5));
-  connect(sensor_p_suction.port, junction22.portA)
+  connect(sensor_p_discharge.port, junction22.portA)
     annotation (Line(points={{62,134},{62,130},{-2,130},{-2,152}}, color={255,153,0}, thickness=0.5));
   connect(RV07.portB, junction22.portB)
     annotation (Line(points={{10,180},{4,180},{4,164},{6,164},{6,156},{2,156}}, color={255,153,0}, thickness=0.5));
@@ -875,7 +941,7 @@ equation
     annotation (Line(points={{-32,182.225},{-32,178},{-20,178}}, color={255,153,0}, thickness=0.5));
   connect(pressureSetpointSource.y, PID_pressure.u_s)
     annotation (Line(points={{101,170},{118,170}}, color={0,0,127}));
-  connect(sensor_p_suction.sensorValue, PID_pressure.u_m)
+  connect(sensor_p_discharge.sensorValue, PID_pressure.u_m)
     annotation (Line(points={{62,140},{62,148},{130,148},{130,158}}, color={0,0,127}));
   connect(RV07Limiter.y, firstOrderRV07.u)
     annotation (Line(points={{-19,268},{-10,268},{-10,270},{-2,270}}, color={0,0,127}));

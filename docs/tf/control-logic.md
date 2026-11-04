@@ -39,7 +39,8 @@ startup preparation.
 reservoirs 27 / 23 bar. `kPressurePID` = 0.05, `TiPressurePID` = 30 s,
 `KvGain` 5 / `KvMax` 30 (placeholders, scaled from PF), y ±7.5,
 `valveRampTime` = 3 s. Node: discharge side (`junction22` off the
-evaporator inlet tee `junction1`), despite the name `sensor_p_suction`.
+evaporator inlet tee `junction1`); the sensor is `sensor_p_discharge` (renamed from
+`sensor_p_suction`, FIX-17).
 
 ### C-TEMP-SR
 | Parameter | TF |
