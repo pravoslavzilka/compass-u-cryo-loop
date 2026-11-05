@@ -6,9 +6,11 @@ if Modelica.Utilities.Files.exist(d) then
 end if;
 clearlog();
 Modelica.Utilities.Streams.print("Dymola version: " + DymolaVersion(), d);
+tsOk := loadModel(ThermalSystems);
+Modelica.Utilities.Streams.print("loadModel(ThermalSystems) ok: " + String(tsOk), d);
+savelog("Z:/compass-u-cryo-loop/vm-inbox/diag_log.txt");
 loaded := openModel("Z:/compass-u-cryo-loop/dymola-thermal-systems/CoilLoopCompassU/package.mo", mustRead=true);
 Modelica.Utilities.Streams.print("openModel ok: " + String(loaded), d);
-savelog("Z:/compass-u-cryo-loop/vm-inbox/diag_log.txt");
 ok := checkModel("CoilLoopCompassU.PF.PFCircuit");
 Modelica.Utilities.Streams.print("checkModel ok: " + String(ok), d);
 savelog("Z:/compass-u-cryo-loop/vm-inbox/diag_log.txt");
