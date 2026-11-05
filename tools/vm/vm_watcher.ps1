@@ -36,7 +36,13 @@ function KillDymola($p) {
 }
 
 if (-not $DymolaExe -or -not (Test-Path $DymolaExe)) {
+  # Prefer the NEWEST install (e.g. "Dymola 2024x Refresh 1" over "Dymola 2020x"): ThermalSystems
+  # lives in the newer one. Sort key = year, then refresh number (no "Refresh" = 0).
   $DymolaExe = Get-ChildItem "C:\Program Files*","D:\Program Files*" -Recurse -Filter Dymola.exe -ErrorAction SilentlyContinue |
+    Sort-Object -Descending -Property @(
+      @{ Expression = { if ($_.FullName -match 'Dymola\s+(\d{4})') { [int]$matches[1] } else { 0 } } },
+      @{ Expression = { if ($_.FullName -match 'Refresh\s+(\d+)') { [int]$matches[1] } else { 0 } } }
+    ) |
     Select-Object -First 1 -ExpandProperty FullName
 }
 if (-not $DymolaExe) {
