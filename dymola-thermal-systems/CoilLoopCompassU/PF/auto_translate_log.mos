@@ -1,5 +1,5 @@
 // ============================================================
-// Dymola automated translate/simulate script for CoilLoopCompassU.PF
+// Dymola automated translate/simulate script for PF Run_4 (Reference + PF-LOWTEMP, C-ISO off)
 // Purpose: on failure (or success) write a COMPLETE log
 // to the shared "debugging" folder, so Claude Code can read it
 // on the host PC.
@@ -14,7 +14,10 @@
 // PFCircuit.mo is the closed (simulatable) example that uses CoilAssembly
 // inside the loop (portA1/portB1) — CoilAssembly itself has unconnected
 // ports, so it does not translate standalone.
-modelName    := "CoilLoopCompassU.PF.PFCircuit";
+// Run_4 = Run_1 + PF-LOWTEMP on (threshold 80 K; MinHotOthers 2 and MinDuration 10 s are the defaults)
+// + C-ISO off (never together, FIX-23);
+// nothing else changes, no edit of PFCircuit.mo (docs/pf/run_simulation.md).
+modelName    := "CoilLoopCompassU.PF.PFCircuit(enableLowTempCoolantOptimization=true, lowTempCoolantOptimizationThreshold=80, enableCoilIsolation=false)";
 packagePath  := "Z:/compass-u-cryo-loop/dymola-thermal-systems/CoilLoopCompassU";
 debugPath    := packagePath + "/PF/debugging";
 logFile      := debugPath + "/translation_log.txt";

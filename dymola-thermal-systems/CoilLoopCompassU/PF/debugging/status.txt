@@ -1,2 +1,2 @@
 RUNNING: translate started
-FAIL: translation failed
+OK: translation successful
