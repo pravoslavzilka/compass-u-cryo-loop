@@ -1,0 +1,162 @@
+{
+  "coils": {
+    "PF1U": {
+      "T0_wall_K": 137.63800048828125,
+      "T_end_wall_K": 79.09095764160156,
+      "wall_settled_le_80K_s": 1335.8399658203125,
+      "wall_settled_le_81K_s": 1266.8699951171875,
+      "T_gas_out_end_K": 79.08525848388672,
+      "T_gas_out_peak_K": 137.65936279296875,
+      "isolation_events": []
+    },
+    "PF1L": {
+      "T0_wall_K": 158.61199951171875,
+      "T_end_wall_K": 79.09092712402344,
+      "wall_settled_le_80K_s": 1339.469970703125,
+      "wall_settled_le_81K_s": 1266.8699951171875,
+      "T_gas_out_end_K": 79.08525085449219,
+      "T_gas_out_peak_K": 158.64544677734375,
+      "isolation_events": []
+    },
+    "PF2U": {
+      "T0_wall_K": 87.1449966430664,
+      "T_end_wall_K": 79.10430908203125,
+      "wall_settled_le_80K_s": 1379.4000244140625,
+      "wall_settled_le_81K_s": 1285.02001953125,
+      "T_gas_out_end_K": 79.10108947753906,
+      "T_gas_out_peak_K": 144.04788208007812,
+      "isolation_events": [
+        [
+          0.11684215068817139,
+          "shut"
+        ],
+        [
+          798.7237548828125,
+          "open"
+        ]
+      ]
+    },
+    "PF2L": {
+      "T0_wall_K": 83.76200103759766,
+      "T_end_wall_K": 79.10464477539062,
+      "wall_settled_le_80K_s": 1368.510009765625,
+      "wall_settled_le_81K_s": 1263.239990234375,
+      "T_gas_out_end_K": 79.10134887695312,
+      "T_gas_out_peak_K": 144.09422302246094,
+      "isolation_events": [
+        [
+          0.11026396602392197,
+          "shut"
+        ],
+        [
+          829.5005493164062,
+          "open"
+        ]
+      ]
+    },
+    "PF3U": {
+      "T0_wall_K": 80.33399963378906,
+      "T_end_wall_K": 79.11434936523438,
+      "wall_settled_le_80K_s": 1372.1400146484375,
+      "wall_settled_le_81K_s": 1197.9000244140625,
+      "T_gas_out_end_K": 79.10811614990234,
+      "T_gas_out_peak_K": 98.23709869384766,
+      "isolation_events": [
+        [
+          0.10389207303524017,
+          "shut"
+        ],
+        [
+          857.967041015625,
+          "open"
+        ]
+      ]
+    },
+    "PF3L": {
+      "T0_wall_K": 98.19300079345703,
+      "T_end_wall_K": 79.11125183105469,
+      "wall_settled_le_80K_s": 1441.1099853515625,
+      "wall_settled_le_81K_s": 1361.25,
+      "T_gas_out_end_K": 79.10566711425781,
+      "T_gas_out_peak_K": 98.6534194946289,
+      "isolation_events": [
+        [
+          0.13817743957042694,
+          "shut"
+        ],
+        [
+          700.6370239257812,
+          "open"
+        ]
+      ]
+    },
+    "PF4U": {
+      "T0_wall_K": 83.7979965209961,
+      "T_end_wall_K": 79.09504699707031,
+      "wall_settled_le_80K_s": 1314.06005859375,
+      "wall_settled_le_81K_s": 1205.1600341796875,
+      "T_gas_out_end_K": 79.09133911132812,
+      "T_gas_out_peak_K": 99.1061019897461,
+      "isolation_events": [
+        [
+          0.11146175861358643,
+          "shut"
+        ],
+        [
+          823.9692993164062,
+          "open"
+        ]
+      ]
+    },
+    "PF4L": {
+      "T0_wall_K": 83.3759994506836,
+      "T_end_wall_K": 79.09506225585938,
+      "wall_settled_le_80K_s": 1314.06005859375,
+      "wall_settled_le_81K_s": 1201.530029296875,
+      "T_gas_out_end_K": 79.09134674072266,
+      "T_gas_out_peak_K": 99.1061019897461,
+      "isolation_events": [
+        [
+          0.11054455488920212,
+          "shut"
+        ],
+        [
+          828.1157836914062,
+          "open"
+        ]
+      ]
+    }
+  },
+  "slowest_wall_settled_le_80K_s": 1441.1099853515625,
+  "slowest_wall_settled_le_81K_s": 1361.25,
+  "T_wall_hot_peak_K": 158.61199951171875,
+  "T_wall_hot_end_K": 79.11434936523438,
+  "T_gas_out_max_K": {
+    "start": 80.0,
+    "peak": 158.64544677734375,
+    "end": 79.10811614990234
+  },
+  "supply_T_K": {
+    "start": 120.0,
+    "min": 79.07186889648438,
+    "max": 153.07310485839844,
+    "end": 79.07186889648438
+  },
+  "coil_to_coil_spread_wall_K_max": 78.28020477294922,
+  "hot_wall_minus_supply_K_max": 43.44728088378906,
+  "m_flow_kg_s": {
+    "max": 0.6731449365615845,
+    "end": 0.6523787975311279
+  },
+  "P_shaft_kW": {
+    "start": 31.6155859375,
+    "peak": 58.16102734375,
+    "end": 58.16102734375
+  },
+  "circulator_energy_kWh": 18.28984422277686,
+  "p_discharge_bar": {
+    "min": 35.8188225,
+    "max": 38.1992,
+    "end": 36.5
+  }
+}

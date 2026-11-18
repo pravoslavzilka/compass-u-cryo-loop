@@ -1,0 +1,75 @@
+{
+  "phases_s": {
+    "probe_end": 15.0,
+    "flush_start": 96.257568359375,
+    "coolantReady": 156.257568359375,
+    "controlsActive": 166.257568359375,
+    "allReleased": 656.898681640625
+  },
+  "T_probe_K": 85.32071685791016,
+  "T_prepTarget_K": 77.0,
+  "T_loopInitial_K": 80.0,
+  "coils": {
+    "CS1": {
+      "T0_K": 79.96299743652344,
+      "T_end_K": 77.43646240234375,
+      "settled_le_80K_s": 1011.5999755859375,
+      "coldShut_s": 166.257568359375
+    },
+    "CS2U": {
+      "T0_K": 85.37999725341797,
+      "T_end_K": 77.43598937988281,
+      "settled_le_80K_s": 662.4000244140625,
+      "coldShut_s": 656.898681640625
+    },
+    "CS2L": {
+      "T0_K": 85.37999725341797,
+      "T_end_K": 77.43601989746094,
+      "settled_le_80K_s": 658.8604125976562,
+      "coldShut_s": 653.2958984375
+    },
+    "CS3U": {
+      "T0_K": 83.9000015258789,
+      "T_end_K": 77.4361801147461,
+      "settled_le_80K_s": 657.5618286132812,
+      "coldShut_s": 651.563720703125
+    },
+    "CS3L": {
+      "T0_K": 82.43399810791016,
+      "T_end_K": 77.43612670898438,
+      "settled_le_80K_s": 637.2000122070312,
+      "coldShut_s": 630.8453369140625
+    }
+  },
+  "slowest_coil_settled_le_80K_s": 1011.5999755859375,
+  "T_wall_hot_end_K": 77.43646240234375,
+  "T_wall_hot_max_K": 85.39128875732422,
+  "supply_T_K": {
+    "min": 76.76615905761719,
+    "max": 90.19300842285156,
+    "end": 77.4347152709961
+  },
+  "max_hotwall_minus_header_K_after_ready": 7.728218078613281,
+  "min_hotwall_minus_header_K_after_ready": 0.00174713134765625,
+  "spread_between_coils_K_max_after_ready": 3.0918960571289062,
+  "m_flow_loop_kg_s": {
+    "max": 0.3323338031768799,
+    "end": 0.2917362153530121
+  },
+  "P_shaft_kW": {
+    "start": 4.15717041015625,
+    "peak": 27.1517265625,
+    "end": 26.5018671875
+  },
+  "circulator_energy_kWh": 11.795913724917671,
+  "LIN_energy_MJ": 44.97901226533857,
+  "Q_evaporator_kW": {
+    "max": 60.0,
+    "end": 26.288826171875
+  },
+  "p_discharge_bar": {
+    "min": 76.479615,
+    "max": 84.58999,
+    "end": 82.00001
+  }
+}
