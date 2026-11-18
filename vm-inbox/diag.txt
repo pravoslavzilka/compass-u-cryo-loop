@@ -1,1 +1,8 @@
-Dymola version: Dymola Version 2020x (64-bit), 2019-10-10
+Dymola version: Dymola Version 2024x Refresh 1, 2024-04-12
+step1: openModel ThermalSystems by explicit path
+step1 done
+step2: openModel CoilLoopCompassU
+step2 done
+step3: checkModel PFCircuit
+step3 done
+last error log:

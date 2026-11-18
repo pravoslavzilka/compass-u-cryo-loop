@@ -1,2 +1,2 @@
-RunScript("Z:/compass-u-cryo-loop/tools/vm/diag.mos");
+RunScript("Z:/compass-u-cryo-loop/tools/vm/pf_scen.mos");
 exit();

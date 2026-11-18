@@ -1,0 +1,12 @@
+﻿ = true
+Modelica.Utilities.Streams.print("RUNNING: load + translate", st);
+openModel("C:/Program Files/Dymola 2024x Refresh 1/Modelica/Library/ThermalSystems 1.13.0/package.mo", mustRead=true);
+ = false
+openModel(root + "/dymola-thermal-systems/CoilLoopCompassU/package.mo", mustRead=true);
+ = true
+cd(outd);
+Z:/compass-u-cryo-loop/vm-inbox/pf_scen
+ = true
+ok := translateModel("CoilLoopCompassU.PF.PFCircuit(enableCoilIsolation=true, enableCirculatorPowerOptimization=true, enablePressureControl=true, enableOverCoolPrevention=true, enableOverCoolRecovery=true, PF1U(TInitial=91.951), PF1L(TInitial=170), PF2U(TInitial=88.928), PF2L(TInitial=94.964), PF3U(TInitial=95.853), PF3L(TInitial=136.391), PF4U(TInitial=87.842), PF4L(TInitial=89.580))");
+Declaring variable: Boolean ok ;
+savelog(outd + "/log.txt");
