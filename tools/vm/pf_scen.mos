@@ -1,0 +1,30 @@
+root  := "Z:/compass-u-cryo-loop";
+outd  := root + "/vm-inbox/pf_scen";
+Modelica.Utilities.Files.createDirectory(outd);
+st := outd + "/status.txt";
+if Modelica.Utilities.Files.exist(st) then
+  Modelica.Utilities.Files.remove(st);
+end if;
+clearlog();
+Modelica.Utilities.Streams.print("RUNNING: load + translate", st);
+openModel("C:/Program Files/Dymola 2024x Refresh 1/Modelica/Library/ThermalSystems 1.13.0/package.mo", mustRead=true);
+openModel(root + "/dymola-thermal-systems/CoilLoopCompassU/package.mo", mustRead=true);
+cd(outd);
+ok := translateModel("CoilLoopCompassU.PF.PFCircuit(enableCoilIsolation=true, enableCirculatorPowerOptimization=true, enablePressureControl=true, enableOverCoolPrevention=true, enableOverCoolRecovery=true, PF1U(TInitial=91.951), PF1L(TInitial=180.955), PF2U(TInitial=88.928), PF2L(TInitial=94.964), PF3U(TInitial=95.853), PF3L(TInitial=136.391), PF4U(TInitial=87.842), PF4L(TInitial=89.580))");
+savelog(outd + "/log.txt");
+if not ok then
+  Modelica.Utilities.Streams.print("FAIL: translation", st);
+  Modelica.Utilities.Streams.print(getLastErrorLog(), outd + "/last_error.txt");
+else
+  Modelica.Utilities.Streams.print("RUNNING: simulate 30 s", st);
+  OutputCPUtime := true;
+  simOk := simulateModel("CoilLoopCompassU.PF.PFCircuit(enableCoilIsolation=true, enableCirculatorPowerOptimization=true, enablePressureControl=true, enableOverCoolPrevention=true, enableOverCoolRecovery=true, PF1U(TInitial=91.951), PF1L(TInitial=180.955), PF2U(TInitial=88.928), PF2L(TInitial=94.964), PF3U(TInitial=95.853), PF3L(TInitial=136.391), PF4U(TInitial=87.842), PF4L(TInitial=89.580))", stopTime=30, tolerance=1e-3,
+                         resultFile=outd + "/result");
+  savelog(outd + "/log.txt");
+  if simOk then
+    Modelica.Utilities.Streams.print("OK: simulated 30 s", st);
+  else
+    Modelica.Utilities.Streams.print("FAIL: simulation", st);
+    Modelica.Utilities.Streams.print(getLastErrorLog(), outd + "/last_error.txt");
+  end if;
+end if;

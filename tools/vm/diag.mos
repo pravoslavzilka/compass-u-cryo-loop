@@ -1,18 +1,22 @@
-// Diagnostic for the VM watcher: why does a freshly started Dymola fail to translate?
-// Writes vm-inbox/diag.txt and vm-inbox/diag_log.txt. Run via run.request (script=tools/vm/diag.mos).
+// Diagnostic for the VM watcher. Writes vm-inbox/diag.txt and vm-inbox/diag_log.txt.
+// Run via run.request (script=tools/vm/diag.mos). Each step logs BEFORE the next can fail.
 d := "Z:/compass-u-cryo-loop/vm-inbox/diag.txt";
 if Modelica.Utilities.Files.exist(d) then
   Modelica.Utilities.Files.remove(d);
 end if;
 clearlog();
 Modelica.Utilities.Streams.print("Dymola version: " + DymolaVersion(), d);
-tsOk := loadModel(ThermalSystems);
-Modelica.Utilities.Streams.print("loadModel(ThermalSystems) ok: " + String(tsOk), d);
+Modelica.Utilities.Streams.print("step1: openModel ThermalSystems by explicit path", d);
+tsOk := openModel("C:/Program Files/Dymola 2024x Refresh 1/Modelica/Library/ThermalSystems 1.13.0/package.mo", mustRead=true);
+Modelica.Utilities.Streams.print("step1 done", d);
 savelog("Z:/compass-u-cryo-loop/vm-inbox/diag_log.txt");
+Modelica.Utilities.Streams.print("step2: openModel CoilLoopCompassU", d);
 loaded := openModel("Z:/compass-u-cryo-loop/dymola-thermal-systems/CoilLoopCompassU/package.mo", mustRead=true);
-Modelica.Utilities.Streams.print("openModel ok: " + String(loaded), d);
+Modelica.Utilities.Streams.print("step2 done", d);
+savelog("Z:/compass-u-cryo-loop/vm-inbox/diag_log.txt");
+Modelica.Utilities.Streams.print("step3: checkModel PFCircuit", d);
 ok := checkModel("CoilLoopCompassU.PF.PFCircuit");
-Modelica.Utilities.Streams.print("checkModel ok: " + String(ok), d);
+Modelica.Utilities.Streams.print("step3 done", d);
 savelog("Z:/compass-u-cryo-loop/vm-inbox/diag_log.txt");
 Modelica.Utilities.Streams.print("last error log:", d);
 Modelica.Utilities.Streams.print(getLastErrorLog(), d);

@@ -8,18 +8,23 @@ model CopperOFHC_Tdep
 
   // -------------------------------------------------------------------
   // Specific heat capacity cp(T), J/(kg.K)
-  // Table interpolation across 20-300 K. Copper cp falls even more
-  // steeply than steel toward low T, so a constant value is badly
+  // Table interpolation, 1-300 K, sampled from the NIST OFHC copper cp fit
+  // (trc.nist.gov/cryogenics/materials/OFHC Copper, log10-polynomial a-h,
+  // valid 4-300 K, ~1% error for T>=15 K). 2026-11-11: replaced the earlier
+  // 8-point table, whose linear chords under-read cp by up to 13% at
+  // 70-90 K (e.g. 171 vs 196 J/kg/K at 77 K). The 1 K point is an anchor
+  // (cp ~ T below 4 K) so out-of-range Newton trials stay finite.
+  // Interpolation error vs the fit is <1% above ~40 K (max 4% at 20-25 K,
+  // where the coils never operate).
+  // Copper cp falls steeply toward low T, so a constant value is badly
   // wrong for a cryogenic coil - which for a magnet coil is exactly
   // the wall thermal mass that sets cooldown time.
   //
-  //   T [K] :   20    40    80   100   150   200   250   300
-  //   cp    :  7.5   58   180   250   322   356   377   385
   // -------------------------------------------------------------------
 
 protected
-  constant Real Tdata[:]  = {20, 40, 80, 100, 150, 200, 250, 300};
-  constant Real cpData[:] = {7.5, 58, 180, 250, 322, 356, 377, 385};
+  constant Real Tdata[:]  = {1, 4, 10, 15, 20, 25, 30, 40, 50, 60, 70, 77, 80, 90, 100, 110, 120, 135, 150, 175, 200, 225, 250, 275, 300};
+  constant Real cpData[:] = {0.025, 0.1, 0.86, 2.96, 7.51, 15.26, 26.47, 57.84, 96.27, 135.88, 172.76, 195.92, 205.1, 232.5, 255.33, 274.24, 289.97, 309.01, 324.11, 343.73, 359.01, 371.24, 380.62, 386.84, 389.4};
 
   // Newton iterations on the wall-cell energy balance routinely probe T
   // values outside the physical range while searching for a consistent

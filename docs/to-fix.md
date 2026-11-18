@@ -37,7 +37,7 @@ structure.
 | [FIX-22](#fix-22) | TF | Stale header and docstrings, no ID tags | P3 | **done** 2026-10-22 |
 | [FIX-23](#fix-23) | PF | PF-LOWTEMP and C-ISO fight over the same latch (close/reopen loop) | P2 | open |
 | [FIX-24](#fix-24) | PF | Coil valves at the inlet only (no R-BOTHENDS) | P3 | open |
-| [FIX-25](#fix-25) | PF | Evaporator modelled as one well-mixed cell, likely oversized | P2 | open |
+| [FIX-25](#fix-25) | PF | Evaporator modelled as one well-mixed cell, likely oversized | P2 | applied 2026-11-11, **reverted 2026-11-17**; open (size UA from the loop's own cooldown requirement) |
 | [FIX-26](#fix-26) | PF | Power-cap PI integrates while its gate is shut | P3 | open |
 | [FIX-27](#fix-27) | CS | Recoverable Newton-solver failure at T~4.85s, every run since commit 13c9717 | P2 | open |
 | [FIX-28](#fix-28) | CS, TF | Setpoint and release-all still read the wall temperature, which the plant can't measure (CS-PREP no longer does) | P2 | open, decision |
@@ -369,6 +369,48 @@ versus ATEKO (TF resized it 2026-10-06 to 4.5 m with 5 cells). PF's
 supply may reach its setpoint only because of this.
 **Fix:** `nCells` = 5 with one 77 K port per cell, sized against ATEKO's
 PF duty, as TF did; then FIX-08.
+
+**Applied 2026-11-11, reverted 2026-11-17.** `tube1` was changed to
+15 x 12 mm x 4.2 m, `nCells=5`, one 77 K port per cell: ~1.5x the UA implied
+by ATEKO's PF duty (47.9 kW, 0.231 kg/s, 120 -> 80 K: NTU 2.66, UA ~3.2 kW/K,
+so ~4.8 kW/K); before it was 60 x 12 mm x 10 m in one cell. Reason for the
+change: in the PF working-scenario runs the supply still stopped at 80.1 K,
+because the circulator's 50 kW heat had to leave through the evaporator.
+
+**Why it was reverted (`PFCircuit.mo` is back to the committed 60 x 10 m,
+one cell). The run-time reason stands; the estimate-based reasons are corrected below:**
+* **Run time.** The 5-cell run was cancelled after 61.7 min with `result.mat`
+  at ~3 s of 1815 s; the same tube with `nCells=3` was cancelled after 95.1 min
+  at ~12 s. The one-cell 10 m tube finishes in ~45 min (CPU 2,680 s). No new-tube
+  run completed, so none of the "expected" numbers above were checked.
+* **Wrong sizing target.** ATEKO's UA belongs to ATEKO's operating point
+  (0.23 kg/s, 20 kW circulator), not to this loop, which was tuned to reach
+  80 K in 30 min from 160 K. The HEX has to be sized for the loop's own
+  conditions, so FIX-25's "1.5x ATEKO" was the wrong target.
+* **Correction (2026-11-18) to the first version of this entry.** The reverted
+  text said the new tube would run at ~0.79 kg/s, reach an effectiveness of
+  ~0.65 and end near 83 K, missing 80 K. That was wrong: 0.79 kg/s is the
+  circulator flow, of which PF_RV01 bypasses ~0.43 kg/s at the cold end. The
+  flow through the heater and `tube1` is only ~0.36 kg/s (0.41 kg/s at 600 s),
+  measured in the 3100 run (`tube1.portA.m_flow`, `fan2ndOrder.portB.m_flow`,
+  `PF_RV01.portA.m_flow`), with a duty of 50 kW at the end and 62.6 kW at
+  ~600 s. At 0.36 kg/s the old one-cell tube has an effective UA of ~16 kW/K
+  (effectiveness ~0.90, `tube1` inlet 106.7 K, outlet 80.1 K). The new
+  15 x 4.2 m tube would have ~5 kW/K at that flow (U scales with flow per tube
+  to ~0.8) and, with 5 cells, an effectiveness of ~0.89: about the same as the
+  old tube, i.e. an end supply near 80 K, not 83 K. These are hand estimates,
+  not simulations; no new-tube run completed.
+* The "supply 2-3 K above 77 K, like TF" expectation of the first version still
+  does not hold at this flow and duty (the end-state supply is ~80 K with either
+  tube).
+
+**Still open:** a single well-mixed cell caps the effectiveness at
+UA/(m*cp+UA), so the old tube's behaviour is an effective UA, not a
+defined design. Plan: size UA from the loop's own requirement (80 K in
+30 min from 160 K at the loop flow) by a small UA sweep, with `nCells` 2-3,
+report the area/U it implies, and add FIX-08 (LIN boiling resistance and
+supply cap). The old-tube runs stay in
+`data/PF/working_scenarios_oneCellEvap_10m/`.
 
 <a id="fix-26"></a>
 ### FIX-26 — Power-cap PI integrates while gated shut (P3)

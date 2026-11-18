@@ -1,5 +1,5 @@
 Log-file of program ./dymosim
-(generated: Wed Nov  4 13:10:30 2026)
+(generated: Thu Nov  5 16:20:10 2026)
 
 dymosim started
 ... "CoilLoopCompassU.PF.PFCircuit" simulating
@@ -188,9 +188,9 @@ Solver will attempt to handle this problem.
 Failed to evaluate model for ODE-Jacobian
 
 Integration terminated successfully at T = 1815
-   CPU-time for integration                : 1.51e+03 seconds
-   CPU-time for one grid interval          : 3.02e+03 milliseconds
-   CPU-time for initialization             : 0.108 seconds
+   CPU-time for integration                : 1.53e+03 seconds
+   CPU-time for one grid interval          : 3.06e+03 milliseconds
+   CPU-time for initialization             : 0.109 seconds
    Number of result points                 : 720
    Number of grid points                   : 501
    Number of accepted steps                : 1676

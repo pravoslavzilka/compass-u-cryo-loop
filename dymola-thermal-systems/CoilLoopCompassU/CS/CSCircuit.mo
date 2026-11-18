@@ -16,6 +16,10 @@ model CSCircuit
   // header -> 5 coils, each with ON/OFF valves at both ends (CS_V01..V05) ->
   // return header -> junction20 -> junction4 -> circulator.
   //
+  // CS-PREP is FROZEN (enableCSPrep=false, 2026-11-11): the loop gas starts at the
+  // calculated supply temperature T_loopInitial = TInitialCoil - tempMargin (floored
+  // at 77K) and the coils open at t=0. The description below applies to enableCSPrep=true.
+  //
   // Startup [CS-PREP]: the loop gas starts at 80K (idle), the coils at 137.5K wall
   // and gas (ATEKO Tab.5, no heat pulse). 1) Probe: for prepProbeTime the coil
   // valves open with only a little flow (the RV01 flow regulator holds
@@ -59,7 +63,7 @@ model CSCircuit
 
   // --- startup coolant preparation through the coil bypass valve4 [CS-PREP] ---
   parameter Boolean enableCSPrep = true
-    "Master switch for CS-PREP (probe + warm-up, see the header). On by default (baseline). Off: coolantReady starts true and prepProbing false, so the coils open at t=0 with the loop at T_loopInitial as if no preparation had run -- for Run_6's ablation (docs/cs/run_simulation.md).";
+    "Master switch for CS-PREP (probe + warm-up, see the header). FROZEN (off) since 2026-11-11: the supply temperature is now calculated at t=0 (T_loopInitial = coil temperature - tempMargin, floored) instead of probed and warmed up; the CS-PREP code is kept, set true to bring it back. Off: coolantReady starts true and prepProbing false, so the coils open at t=0 with the loop at T_loopInitial as if no preparation had run -- for Run_6's ablation (docs/cs/run_simulation.md).";
   parameter Real Kv_prepBypass = 1
     "valve4 Kv during preparation: ~10 bar at 0.17 kg/s of 97.5K/82 bar helium, about the coils' own loss, so the circulator runs near its design point and RV01 hardly moves at the hand-over.";
   parameter Modelica.Units.SI.Time prepProbeTime = 15
@@ -77,11 +81,12 @@ model CSCircuit
   parameter Real prepFlushFlowFraction = 0.3
     "[CS-PREP] Flush flow as a share of m_flow_design, held by PID_RV01 (valve4 shut).";
   parameter Modelica.Units.SI.Time prepMaxTime = 300 "Fallback: the coils open at this time even if the supply never settled.";
-  parameter Modelica.Units.SI.Temperature T_loopInitial(displayUnit="K") = 80
-    "Initial gas temperature in the loop outside the coils and the evaporator: the idle loop temperature (ATEKO 80K target). Until 2026-11-03 this was TInitialCoil - tempMargin = 97.5K, i.e. the loop started already prepared; CS-PREP now does the preparation (probe + warm-up).";
+  parameter Modelica.Units.SI.Temperature T_loopIdle(displayUnit="K") = 80 "Idle loop gas temperature at the start when CS-PREP is on (ATEKO).";
+  parameter Modelica.Units.SI.Temperature T_loopInitial(displayUnit="K") = if enableCSPrep then T_loopIdle else max(TInitialCoil - tempMargin, T_supplyFloor)
+    "Initial gas temperature in the loop outside the coils and the evaporator. With CS-PREP frozen it is the calculated supply temperature the preparation would have reached: hottest coil temperature (TInitialCoil) - tempMargin (40K), floored at T_supplyFloor, i.e. the loop starts already prepared (as before 2026-11-03). With enableCSPrep = true set it to the idle loop temperature (80K, ATEKO) instead -- the preparation then warms it up.";
 
-  parameter Boolean enableOverCoolPrevention = false "valve4 coil-bypass trigger after startup -- copied from TF/PF, off by default.";
-  parameter Boolean enableOverCoolRecovery = false "valve4 stabilize-and-reclose logic -- copied from TF/PF, off by default.";
+  parameter Boolean enableOverCoolPrevention = true "valve4 coil-bypass trigger after startup -- copied from TF/PF, off by default.";
+  parameter Boolean enableOverCoolRecovery = true "valve4 stabilize-and-reclose logic -- copied from TF/PF, off by default.";
   parameter Modelica.Units.SI.TemperatureDifference overCoolShutMargin = 40 "Copied from TF/PF.";
   parameter Modelica.Units.SI.TemperatureDifference overCoolReopenMargin = 45 "Copied from TF/PF.";
   parameter Modelica.Units.SI.TemperatureDifference overCoolStabilityBand = 20 "Copied from TF/PF.";
@@ -92,14 +97,18 @@ model CSCircuit
     "Per-coil relative-margin isolation (ATEKO S6.1: 'ON/OFF valve switch ON/OFF flow rate through coils according to their temperature') -- all 5 coils, CS_V01..V05. Currently set for Run_6 (docs/cs/run_simulation.md); set to false for Run_5.";
   parameter Modelica.Units.SI.TemperatureDifference coilIsolationCloseMargin = 40 "Same as TF/PF.";
   parameter Modelica.Units.SI.TemperatureDifference coilIsolationReopenMargin = 35 "Same as TF/PF.";
-  parameter Boolean shutWhenCold_CS[nCS] = fill(false, nCS)
+  parameter Boolean shutWhenCold_CS[nCS] = fill(true, nCS)
     "Per-coil opt-in to the permanent 'cooled down' shut-off, same rule as TF's upper limb -- a coil that reaches T_coldShut gives its flow to the others. Currently set for Run_5 (docs/cs/run_simulation.md), C-COLDSHUT off; set to fill(true, nCS) for Run_2/Run_4.";
   parameter Modelica.Units.SI.Temperature T_coldShut(displayUnit="K") = 80 "ATEKO S3.4 target temperature.";
   parameter Modelica.Units.SI.Temperature T_releaseAll(displayUnit="K") = 80
     "Once the hottest wall cell of every coil still being cooled is below this, all shut-offs are lifted (allReleased), same as TF.";
   parameter Modelica.Units.SI.Time controlActivationDelay = 10
     "Preparation, isolation and shut-off logic stay off this long after start / after the coils open: the 88m CS channels hold ~5s of gas at design flow.";
-  parameter Modelica.Units.SI.Temperature TInitialCoil(displayUnit="K") = 137.5
+  // Working scenario 1 (data/working_scenarios/model_coil_start.csv, 3100-rev15-ver_vacuum-rrr30-77K-rump50kAs-1,
+  // T_start_energy_conserving_K), order CS1, CS2U, CS2L, CS3U, CS3L.
+  parameter Modelica.Units.SI.Temperature TInitialCoilCS[nCS](each displayUnit="K") = {78.682, 83.209, 83.209, 83.280, 80.470}
+    "Per-coil initial wall and trapped-gas temperature (working scenario 1).";
+  parameter Modelica.Units.SI.Temperature TInitialCoil(displayUnit="K") = max(TInitialCoilCS)
     "Coil wall and trapped gas initial temperature -- ATEKO Tab.5: 137.5K coil temperature after a shot (energy balance, 16 MJ into 714 kg).";
 
   // --- circulator CC01: fixed speed, coil flow set by the bypass CS_RV01 -- design-basis doc S10d ---
@@ -145,13 +154,15 @@ model CSCircuit
   parameter Real Kv_RV01Start = if enableCSPrep then Kv_RV01Probe else 0.5
     "RV01 Kv at t=0. With CS-PREP: the calculated probe opening Kv_RV01Probe. Without it: 0.5, ~0.1 kg/s of the circulator's ~0.28 kg/s back to suction.";
   parameter Modelica.Units.SI.Time T_RV01 = 2 "RV01 actuator lag (first order).";
+  parameter Boolean rv01ForcedShut = true
+    "TEST: circulator bypass CS_RV01 held fully shut (Kv_shut) and the loop-flow PI PID_RV01 ignored, so the whole circulator flow goes through the loop. false = normal PI-regulated RV01.";
 
   // --- C-RV01 goal: flow (m_flow_set) or power (P_shaftLimit with m_flow_set as floor) -- docs/control-common.md ---
   type RV01Goal = enumeration(
       Flow "Hold the coil-loop flow at m_flow_set",
       Power "Spend the shaft-power budget P_shaftLimit on extra coil flow, never below m_flow_set")
     "C-RV01 control goal.";
-  parameter RV01Goal rv01Goal = RV01Goal.Flow
+  parameter RV01Goal rv01Goal = RV01Goal.Power
     "Flow: RV01 holds m_flow_set. Power: PID_power adds 0..dm_flowPowerMax to the flow target while P_shaft is below P_shaftLimit, and takes it back above; the flow PI and the m_flow_set floor are the same in both modes. Currently set for Run_5 (docs/cs/run_simulation.md); set to Power for Run_3/Run_4.";
   parameter Modelica.Units.SI.Power P_shaftLimit = 20000
     "ASSUMED placeholder: shaft-power budget in power mode. Flow mode runs at ~16-18 kW over the cooldown (2026-10-16 sizing), so 20 kW leaves a few kW for extra flow.";
@@ -349,11 +360,11 @@ model CSCircuit
     y_start=-Kv_RV01Start)
     "Coil-loop flow on CS_RV01: u_s=m_flow_set, u_m=m_flow_loop. Too much loop flow -> negative y -> RV01 opens (PF's max(-y,0) convention)."
     annotation (Placement(transformation(extent={{-178,174},{-158,194}})));
-  Modelica.Blocks.Sources.RealExpression CS_RV01Command(y=Kv_shut + max(-PID_RV01.y, 0))
+  Modelica.Blocks.Sources.RealExpression CS_RV01Command(y=if rv01ForcedShut then Kv_shut else Kv_shut + max(-PID_RV01.y, 0))
     "RV01 Kv from the loop-flow PI."
     annotation (Placement(transformation(extent={{-154,174},{-134,194}})));
   Modelica.Blocks.Continuous.FirstOrder firstOrderRV01(T=T_RV01,
-    initType=Modelica.Blocks.Types.Init.InitialOutput, y_start=Kv_shut + Kv_RV01Start)
+    initType=Modelica.Blocks.Types.Init.InitialOutput, y_start=if rv01ForcedShut then Kv_shut else Kv_shut + Kv_RV01Start)
     annotation (Placement(transformation(extent={{-118,174},{-98,194}})));
   Modelica.Blocks.Continuous.LimPID PID_power(
     controllerType=Modelica.Blocks.Types.SimpleController.PI,
@@ -569,24 +580,24 @@ model CSCircuit
     annotation (Placement(transformation(extent={{-4,-4},{4,4}}, rotation=90,
         origin={74,-26})));
 
-  CoilAssembly2ch CS1(TInitial(displayUnit="K") = TInitialCoil,
-    TInitialGas(displayUnit="K") = TInitialCoil, assemblyIndex=1)
+  CoilAssembly2ch CS1(TInitial(displayUnit="K") = TInitialCoilCS[1],
+    TInitialGas(displayUnit="K") = TInitialCoilCS[1], assemblyIndex=1)
     "714 kg, 2 x 88 m (ATEKO Tab.2)."
     annotation (Placement(transformation(extent={{100,60},{120,80}})));
-  CoilAssembly CS2U(length=86, TInitial(displayUnit="K") = TInitialCoil,
-    TInitialGas(displayUnit="K") = TInitialCoil, assemblyIndex=4)
+  CoilAssembly CS2U(length=86, TInitial(displayUnit="K") = TInitialCoilCS[2],
+    TInitialGas(displayUnit="K") = TInitialCoilCS[2], assemblyIndex=4)
     "349 kg, 1 x 86 m."
     annotation (Placement(transformation(extent={{100,20},{120,40}})));
-  CoilAssembly CS2L(length=86, TInitial(displayUnit="K") = TInitialCoil,
-    TInitialGas(displayUnit="K") = TInitialCoil, assemblyIndex=5)
+  CoilAssembly CS2L(length=86, TInitial(displayUnit="K") = TInitialCoilCS[3],
+    TInitialGas(displayUnit="K") = TInitialCoilCS[3], assemblyIndex=5)
     "349 kg, 1 x 86 m."
     annotation (Placement(transformation(extent={{100,-20},{120,0}})));
-  CoilAssembly2ch CS3U(TInitial(displayUnit="K") = TInitialCoil,
-    TInitialGas(displayUnit="K") = TInitialCoil, assemblyIndex=2)
+  CoilAssembly2ch CS3U(TInitial(displayUnit="K") = TInitialCoilCS[4],
+    TInitialGas(displayUnit="K") = TInitialCoilCS[4], assemblyIndex=2)
     "714 kg, 2 x 88 m (Tab.2; PFD draws 2 x 86 m)."
     annotation (Placement(transformation(extent={{100,-60},{120,-40}})));
-  CoilAssembly2ch CS3L(TInitial(displayUnit="K") = TInitialCoil,
-    TInitialGas(displayUnit="K") = TInitialCoil, assemblyIndex=3)
+  CoilAssembly2ch CS3L(TInitial(displayUnit="K") = TInitialCoilCS[5],
+    TInitialGas(displayUnit="K") = TInitialCoilCS[5], assemblyIndex=3)
     "714 kg, 2 x 88 m (Tab.2; PFD draws 2 x 86 m)."
     annotation (Placement(transformation(extent={{100,-100},{120,-80}})));
   Modelica.Blocks.Continuous.FirstOrder firstOrderCoilKv[nCS](each T=3,

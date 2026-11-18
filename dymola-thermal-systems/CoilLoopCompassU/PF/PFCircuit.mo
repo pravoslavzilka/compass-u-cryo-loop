@@ -14,7 +14,7 @@ model  PFCircuit
   // each) -> return header -> junction20 -> junction4 -> circulator. junction22
   // (pressure tee, RV07/RV08) hangs off junction6: the DISCHARGE side.
   //
-  // Algorithms: [C-SPEED-a] constant speed; [C-PRES-b] PressureStabilizer
+  // Algorithms: [C-SPEED-a] constant speed (or [C-SPEED-b] power-limit trim, off by default); [C-PRES-b] PressureStabilizer
   // (PI trim + feedforward pulse) on the discharge pressure via RV07/RV08;
   // [C-RV01 power-cap a] PF_RV01 caps shaft power below 140 K (off by default);
   // [C-TEMP-SR] split-range supply temperature (heater / valve6 / valve5);
@@ -85,6 +85,17 @@ model  PFCircuit
     "[C-RV01 power-cap a, R-WINDUP] Converts PID_circulatorPower.y to a Kv command, so that y=yMin (-10) maps to exactly KvPowerLimitMax -- keeps the LimPID's own anti-windup bound sitting exactly at the downstream Kv clamp, same 'no windup headroom beyond what's usable' invariant PID_pressure/KvGainMakeup/KvGainRelief already use.";
   parameter Real KvPowerLimitMax = 500
     "[C-RV01 power-cap a] Kv cap for PF_RV01's power-limit trim -- same order as this valve's old flow-trim limiter (uMax=500) and RV07/RV08's Kv range, well within the valve's characteristic range.";
+
+  parameter Boolean enableSpeedPowerLimit=false
+    "[C-SPEED-b] Master switch for the circulator-power limit by speed: a PI on fan2ndOrder.P_shaft vs. P_shaftLimit trims the circulator speed (n = smoothStep.y*trim, trim in [speedMinFraction, 1]) instead of bleeding flow through PF_RV01. Same trigger as PF_RV01's power limit (time>=controlActivationDelay and T_gas_out_max<=valve1PowerLimitTriggerTemp). When false the speed is the constant smoothStep value (C-SPEED-a). Use with enableCirculatorPowerOptimization=false, not together.";
+  parameter Real kSpeedPowerPID = 5e-6
+    "[C-SPEED-b] P gain of PID_speedPower, 1/W (trim per W of overshoot): 5 kW over the limit gives trim -0.025 at once. Power goes roughly as n^3, so ~-0.03 in trim removes ~9% of 50 kW.";
+  parameter Modelica.Units.SI.Time TiSpeedPowerPID = 60
+    "[C-SPEED-b] Integral time of PID_speedPower, s -- slow, same as TiPowerLimitPID.";
+  parameter Real speedMinFraction = 0.5
+    "[C-SPEED-b] Lowest allowed speed as a fraction of the nominal smoothStep speed (the PI's lower output bound is speedMinFraction-1).";
+  parameter Modelica.Units.SI.Time speedRampTime = 5
+    "[C-SPEED-b] Time constant of the first-order filter on the speed trim, s, so the speed does not step.";
 
   parameter Boolean enablePressureControl = true
     "[C-PRES-b] Master switch for the RV07 (make-up)/RV08 (relief) split-range pressure-control valve pair at junction22 (circulator discharge side, despite the old suction wording). When false, both valves are forced to Kv_shut regardless of the measured pressure.";
@@ -522,6 +533,24 @@ model  PFCircuit
   Modelica.Blocks.Continuous.FirstOrder firstOrderPF_RV01(T=valveRampTime)
     "Opening/closing ramp for PF_RV01's power-limit command -- same anti-chatter role as firstOrderRV07/firstOrderRV08."
     annotation (Placement(transformation(extent={{-118,174},{-98,194}})));
+  Modelica.Blocks.Continuous.LimPID PID_speedPower(
+    controllerType=Modelica.Blocks.Types.SimpleController.PI,
+    k=kSpeedPowerPID,
+    Ti=TiSpeedPowerPID,
+    yMax=0,
+    yMin=speedMinFraction - 1,
+    initType=Modelica.Blocks.Types.Init.InitialOutput,
+    y_start=0)
+    "[C-SPEED-b] u_s=P_shaftLimit, u_m=fan2ndOrder.P_shaft while active (else u_m=u_s so the integrator does not wind up), e=u_s-u_m: y<0 when the shaft power is above the limit, y=0 otherwise (upper bound 0: the speed is only ever lowered)."
+    annotation (Placement(transformation(extent={{-178,150},{-158,170}})));
+  Modelica.Blocks.Continuous.FirstOrder speedTrimFilter(
+    T=speedRampTime,
+    initType=Modelica.Blocks.Types.Init.InitialOutput,
+    y_start=1)
+    "[C-SPEED-b] Smooths the speed trim 1+PID_speedPower.y; the circulator speed is smoothStep.y*speedTrimFilter.y."
+    annotation (Placement(transformation(extent={{-150,150},{-130,170}})));
+  Boolean speedPowerActive
+    "[C-SPEED-b] Trigger of the speed power limit: enableSpeedPowerLimit and time>=controlActivationDelay and T_gas_out_max<=valve1PowerLimitTriggerTemp.";
   // [R-EVAPDECOUPLE] fixed valve between evaporator and mixing node
   ThermalSystems.GasComponents.Valves.Valve valve3(
     valveFlowVariableType=ThermalSystems.Internals.ValveFlowVariableType.KvValue,
@@ -767,6 +796,12 @@ equation
   bypassHysteresis.u = -PID.y;
   PID_circulatorPower.u_s = P_shaftLimit;
   PID_circulatorPower.u_m = fan2ndOrder.P_shaft;
+  // [C-SPEED-b] circulator-power limit by speed
+  speedPowerActive = enableSpeedPowerLimit and time >= controlActivationDelay and T_gas_out_max <= valve1PowerLimitTriggerTemp;
+  PID_speedPower.u_s = P_shaftLimit;
+  PID_speedPower.u_m = if speedPowerActive then fan2ndOrder.P_shaft else P_shaftLimit;
+  speedTrimFilter.u = 1 + PID_speedPower.y;
+  rotatoryBoundary.n_in = smoothStep.y*speedTrimFilter.y;
 
   for i in 1:nPF loop
     kvTarget_PF[i] = if coilOpen[i] then valveKvNominal_PF[i] else Kv_shut;
@@ -954,9 +989,6 @@ equation
     reinit(reliefDeliveredMass, 0);
   end when;
 
-  connect(smoothStep.y,rotatoryBoundary. n_in)
-    annotation (Line(points={{-179.4,156},{-60,156},{-60,135}},
-                                                     color={0,0,127}));
   connect(rotatoryBoundary.rotatoryFlange, fan2ndOrder.rotatoryFlange)
     annotation (Line(
       points={{-60,131},{-60,128}},
