@@ -1,0 +1,2 @@
+RUNNING: load + translate
+RUNNING: simulate 30 s

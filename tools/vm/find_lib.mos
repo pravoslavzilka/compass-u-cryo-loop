@@ -1,0 +1,12 @@
+// Locate the ThermalSystems library on the VM disk and dump Dymola's library paths.
+// Output: vm-inbox/find_lib.txt  (run via run.request, script=tools/vm/find_lib.mos)
+o := "Z:/compass-u-cryo-loop/vm-inbox/find_lib.txt";
+if Modelica.Utilities.Files.exist(o) then
+  Modelica.Utilities.Files.remove(o);
+end if;
+Modelica.Utilities.Streams.print("Dymola: " + DymolaVersion(), o);
+Modelica.Utilities.Streams.print("cwd: " + cd(), o);
+Modelica.Utilities.Streams.print("--- dirs named ThermalSystems* (C:\Program Files*, C:\Users, C:\Dymola*) ---", o);
+Modelica.Utilities.System.command("cmd /c for %d in (\"C:\Program Files\" \"C:\Program Files (x86)\" \"C:\Users\" \"C:\ProgramData\") do dir /s /b /ad \"%~d\*ThermalSystems*\" >> Z:\compass-u-cryo-loop\vm-inbox\find_lib.txt 2>nul");
+Modelica.Utilities.System.command("cmd /c for %d in (\"C:\Program Files\" \"C:\Users\" \"C:\ProgramData\") do dir /s /b \"%~d\ThermalSystems*.mo\" >> Z:\compass-u-cryo-loop\vm-inbox\find_lib.txt 2>nul");
+Modelica.Utilities.Streams.print("--- done ---", o);

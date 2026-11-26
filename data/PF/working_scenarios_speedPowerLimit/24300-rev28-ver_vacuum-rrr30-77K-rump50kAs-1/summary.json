@@ -1,0 +1,126 @@
+{
+  "coils": {
+    "PF1U": {
+      "T0_wall_K": 85.66000366210938,
+      "T_end_wall_K": 78.82427978515625,
+      "wall_settled_le_80K_s": 856.6799926757812,
+      "wall_settled_le_81K_s": 776.8200073242188,
+      "T_gas_out_end_K": 78.8240737915039,
+      "T_gas_out_peak_K": 97.22946166992188,
+      "isolation_events": []
+    },
+    "PF1L": {
+      "T0_wall_K": 121.41999816894531,
+      "T_end_wall_K": 78.82424926757812,
+      "wall_settled_le_80K_s": 863.9400024414062,
+      "wall_settled_le_81K_s": 787.7100219726562,
+      "T_gas_out_end_K": 78.82406616210938,
+      "T_gas_out_peak_K": 121.41632080078125,
+      "isolation_events": []
+    },
+    "PF2U": {
+      "T0_wall_K": 78.01300048828125,
+      "T_end_wall_K": 78.82549285888672,
+      "wall_settled_le_80K_s": 874.8300170898438,
+      "wall_settled_le_81K_s": 598.9500122070312,
+      "T_gas_out_end_K": 78.82522583007812,
+      "T_gas_out_peak_K": 91.14681243896484,
+      "isolation_events": [
+        [
+          0.2220216989517212,
+          "shut"
+        ],
+        [
+          324.60577392578125,
+          "open"
+        ]
+      ]
+    },
+    "PF2L": {
+      "T0_wall_K": 82.322998046875,
+      "T_end_wall_K": 78.82548522949219,
+      "wall_settled_le_80K_s": 932.9099731445312,
+      "wall_settled_le_81K_s": 853.0499877929688,
+      "T_gas_out_end_K": 78.8251724243164,
+      "T_gas_out_peak_K": 95.24518585205078,
+      "isolation_events": []
+    },
+    "PF3U": {
+      "T0_wall_K": 82.81600189208984,
+      "T_end_wall_K": 78.8262939453125,
+      "wall_settled_le_80K_s": 965.5800170898438,
+      "wall_settled_le_81K_s": 885.719970703125,
+      "T_gas_out_end_K": 78.82575225830078,
+      "T_gas_out_peak_K": 94.8865737915039,
+      "isolation_events": []
+    },
+    "PF3L": {
+      "T0_wall_K": 94.41000366210938,
+      "T_end_wall_K": 78.82630157470703,
+      "wall_settled_le_80K_s": 969.2100219726562,
+      "wall_settled_le_81K_s": 892.97998046875,
+      "T_gas_out_end_K": 78.82575225830078,
+      "T_gas_out_peak_K": 97.85037231445312,
+      "isolation_events": []
+    },
+    "PF4U": {
+      "T0_wall_K": 81.38400268554688,
+      "T_end_wall_K": 78.82463836669922,
+      "wall_settled_le_80K_s": 860.3099975585938,
+      "wall_settled_le_81K_s": 751.4099731445312,
+      "T_gas_out_end_K": 78.82443237304688,
+      "T_gas_out_peak_K": 91.50621795654297,
+      "isolation_events": [
+        [
+          2.3776469230651855,
+          "shut"
+        ],
+        [
+          270.81549072265625,
+          "open"
+        ]
+      ]
+    },
+    "PF4L": {
+      "T0_wall_K": 81.74700164794922,
+      "T_end_wall_K": 78.82455444335938,
+      "wall_settled_le_80K_s": 878.4600219726562,
+      "wall_settled_le_81K_s": 798.5999755859375,
+      "T_gas_out_end_K": 78.82438659667969,
+      "T_gas_out_peak_K": 95.8725357055664,
+      "isolation_events": []
+    }
+  },
+  "slowest_wall_settled_le_80K_s": 969.2100219726562,
+  "slowest_wall_settled_le_81K_s": 892.97998046875,
+  "T_wall_hot_peak_K": 121.41999816894531,
+  "T_wall_hot_end_K": 78.82630157470703,
+  "T_gas_out_max_K": {
+    "start": 80.0,
+    "peak": 121.41632080078125,
+    "end": 78.82575225830078
+  },
+  "supply_T_K": {
+    "start": 120.0,
+    "min": 78.82292175292969,
+    "max": 122.31716918945312,
+    "end": 78.82292175292969
+  },
+  "coil_to_coil_spread_wall_K_max": 43.41130828857422,
+  "hot_wall_minus_supply_K_max": 35.166404724121094,
+  "m_flow_kg_s": {
+    "max": 0.6731447577476501,
+    "end": 0.6337441205978394
+  },
+  "P_shaft_kW": {
+    "start": 31.6155859375,
+    "peak": 55.90427734375,
+    "end": 50.001984375
+  },
+  "circulator_energy_kWh": 24.15314477687201,
+  "p_discharge_bar": {
+    "min": 35.755695,
+    "max": 37.9597025,
+    "end": 36.5
+  }
+}

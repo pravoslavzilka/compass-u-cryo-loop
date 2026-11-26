@@ -1,0 +1,75 @@
+{
+  "phases_s": {
+    "probe_end": 15.0,
+    "flush_start": 98.83756256103516,
+    "coolantReady": 158.83755493164062,
+    "controlsActive": 168.83755493164062,
+    "allReleased": 642.7158813476562
+  },
+  "T_probe_K": 83.20824432373047,
+  "T_prepTarget_K": 77.0,
+  "T_loopInitial_K": 80.0,
+  "coils": {
+    "CS1": {
+      "T0_K": 78.68199920654297,
+      "T_end_K": 77.4360580444336,
+      "settled_le_80K_s": 900.0,
+      "coldShut_s": 168.83755493164062
+    },
+    "CS2U": {
+      "T0_K": 83.20899963378906,
+      "T_end_K": 77.43569946289062,
+      "settled_le_80K_s": 637.2000122070312,
+      "coldShut_s": 633.9843139648438
+    },
+    "CS2L": {
+      "T0_K": 83.20899963378906,
+      "T_end_K": 77.43572235107422,
+      "settled_le_80K_s": 633.9843139648438,
+      "coldShut_s": 629.9700317382812
+    },
+    "CS3U": {
+      "T0_K": 83.27999877929688,
+      "T_end_K": 77.43585205078125,
+      "settled_le_80K_s": 648.0,
+      "coldShut_s": 642.7158813476562
+    },
+    "CS3L": {
+      "T0_K": 80.47000122070312,
+      "T_end_K": 77.43580627441406,
+      "settled_le_80K_s": 604.7999877929688,
+      "coldShut_s": 598.6937255859375
+    }
+  },
+  "slowest_coil_settled_le_80K_s": 900.0,
+  "T_wall_hot_end_K": 77.4360580444336,
+  "T_wall_hot_max_K": 84.26940155029297,
+  "supply_T_K": {
+    "min": 76.80421447753906,
+    "max": 90.135498046875,
+    "end": 77.43470001220703
+  },
+  "max_hotwall_minus_header_K_after_ready": 5.875602722167969,
+  "min_hotwall_minus_header_K_after_ready": 0.00135040283203125,
+  "spread_between_coils_K_max_after_ready": 2.5769119262695312,
+  "m_flow_loop_kg_s": {
+    "max": 0.3344753682613373,
+    "end": 0.2917368412017822
+  },
+  "P_shaft_kW": {
+    "start": 4.15717041015625,
+    "peak": 27.1129453125,
+    "end": 26.501900390625
+  },
+  "circulator_energy_kWh": 11.838604697231194,
+  "LIN_energy_MJ": 44.318295708482424,
+  "Q_evaporator_kW": {
+    "max": 60.0,
+    "end": 26.2883125
+  },
+  "p_discharge_bar": {
+    "min": 77.75485,
+    "max": 84.63459,
+    "end": 82.00001
+  }
+}

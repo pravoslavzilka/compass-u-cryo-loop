@@ -11,7 +11,11 @@
 // ============================================================
 
 // --- 1. SETTINGS (adjust as needed) ---------------------------------
-modelName    := "CoilLoopCompassU.TF.TFCircuit";
+// TF run 2 of 2: Structure CONNECTED (connectStructure=true), Run_1 (Structure isolated) otherwise unchanged.
+// All switches written out explicitly. NOTE: the model default for shutWhenCold_TF is
+// {false,false,true,true} (C-COLDSHUT on); the Reference turns it off.
+// Run 1 of 2 (saved in data/TF/paper/Run_1) had connectStructure=false.
+modelName    := "CoilLoopCompassU.TF.TFCircuit(connectStructure=true, shutWhenCold_TF={false,false,false,false}, enableCoilIsolation=true, KvUpperLimb=45, enablePressureControl=true)";
 packagePath  := "Z:/compass-u-cryo-loop/dymola-thermal-systems/CoilLoopCompassU";
 debugPath    := packagePath + "/TF/debugging";
 logFile      := debugPath + "/translation_log.txt";

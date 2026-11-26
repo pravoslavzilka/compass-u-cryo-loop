@@ -1,0 +1,40 @@
+Log-file of program ./dymosim
+(generated: Thu Nov  5 20:39:16 2026)
+
+dymosim started
+... "CoilLoopCompassU.CS.CSCircuit" simulating
+... "dsin.txt" loading (dymosim input file)
+... "Z:/compass-u-cryo-loop/dymola-thermal-systems/CoilLoopCompassU/CS/prep_opt/result_p01.mat" creating (simulation result file)
+
+Integration started at T = 0 using integration method DASSL
+(DAE multi-step solver (dassl/dasslrt of Petzold modified by Dassault Systemes))
+
+... Warning message from dymosim
+At time T = 1.008820e+01 in current integration interval
+T_interval = 1.000000e+01 ... 1.010000e+01
+a large amount of work has been expended
+(about 500 steps) in the integrator. Probably the communication
+interval is too large or the system is stiff.
+
+
+Integration terminated successfully at T = 30
+   CPU-time for integration                : 88.7 seconds
+   CPU-time for one grid interval          : 296 milliseconds
+   CPU-time for initialization             : 0.029 seconds
+   Number of result points                 : 303
+   Number of grid points                   : 301
+   Number of accepted steps                : 5678
+   Number of f-evaluations (dynamics)      : 16728
+   Number of crossing function evaluations : 5984
+   Number of Jacobian-evaluations          : 1579
+   Number of model time events             : 1
+   Number of input time events             : 0
+   Number of state events                  : 0
+   Number of step events                   : 0
+   Minimum integration stepsize            : 3.75e-06
+   Maximum integration stepsize            : 1.14
+   Maximum integration order               : 4
+Calling terminal section
+... "dsfinal.txt" creating (final states)
+
+SUCCESSFUL simulation of CoilLoopCompassU.CS.CSCircuit

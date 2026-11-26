@@ -1,0 +1,30 @@
+﻿ = true
+Modelica.Utilities.Streams.print("RUNNING: load + translate", st);
+openModel("C:/Program Files/Dymola 2024x Refresh 1/Modelica/Library/ThermalSystems 1.13.0/package.mo", mustRead=true);
+ = false
+openModel(root + "/dymola-thermal-systems/CoilLoopCompassU/package.mo", mustRead=true);
+ = true
+cd(outd);
+Z:/compass-u-cryo-loop/vm-inbox/cs20
+ = true
+ok := translateModel("CoilLoopCompassU.CS.CSCircuit");
+Declaring variable: Boolean ok ;
+savelog(outd + "/log.txt");
+ = true
+if not ok then
+  Modelica.Utilities.Streams.print("FAIL: translation", st);
+  Modelica.Utilities.Streams.print(getLastErrorLog(), outd + "/last_error.txt");
+else
+  Modelica.Utilities.Streams.print("RUNNING: simulate 20 s", st);
+  OutputCPUtime := true;
+  simOk := simulateModel("CoilLoopCompassU.CS.CSCircuit", stopTime=20, tolerance=1e-4,
+                         resultFile=outd + "/result");
+  savelog(outd + "/log.txt");
+  if simOk then
+    Modelica.Utilities.Streams.print("OK: simulated 20 s", st);
+  else
+    Modelica.Utilities.Streams.print("FAIL: simulation", st);
+    Modelica.Utilities.Streams.print(getLastErrorLog(), outd + "/last_error.txt");
+  end if;
+end if;
+Declaring variable: Boolean simOk ;

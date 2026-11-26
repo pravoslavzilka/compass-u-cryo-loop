@@ -1,0 +1,75 @@
+{
+  "phases_s": {
+    "probe_end": 15.0,
+    "flush_start": 97.71449279785156,
+    "coolantReady": 157.71449279785156,
+    "controlsActive": 167.71449279785156,
+    "allReleased": 649.8892211914062
+  },
+  "T_probe_K": 83.89730072021484,
+  "T_prepTarget_K": 77.0,
+  "T_loopInitial_K": 80.0,
+  "coils": {
+    "CS1": {
+      "T0_K": 79.87000274658203,
+      "T_end_K": 77.43630981445312,
+      "settled_le_80K_s": 997.2000122070312,
+      "coldShut_s": 167.71449279785156
+    },
+    "CS2U": {
+      "T0_K": 81.29499816894531,
+      "T_end_K": 77.43588256835938,
+      "settled_le_80K_s": 615.5999755859375,
+      "coldShut_s": 611.5910034179688
+    },
+    "CS2L": {
+      "T0_K": 81.29499816894531,
+      "T_end_K": 77.4359130859375,
+      "settled_le_80K_s": 612.0,
+      "coldShut_s": 606.741943359375
+    },
+    "CS3U": {
+      "T0_K": 83.96900177001953,
+      "T_end_K": 77.4360580444336,
+      "settled_le_80K_s": 655.2000122070312,
+      "coldShut_s": 649.8892211914062
+    },
+    "CS3L": {
+      "T0_K": 80.53900146484375,
+      "T_end_K": 77.4360122680664,
+      "settled_le_80K_s": 606.741943359375,
+      "coldShut_s": 600.3536376953125
+    }
+  },
+  "slowest_coil_settled_le_80K_s": 997.2000122070312,
+  "T_wall_hot_end_K": 77.43630981445312,
+  "T_wall_hot_max_K": 84.3505859375,
+  "supply_T_K": {
+    "min": 76.17729187011719,
+    "max": 90.00758361816406,
+    "end": 77.43470764160156
+  },
+  "max_hotwall_minus_header_K_after_ready": 6.475654602050781,
+  "min_hotwall_minus_header_K_after_ready": 0.0016021728515625,
+  "spread_between_coils_K_max_after_ready": 2.98114013671875,
+  "m_flow_loop_kg_s": {
+    "max": 0.3808063864707947,
+    "end": 0.29173606634140015
+  },
+  "P_shaft_kW": {
+    "start": 4.15717041015625,
+    "peak": 27.225162109375,
+    "end": 26.50183203125
+  },
+  "circulator_energy_kWh": 11.789556933295689,
+  "LIN_energy_MJ": 44.044997910775,
+  "Q_evaporator_kW": {
+    "max": 60.0,
+    "end": 26.288626953125
+  },
+  "p_discharge_bar": {
+    "min": 79.378585,
+    "max": 84.79816,
+    "end": 82.00001
+  }
+}

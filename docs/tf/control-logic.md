@@ -1,6 +1,7 @@
 # TF circuit — control logic
 
 Model: `dymola-thermal-systems/CoilLoopCompassU/TF/TFCircuit.mo`.
+Requirements from the sources: [requirements.md](requirements.md).
 Sizing and sources: [circulator-sizing.md](circulator-sizing.md).
 Common algorithm definitions: [control-common.md](../control-common.md).
 Tier rules: [README](../README.md#tiers).
@@ -26,6 +27,43 @@ default (`connectStructure` = false).
 Not used in TF: C-RV01 (no circulator bypass in the model), a loop-flow
 setpoint (`m_total` = 1.3 kg/s, ATEKO S6.5.3, is documentation only),
 startup preparation.
+
+## Flow path
+
+```
+fan2ndOrder (CC01) → Heater (EH01) → junction6 → junction1 ─┬─► junction22 → RV07 / RV08            pressure tee (discharge side)
+                                                            ├─► valve5 (RV02) ───────────────────┐   evaporator bypass
+                                                            └─► valve6 → tube1 (HE01) → valve3 ──┤
+      junction7 (mixing node, sensor_T) ◄──────────────────────────────────────────────────────────┘
+          → junction21 ─┬─► valve4 ─► junction20                                                      coil bypass (archived)
+                        └─► junctionSupply ─┬─► junctionCL → TFCL1 (+ Structure if connected)
+                                            └─► junctionUL → TFUL1, TFUL2
+      → junctionReturnCL / junctionReturnUL → junctionReturn → junction20 → junction4 → fan2ndOrder
+```
+
+Structure sits between `junctionCL` and `junctionReturnCL` and is connected
+at both ends only when `connectStructure` = true. valve5 is RV02 on the
+PFDs; the other valves are not mapped to PFD numbers here (the PFD has no
+text layer; see FIX-07).
+
+## How the pieces connect
+
+```
+coil outlet temps ──► T_gas_out_max (frozen for shut busses) ──► coilOpen[i], coldShut[i]   (C-ISO, C-COLDSHUT)
+                                                                        │
+                                                                        └──► kvTarget_TF[i] ──► bus inlet valve (+ outlet valve, upper limb: R-BOTHENDS)
+wall temps (coil busses only) ──► T_wallHotCooled ──► wanted_temp (C-TEMP-SP-b) ──► PID ──► heater / valve6 / valve5   (C-TEMP-SR)
+wall temps ──► T_wallHotLive ──► allReleased (C-COLDSHUT release-all)
+discharge pressure ──► PID_pressure ──► RV07 / RV08                                          (C-PRES-a, independent)
+```
+
+The bus valves are commanded by one expression per branch:
+
+```
+kvTarget_TF[i] = flowing[i] ? valveKvNominal_TF[i] : Kv_shut  → first-order lag (3 s) → bus valve
+flowing[i]     = allReleased or (coilOpen[i] and not coldShut[i])      (the structure is never isolated, never cold shut)
+T_gas_out_compare_TF[i] = flowing ? T_gas_out_TF[i] : T_gas_out_frozen[i]      (R-FROZEN)
+```
 
 ---
 
@@ -76,6 +114,11 @@ structure from `T_wallHotLive` and from the release (its wall sits at
 are also throttled to `KvUpperLimb` = 45 (default 100) to slow that limb
 down.
 
+Since 2026-11-03 the cold shut-off re-freezes `T_gas_out_frozen[i]` only while
+the branch flows (`(pre(allReleased) and isCoil_TF[i]) or pre(coilOpen[i])`),
+so a bus already isolated by C-ISO keeps its R-FROZEN value (FIX-04, not yet
+simulated).
+
 ### C-OVERCOOL (archived)
 Copied unchanged from PF: valve4 Kv 5000 when open, gated by `time ≥
 controlActivationDelay`.
@@ -89,7 +132,25 @@ R-HYST, R-SMOOTH, R-FROZEN, R-BOTHENDS (upper-limb busses only,
 gates C-COLDSHUT because the gas starts at 80 K = `T_coldShut`).
 Not used: R-KVFLOOR.
 
-**Revision history:** 2026-10-22 created from `TFCircuit.mo` at commit
+## Plant-model assumptions (not control)
+
+* **Evaporator:** `tube1` 60 × 12 mm × 4.5 m, `nCells` = 5, wall held at
+  77 K on every cell. Resized 2026-10-06 to about 1.5 × the UA implied by
+  ATEKO S6.5.3/S7.2 (138.8 kW, 1.3 kg/s, 100.6 → 80 K against 77 K LIN);
+  PF's copy of this tube was one cell and about 4× oversized (FIX-25).
+  No LIN-side boiling resistance and no cap at the LIN supply (1.3 kg/s,
+  ATEKO S7.2), unlike CS (FIX-08).
+* **Startup:** coil busses at 137 K, Structure and loop gas at 80 K, busses
+  open at t = 0: a 57 K step at first contact (FIX-01).
+* **Static flow split:** with no flow control, `KvUpperLimb` = 45 and
+  `Structure.valveKvNominal` = 12 are tuning values, not plant data; see
+  their docstrings in `TFCircuit.mo` and FIX-07.
+* **Heater:** `Heater` is the EH01 stand-in; ATEKO S6.1 requires it for TF.
+
+
+**Revision history:** 2026-11-04 flow path, signal map and plant-model assumptions
+added; FIX-04 noted (no code change).
+2026-10-22 created from `TFCircuit.mo` at commit
 2ecd589.
 2026-10-22: `TFCircuit.mo` tagged with algorithm IDs, stale comments
 fixed (no code change). Open problems: [to-fix.md](../to-fix.md).

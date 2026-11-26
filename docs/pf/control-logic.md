@@ -1,6 +1,7 @@
 # PF circuit — control logic
 
 Model: `dymola-thermal-systems/CoilLoopCompassU/PF/PFCircuit.mo`.
+Requirements from the sources: [requirements.md](requirements.md).
 Sizing and sources: [circulator-sizing.md](circulator-sizing.md);
 tuning study: [pid-sensitivity-report.md](pid-sensitivity-report.md).
 Common algorithm definitions: [control-common.md](../control-common.md).
@@ -8,11 +9,12 @@ Tier rules: [README](../README.md#tiers). Open problems:
 [to-fix.md](../to-fix.md).
 
 Eight coil assemblies (PF1U … PF4L: PF1U/L 4 channels, PF2U/L 2, PF3U/L 3,
-PF4U/L 4) start at 160 K; the loop gas outside the coils starts at 80 K.
+PF4U/L 4) start at 160 K; the loop gas outside the coils starts at 120 K
+(80 K until 2026-11-04, FIX-01 quick fix).
 Helium at 36.5 bara, default run 1815 s.
 
-> `PFCircuit.mo` is **not** tagged with algorithm IDs yet (FIX-18); the
-> component names below are how to find each algorithm in the code.
+> `PFCircuit.mo` has carried `[ID]` tags and a header comment since 2026-11-04
+> (FIX-18); search the file for the ID, or use the component names below.
 
 ## Summary
 
@@ -64,6 +66,11 @@ coilOpen[i] := false  when C-ISO close   or  PF-LOWTEMP dwell elapsed      (free
 kvTarget_PF[i]        = coilOpen[i] ? valveKvNominal_PF[i] : Kv_shut  → firstOrderCoilKv[i] (3 s) → KvValue_in1
 T_gas_out_compare_PF[i] = coilOpen[i] ? T_gas_out_PF[i] : T_gas_out_frozen[i]
 ```
+
+Valve names: `PF_RV01` = RV01 (circulator bypass), `valve5` = RV02 (evaporator
+bypass, per the TF docstring that copied it), `RV07`/`RV08` as on the PFD;
+the coil valves are the inlet valves inside `PF1U … PF4L` (not mapped to PFD
+numbers here).
 
 The valve sits at the assembly **inlet only**; a shut assembly stays open
 to the return header (no R-BOTHENDS).
@@ -127,7 +134,7 @@ Full description in
 
 Node: `junction22` off `junction6`, the evaporator inlet tee after the
 heater — the circulator **discharge** side, despite the sensor name.
-Several PF docstrings still quote old thresholds (FIX-18).
+The docstrings were corrected in the FIX-18 pass.
 
 ### C-RV01 power-cap (a)
 `P_shaftLimit` = 50 kW, trigger `T_gas_out_max` ≤ 140 K
@@ -151,13 +158,15 @@ floor.
 | `bypass_limit` | 10 |
 | valve3 (fixed) | 4000 |
 | `heater_gain` | 100 W per unit |
-| `PID` | k 0.12, Ti 12 s, y ±60, **`y_start` = 5** |
+| `PID` | k 0.12, Ti 12 s, y ±60, `y_start` = 0 (was 5, FIX-11) |
 
 Differences from CS/TF worth knowing:
-- `PID.y_start` = 5 starts with the heater gate on. TF changed this to 0
-  after it heated the supply to ~117 K for the first ~40 s (FIX-11).
-- No R-KVFLOOR on valve6: for 0 < `PID.y` < 0.7 the commanded Kv is
-  negative (FIX-03).
+- `PID.y_start` was 5, which started with the heater gate on; set to 0
+  on 2026-11-04 as TF did after it heated the supply to ~117 K for the
+  first ~40 s (FIX-11, not yet simulated).
+- valve6 now has R-KVFLOOR: `max(min(-PID.y*Kv_gain, Kv_cool_max), Kv_shut)`
+  (FIX-03, 2026-11-04, not yet simulated); before, the commanded Kv was
+  negative for 0 < `PID.y` < 0.7.
 - `bypass_limit` = 10 / gain 10: valve5 only starts throttling at
   `PID.y` < −10.3; TF lowered both because valve5 otherwise stayed fully
   open while the supply drifted (FIX-13).
@@ -191,7 +200,7 @@ RV07/RV08/PF_RV01 `valveRampTime`), R-FROZEN, R-EVAPDECOUPLE (valve3),
 R-ACTDELAY (5 s), R-WINDUP (PID_pressure, PID_circulatorPower).
 Also PF-specific: buffer volumes between RV07/RV08 and their ideal
 reservoirs, `Kv_shut_pressureValves` = 1e-2 instead of 1e-4.
-Not used: R-BOTHENDS, R-KVFLOOR.
+Not used: R-BOTHENDS. R-KVFLOOR on valve6 since 2026-11-04.
 
 ## Plant-model assumptions (not control)
 
@@ -199,8 +208,9 @@ Not used: R-BOTHENDS, R-KVFLOOR.
   default) and only `heatPort[1]` tied to the 77 K wall. TF found that a
   single well-mixed cell hid a ~4× UA oversizing of this same PF-copied
   tube (FIX-25). No LIN-side boiling resistance or LIN supply cap (FIX-08).
-* **Startup:** coils at 160 K, loop gas at 80 K, coils open at t = 0 — an
-  80 K step at first contact (FIX-01).
+* **Startup:** coils at 160 K, loop gas at 120 K, coils open at t = 0 — a
+  40 K step at first contact (FIX-01 quick fix, 2026-11-04; the full
+  C-PREP phase is not built).
 
 **Revision history:** 2026-10-22 created from `PFCircuit.mo` at commit
 2ecd589; absorbs the former `docs/algorithms.md` (now in

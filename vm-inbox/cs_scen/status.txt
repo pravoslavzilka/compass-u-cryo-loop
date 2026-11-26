@@ -1,0 +1,3 @@
+RUNNING: load + translate
+RUNNING: simulate 1800 s
+OK: simulated 1800 s

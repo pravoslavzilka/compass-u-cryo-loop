@@ -1,0 +1,31 @@
+﻿ = true
+OutputCPUtime := true;
+if Modelica.Utilities.Files.exist(statusFile) then
+  Modelica.Utilities.Files.remove(statusFile);
+end if;
+Modelica.Utilities.Streams.print("RUNNING: translate started", statusFile);
+loaded := openModel(packagePath + "/package.mo", mustRead=true);
+Declaring variable: Boolean loaded ;
+cd(debugPath);
+Z:/compass-u-cryo-loop/dymola-thermal-systems/CoilLoopCompassU/CS/prep_opt
+ = true
+ok := translateModel(modelName);
+Declaring variable: Boolean ok ;
+if ok then
+  Modelica.Utilities.Streams.print("OK: translation successful", statusFile);
+  simOk := simulateModel(modelName, stopTime=12.0, tolerance=1e-4, numberOfIntervals=300,
+                          resultFile=debugPath + "/result_e03");
+  if Modelica.Utilities.Files.exist(debugPath + "/dslog.txt") then
+    Modelica.Utilities.Files.copy(debugPath + "/dslog.txt", debugPath + "/dslog_e03.txt", true);
+  end if;
+  if not simOk then
+    Modelica.Utilities.Streams.print("FAIL: simulation failed", statusFile);
+  else
+    Modelica.Utilities.Streams.print("DONE: simulation ok", statusFile);
+  end if;
+else
+  Modelica.Utilities.Streams.print("FAIL: translation failed", statusFile);
+  Modelica.Utilities.Streams.print(getLastErrorLog(), debugPath + "/last_error.txt");
+end if;
+Declaring variable: Boolean simOk ;
+savelog(debugPath + "/log_e03.txt");
